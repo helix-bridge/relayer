@@ -1,0 +1,19 @@
+[
+    {
+        "privateKey": "0x...",
+        "toChain": {
+            "chainName": "darwinia-dvm",
+            "rpc": "https://darwinia-rpc.dwellir.com",
+            "bridgeAddress": "0x25bD9707d42FBDEBB2a03D6F50ADD1F84dA18833",
+            "tokenAddress": "0x656567eb75b765fc320783cc6edd86bd854b2305"
+        },
+        "fromChains": [
+            {
+                "chainName": "crab-dvm",
+                "rpc": "https://darwinia-crab.api.onfinality.io/public-https",
+                "bridgeAddress": "0x566d9e2bd492d78d238e3150b7a0527b504a74e2",
+                "tokenAddress": "0x2d2b97ea380b0185e9fdf8271d1afb5d2bf18329"
+            }
+        ]
+    }
+]
