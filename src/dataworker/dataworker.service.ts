@@ -6,7 +6,7 @@ import { Erc20Contract, LpSub2SubBridgeContract } from "../base/contract";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { EthereumProvider, GasPrice } from "../base/provider";
 import { Ether, GWei, EtherBigNumber } from "../base/bignumber";
-import { UniswapTokenRate, TokenRate } from "../base/token.rate";
+import { PriceOracle } from "../base/oracle";
 
 export interface HistoryRecord {
     id: string;
@@ -34,7 +34,7 @@ export class DataworkerService implements OnModuleInit {
     private readonly finalizeBlocks = 8;
     private readonly zeroAddress = '0x0000000000000000000000000000000000000000';
     private readonly relayGasLimit = 100000;
-    private readonly tokenRate: TokenRate = new UniswapTokenRate();
+
     async onModuleInit() {
         this.logger.log("data worker started");
     }
@@ -81,7 +81,10 @@ export class DataworkerService implements OnModuleInit {
         record: HistoryRecord,
         toBridge: LpSub2SubBridgeContract,
         fromProvider: EthereumProvider,
-        toProvider: EthereumProvider
+        toProvider: EthereumProvider,
+        priceOracle: PriceOracle.TokenPriceOracle,
+        userFeeToken: string,
+        relayerGasFeeToken: string,
     ): Promise<ProfitableInfo> {
         // 1. tx must be finalized
         const confirmedBlocks = await fromProvider.checkPendingTransaction(record.requestTxHash);
@@ -114,9 +117,10 @@ export class DataworkerService implements OnModuleInit {
             gasPrice.fee.gasPrice = (new GWei(gasPrice.fee.gasPrice)).mul(1.2).Number;
             feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
         }
-        const swapOut = this.tokenRate.simulateNativeSwap(
-            record.recvTokenAddress,
-            (new EtherBigNumber(record.sendAmount)).Number
+        const swapOut = await priceOracle.simulateSwap(
+            userFeeToken,
+            relayerGasFeeToken,
+            (new EtherBigNumber(record.fee)).Number
         );
         if (swapOut.lt(feeUsed.mul(2))) {
             return {

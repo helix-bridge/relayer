@@ -13,6 +13,13 @@ export interface ConfigInfo {
     privateKey: string;
     toChain: BridgeConfigInfo;
     fromChains: BridgeConfigInfo[];
+    priceOracle: {
+        name: string;
+        chainName: string;
+        userFeeToken: string;
+        relayerGasFeeToken: string;
+        configure: any;
+    };
 }
 
 @Injectable()

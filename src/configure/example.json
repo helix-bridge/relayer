@@ -14,6 +14,15 @@
                 "bridgeAddress": "0x566d9e2bd492d78d238e3150b7a0527b504a74e2",
                 "tokenAddress": "0x2d2b97ea380b0185e9fdf8271d1afb5d2bf18329"
             }
-        ]
+        ],
+        "priceOracle": {
+            "name": "UniswapTokenPriceOracle",
+            "chainName": "crab-dvm",
+            "userFeeToken": "0x273131F7CB50ac002BDd08cA721988731F7e1092",
+            "relayerGasFeeToken": "0x2D2b97EA380b0185e9fDF8271d1AFB5d2Bf18329",
+            "configure": {
+                "address": "0xAF5cAa87a7d3718622604268C43fF6cE9d2cEc3C"
+            }
+        }
     }
 ]

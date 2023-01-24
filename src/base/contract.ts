@@ -1,13 +1,13 @@
-import { Wallet, Contract, ContractInterface, BigNumber } from "ethers";
+import { Wallet, providers, Contract, ContractInterface, BigNumber } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
 import { lpSub2SubBridge } from "../abi/lpbridge";
-//import { uniswap } from "../abi/uniswap";
+import { uniswap } from "../abi/uniswap";
 import { GasPrice } from "../base/provider";
 
 export class EthereumContract {
     protected contract: Contract;
-    constructor(address: string, abi: ContractInterface, signer: Wallet) {
+    constructor(address: string, abi: ContractInterface, signer: Wallet | providers.Provider) {
         this.contract = new Contract(address, abi, signer);
     }
 
@@ -51,7 +51,7 @@ export class EthereumContract {
 }
 
 export class Erc20Contract extends EthereumContract {
-    constructor(address: string, signer: Wallet) {
+    constructor(address: string, signer: Wallet | providers.Provider) {
         super(address, erc20, signer);
     }
 
@@ -106,7 +106,7 @@ export interface RelayArgs {
 }
 
 export class LpSub2SubBridgeContract extends EthereumContract {
-    constructor(address: string, signer: Wallet) {
+    constructor(address: string, signer: Wallet | providers.Provider) {
         super(address, lpSub2SubBridge, signer);
     }
 
@@ -182,10 +182,21 @@ export class LpSub2SubBridgeContract extends EthereumContract {
     }
 }
 
-/*
 export class UniswapContract extends EthereumContract {
-    constructor(address: string, signer: Wallet) {
+    constructor(address: string, signer: Wallet | providers.Provider) {
         super(address, uniswap, signer);
     }
+
+    async getAmountsOut(
+        amountIn: BigNumber,
+        path: string[],
+    ): Promise<BigNumber> {
+        const amountsOut = await this.contract.getAmountsOut(amountIn, path);
+        return amountsOut[amountsOut.length - 1];
+    }
+
+    async weth(): Promise<string> {
+        return await this.contract.WETH();
+    }
 }
-*/
+

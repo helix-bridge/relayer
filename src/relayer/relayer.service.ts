@@ -7,6 +7,7 @@ import { EthereumProvider } from "../base/provider";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from '../configure/configure.service';
+import { PriceOracle } from "../base/oracle";
 
 export class BridgeConnectInfo {
     chainName: string;
@@ -19,6 +20,9 @@ export class LpBridges {
     isProcessing: boolean;
     toBridge: BridgeConnectInfo;
     fromBridges: BridgeConnectInfo[];
+    priceOracle: PriceOracle.TokenPriceOracle;
+    userFeeToken: string;
+    relayerGasFeeToken: string;
 }
 
 @Injectable()
@@ -64,10 +68,16 @@ export class RelayerService implements OnModuleInit {
                 }
                 return fromConnectInfo;
             });
+            const oracleName = config.priceOracle.name;
+            const oracleConfig = config.priceOracle.configure;
+            const provider = this.bridgeConnectInfos[config.priceOracle.chainName].provider;
             return {
                 isProcessing: false,
                 toBridge: toConnectInfo,
                 fromBridges: fromConnectInfos,
+                priceOracle: new (<any>PriceOracle)[oracleName](provider, oracleConfig),
+                userFeeToken: config.priceOracle.userFeeToken,
+                relayerGasFeeToken: config.priceOracle.relayerGasFeeToken,
             };
         });
     }
@@ -131,6 +141,9 @@ export class RelayerService implements OnModuleInit {
                     bridge.toBridge.bridge,
                     fromConnectInfo.provider,
                     bridge.toBridge.provider,
+                    bridge.priceOracle,
+                    bridge.userFeeToken,
+                    bridge.relayerGasFeeToken,
                 );
                 if (profitable.result) {
                     // try relay: check balance and fee enough
