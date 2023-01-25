@@ -3,7 +3,7 @@ import { TasksService } from '../tasks/tasks.service';
 import { Store } from '../base/store';
 import { Erc20Contract, LpSub2SubBridgeContract, RelayArgs } from "../base/contract";
 import { EtherBigNumber } from '../base/bignumber';
-import { EthereumProvider } from "../base/provider";
+import { EthereumProvider, TransactionInfo, scaleBigger } from "../base/provider";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from '../configure/configure.service';
@@ -109,15 +109,24 @@ export class RelayerService implements OnModuleInit {
     async relay(bridge: LpBridges) {
         // checkPending transaction
         let txHash = await this.store.getPendingTransaction(bridge.toBridge.chainName);
+        let transactionInfo: TransactionInfo | null = null;
         if (txHash) {
-            let confirmedBlock = await bridge.toBridge.provider.checkPendingTransaction(txHash);
-            if (confirmedBlock < 15) {
-                this.logger.log(`waiting for relay tx finialize: ${confirmedBlock}, txHash: ${txHash}`);
+            transactionInfo = await bridge.toBridge.provider.checkPendingTransaction(txHash);
+            // may be query error
+            if (transactionInfo === null) {
                 return;
-            } else {
-                // delete in store
-                this.logger.log(`the pending tx is confirmed, txHash: ${txHash}`);
-                await this.store.delPendingTransaction(bridge.toBridge.chainName);
+            }
+            // confirmed
+            if (transactionInfo.confirmedBlock > 0) {
+                if (transactionInfo.confirmedBlock < 15) {
+                    this.logger.log(`waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${txHash}`);
+                    return;
+                } else {
+                    // delete in store
+                    this.logger.log(`the pending tx is confirmed, txHash: ${txHash}`);
+                    await this.store.delPendingTransaction(bridge.toBridge.chainName);
+                    return;
+                }
             }
         }
 
@@ -146,6 +155,15 @@ export class RelayerService implements OnModuleInit {
                     bridge.relayerGasFeeToken,
                 );
                 if (profitable.result) {
+                    // replace ?
+                    let nonce: number | null = null;
+                    if (transactionInfo !== null) {
+                        const needReplace = scaleBigger(profitable.gasPrice, transactionInfo.gasPrice, 1.5);
+                        if (!needReplace) {
+                            return;
+                        }
+                        nonce = transactionInfo.nonce;
+                    }
                     // try relay: check balance and fee enough
                     const chainId = this.dataworkerService.getChainId(record.id);
                     const args: RelayArgs = {
@@ -160,9 +178,9 @@ export class RelayerService implements OnModuleInit {
                     const relayGasLimit = (new EtherBigNumber(this.configureService.relayGasLimit)).Number;
                     const err = await bridge.toBridge.bridge.tryRelay(args, relayGasLimit);
                     if (err === null) {
-                        this.logger.log(`find valid relay info, id: ${record.id}, amount: ${record.sendAmount}`);
+                        this.logger.log(`find valid relay info, id: ${record.id}, amount: ${record.sendAmount}, nonce: ${nonce}`);
                         // relay and return
-                        const tx = await bridge.toBridge.bridge.relay(args, profitable.gasPrice, null, relayGasLimit);
+                        const tx = await bridge.toBridge.bridge.relay(args, profitable.gasPrice, nonce, relayGasLimit);
                         // save to store
                         await this.store.savePendingTransaction(bridge.toBridge.chainName, tx.hash);
                         this.logger.log(`success relay message, txhash: ${tx.hash}`);

@@ -1,4 +1,5 @@
-import { ethers, BigNumber } from "ethers";
+import { ethers, BigNumber } from 'ethers';
+import { GWei } from './bignumber';
 
 export interface EIP1559Fee {
     maxFeePerGas: BigNumber;
@@ -13,6 +14,24 @@ export interface GasPrice {
     eip1559fee: EIP1559Fee | null;
     fee: GasFee | null;
     isEip1559: boolean;
+}
+
+export interface TransactionInfo {
+    gasPrice: GasPrice | null;
+    confirmedBlock: number;
+    nonce: number | null;
+}
+
+export function scaleBigger(left: GasPrice, right: GasPrice, scale: number): boolean {
+    if (left.isEip1559) {
+        const leftGasPrice = left.eip1559fee.maxFeePerGas;
+        const rightGasPrice = new GWei(right.eip1559fee.maxFeePerGas);
+        return leftGasPrice.lt(rightGasPrice.mul(scale).Number);
+    } else {
+        const leftGasPrice = left.fee.gasPrice;
+        const rightGasPrice = new GWei(right.fee.gasPrice);
+        return leftGasPrice.lt(rightGasPrice.mul(scale).Number);
+    }
 }
 
 export class EthereumProvider {
@@ -57,11 +76,43 @@ export class EthereumProvider {
         }
     }
 
-    async checkPendingTransaction(hash: string): Promise<number> {
+    async checkPendingTransaction(hash: string): Promise<TransactionInfo> | null {
         const transaction = await this.provider.getTransaction(hash);
-        if (!transaction || transaction.blockNumber == null) {
-            return 0;
+        if (!transaction) {
+            return null;
         }
-        return transaction.confirmations;
+        if (transaction.blockNumber == null) {
+            if (transaction.maxFeePerGas && transaction.maxPriorityFeePerGas) {
+                return {
+                    gasPrice: {
+                        eip1559fee: {
+                            maxFeePerGas: transaction.maxFeePerGas,
+                            maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+                        },
+                        isEip1559: true,
+                        fee: null,
+                    },
+                    confirmedBlock: 0,
+                    nonce: transaction.nonce,
+                };
+            } else {
+                return {
+                    gasPrice: {
+                        eip1559fee: null,
+                        isEip1559: false,
+                        fee: {
+                            gasPrice: transaction.gasPrice
+                        },
+                    },
+                    confirmedBlock: 0,
+                    nonce: transaction.nonce,
+                }
+            }
+        }
+        return {
+            gasPrice: null,
+            confirmedBlock: transaction.confirmations,
+            nonce: null,
+        }
     }
 }

@@ -87,9 +87,9 @@ export class DataworkerService implements OnModuleInit {
         relayerGasFeeToken: string,
     ): Promise<ProfitableInfo> {
         // 1. tx must be finalized
-        const confirmedBlocks = await fromProvider.checkPendingTransaction(record.requestTxHash);
-        if (confirmedBlocks < this.finalizeBlocks) {
-            this.logger.log(`request tx waiting finalize ${confirmedBlocks}, hash: ${record.requestTxHash}`);
+        const transactionInfo = await fromProvider.checkPendingTransaction(record.requestTxHash);
+        if (!transactionInfo || transactionInfo.confirmedBlock < this.finalizeBlocks) {
+            this.logger.log(`request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`);
             return {
                 gasPrice: null,
                 result: false,
