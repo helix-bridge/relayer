@@ -13,6 +13,7 @@ export interface HistoryRecord {
     messageNonce: string;
     sendTokenAddress: string;
     recvTokenAddress: string;
+    recvToken: string;
     sender: string;
     recipient: string;
     sendAmount: string;
@@ -67,7 +68,7 @@ export class DataworkerService implements OnModuleInit {
                 row: ${row},
                 page: ${page},
                 order: "fee"
-            ) {records {id, messageNonce, sendTokenAddress, recvTokenAddress, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash}}}`;
+            ) {records {id, messageNonce, sendTokenAddress, recvTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash}}}`;
         const records = await axios
         .post(url, {
             query,

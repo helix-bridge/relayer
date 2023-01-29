@@ -32,6 +32,9 @@ export namespace PriceOracle {
             tokenOut: string,
             amountIn: BigNumber
         ): Promise<BigNumber> {
+            if (tokenIn === tokenOut) {
+                return amountIn;
+            }
             return await this.uniswapContract.getAmountsOut(
                 amountIn,
                 [tokenIn, tokenOut]

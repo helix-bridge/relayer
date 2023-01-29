@@ -7,6 +7,7 @@ export interface BridgeConfigInfo {
     rpc: string;
     bridgeAddress: string;
     tokenAddress: string;
+    native?: string;
 }
 
 export interface ConfigInfo {

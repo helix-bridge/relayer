@@ -12,6 +12,7 @@ import { PriceOracle } from "../base/oracle";
 export class BridgeConnectInfo {
     chainName: string;
     tokenAddress: string;
+    native: string;
     provider: EthereumProvider;
     bridge: LpSub2SubBridgeContract;
 }
@@ -47,6 +48,7 @@ export class RelayerService implements OnModuleInit {
                 toConnectInfo = {
                     chainName: config.toChain.chainName,
                     tokenAddress: config.toChain.tokenAddress,
+                    native: config.toChain.native,
                     provider,
                     bridge,
                 };
@@ -61,6 +63,7 @@ export class RelayerService implements OnModuleInit {
                     fromConnectInfo = {
                         chainName: fromBridgeConfig.chainName,
                         tokenAddress: fromBridgeConfig.tokenAddress,
+                        native: fromBridgeConfig.native,
                         provider,
                         bridge,
                     };
@@ -118,7 +121,7 @@ export class RelayerService implements OnModuleInit {
             }
             // confirmed
             if (transactionInfo.confirmedBlock > 0) {
-                if (transactionInfo.confirmedBlock < 15) {
+                if (transactionInfo.confirmedBlock < 8) {
                     this.logger.log(`waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${txHash}`);
                     return;
                 } else {
@@ -168,12 +171,12 @@ export class RelayerService implements OnModuleInit {
                     const chainId = this.dataworkerService.getChainId(record.id);
                     const args: RelayArgs = {
                         messageNonce: (new EtherBigNumber(record.messageNonce)).Number,
-                        token: record.recvTokenAddress,
+                        token: bridge.toBridge.tokenAddress,
                         sender: record.sender,
                         receiver: record.recipient,
                         amount: (new EtherBigNumber(record.sendAmount)).Number,
                         sourceChainId: (new EtherBigNumber(chainId)).Number,
-                        issuingNative: record.reason === 'issuing_native',
+                        issuingNative: bridge.toBridge.native === record.recvToken,
                     };
                     const relayGasLimit = (new EtherBigNumber(this.configureService.relayGasLimit)).Number;
                     const err = await bridge.toBridge.bridge.tryRelay(args, relayGasLimit);
