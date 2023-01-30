@@ -1,58 +1,66 @@
-[
-    {
-        "privateKey": "0x...",
-        "toChain": {
-            "chainName": "darwinia-dvm",
+{
+    "chains": [
+        {
+            "name": "darwinia-dvm",
             "rpc": "https://darwinia-rpc.dwellir.com",
-            "bridgeAddress": "0x1AfcfB0ca36d2cF3573281CBAd9457F5222df02a",
-            "tokenAddress": "0x656567eb75b765fc320783cc6edd86bd854b2305",
             "native": "RING"
         },
-        "fromChains": [
-            {
-                "chainName": "crab-dvm",
-                "rpc": "https://darwiniacrab-rpc.dwellir.com",
-                "bridgeAddress": "0x173f5694Eee6BBd1317D925Fb8C66E0C8966E00F",
-                "tokenAddress": "0x2d2b97ea380b0185e9fdf8271d1afb5d2bf18329",
-                "native": "CRAB"
-            }
-        ],
-        "priceOracle": {
-            "name": "UniswapTokenPriceOracle",
-            "chainName": "crab-dvm",
-            "userFeeToken": "0x273131F7CB50ac002BDd08cA721988731F7e1092",
-            "relayerGasFeeToken": "0x2D2b97EA380b0185e9fDF8271d1AFB5d2Bf18329",
-            "configure": {
-                "address": "0xAF5cAa87a7d3718622604268C43fF6cE9d2cEc3C"
-            }
-        }
-    },
-    {
-        "privateKey": "0x...",
-        "toChain": {
-            "chainName": "crab-dvm",
-            "rpc": "https://crab-rpc.dwellir.com",
-            "bridgeAddress": "0x173f5694Eee6BBd1317D925Fb8C66E0C8966E00F",
-            "tokenAddress": "0x2d2b97ea380b0185e9fdf8271d1afb5d2bf18329",
+        {
+            "name": "crab-dvm",
+            "rpc": "https://darwiniacrab-rpc.dwellir.com",
             "native": "CRAB"
-        },
-        "fromChains": [
-            {
-                "chainName": "darwinia-dvm",
-                "rpc": "https://darwinia-rpc.dwellir.com",
-                "bridgeAddress": "0x1AfcfB0ca36d2cF3573281CBAd9457F5222df02a",
-                "tokenAddress": "0x656567eb75b765fc320783cc6edd86bd854b2305",
-                "native": "RING"
+        }
+    ],
+    "bridges": [
+        {
+            "privateKey": "0x...",
+            "toChain": "darwinia-dvm",
+            "bridgeAddress": "0x1AfcfB0ca36d2cF3573281CBAd9457F5222df02a",
+            "tokens": [
+                {
+                    "toAddress": "0x656567eb75b765fc320783cc6edd86bd854b2305",
+                    "fromAddresses": [
+                        {
+                            "chainName": "crab-dvm",
+                            "fromAddress": "0x2d2b97ea380b0185e9fdf8271d1afb5d2bf18329",
+                            "feeTokenAddress": "0x273131F7CB50ac002BDd08cA721988731F7e1092"
+                        }
+                    ]
+                }
+            ],
+            "priceOracle": {
+                "name": "UniswapTokenPriceOracle",
+                "chainName": "crab-dvm",
+                "relayerGasFeeToken": "0x2D2b97EA380b0185e9fDF8271d1AFB5d2Bf18329",
+                "configure": {
+                    "address": "0xAF5cAa87a7d3718622604268C43fF6cE9d2cEc3C"
+                }
             }
-        ],
-        "priceOracle": {
-            "name": "UniswapTokenPriceOracle",
-            "chainName": "crab-dvm",
-            "userFeeToken": "0x273131F7CB50ac002BDd08cA721988731F7e1092",
-            "relayerGasFeeToken": "0x273131F7CB50ac002BDd08cA721988731F7e1092",
-            "configure": {
-                "address": "0xAF5cAa87a7d3718622604268C43fF6cE9d2cEc3C"
+        },
+        {
+            "privateKey": "0x...",
+            "toChain": "crab-dvm",
+            "bridgeAddress": "0x173f5694Eee6BBd1317D925Fb8C66E0C8966E00F",
+            "tokens": [
+                {
+                    "toAddress": "0x2d2b97ea380b0185e9fdf8271d1afb5d2bf18329",
+                    "fromAddresses": [
+                        {
+                            "chainName": "darwinia-dvm",
+                            "fromAddress": "0x656567eb75b765fc320783cc6edd86bd854b2305",
+                            "feeTokenAddress": "0x273131F7CB50ac002BDd08cA721988731F7e1092"
+                        }
+                    ]
+                }
+            ],
+            "priceOracle": {
+                "name": "UniswapTokenPriceOracle",
+                "chainName": "crab-dvm",
+                "relayerGasFeeToken": "0x273131F7CB50ac002BDd08cA721988731F7e1092",
+                "configure": {
+                    "address": "0xAF5cAa87a7d3718622604268C43fF6cE9d2cEc3C"
+                }
             }
         }
-    }
-]
+    ]
+}
