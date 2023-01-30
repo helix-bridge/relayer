@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { DataworkerService } from './dataworker.service';
+import { Module } from "@nestjs/common";
+import { DataworkerService } from "./dataworker.service";
 
 @Module({
   providers: [DataworkerService],

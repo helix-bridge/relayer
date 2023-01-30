@@ -8,6 +8,7 @@
   "scripts": {
     "prebuild": "rm -rf dist && tsc -p tsconfig.build.json",
     "build": "nest build",
+    "build-wp": "nest build --webpack --webpackPath=./webpack.config.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -30,7 +31,7 @@
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/schedule": "^1.1.0",
     "axios": "^1.2.3",
-    "ethers": "^5.7.2",
+    "ethers": "^5.7.0",
     "level-ts": "^2.1.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0"
@@ -45,6 +46,7 @@
     "@types/supertest": "^2.0.11",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
+    "webpack": "^5.11.0",
     "eslint": "^8.0.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
