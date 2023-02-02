@@ -105,8 +105,8 @@ export class RelayerService implements OnModuleInit {
                   return null;
                 }
                 return {
-                  fromAddress: tokenConfig.fromAddress,
-                  feeTokenAddress: tokenConfig.feeTokenAddress,
+                  fromAddress: tokenConfig.fromAddress.toLowerCase(),
+                  feeTokenAddress: tokenConfig.feeTokenAddress.toLowerCase(),
                   chainInfo: fromChainInfo,
                 };
               })
@@ -115,7 +115,7 @@ export class RelayerService implements OnModuleInit {
               return null;
             }
             return {
-              toAddress: fromBridgeConfig.toAddress,
+              toAddress: fromBridgeConfig.toAddress.toLowerCase(),
               fromTokens: fromTokens,
             };
           })
@@ -134,7 +134,7 @@ export class RelayerService implements OnModuleInit {
             oracleProvider,
             oracleConfig
           ),
-          relayerGasFeeToken: config.priceOracle.relayerGasFeeToken,
+          relayerGasFeeToken: config.priceOracle.relayerGasFeeToken.toLowerCase(),
         };
       })
       .filter((item) => item !== null);
@@ -201,7 +201,7 @@ export class RelayerService implements OnModuleInit {
       });
       const needRelayRecords =
         await this.dataworkerService.queryRecordNeedRelay(
-          this.configureService.indexer,
+          this.configureService.config.indexer,
           fromChains,
           toChainInfo.chainName,
           token.toAddress,
@@ -252,7 +252,7 @@ export class RelayerService implements OnModuleInit {
               issuingNative: toChainInfo.native === record.recvToken,
             };
             const relayGasLimit = new EtherBigNumber(
-              this.configureService.relayGasLimit
+              this.configureService.config.relayGasLimit
             ).Number;
             const err = await bridge.toBridge.bridge.tryRelay(
               args,
@@ -260,7 +260,7 @@ export class RelayerService implements OnModuleInit {
             );
             if (err === null) {
               this.logger.log(
-                `find valid relay info, id: ${record.id}, amount: ${record.sendAmount}, nonce: ${nonce}`
+                `find valid relay info, id: ${record.id}, nonce: ${nonce}`
               );
               // relay and return
               const tx = await bridge.toBridge.bridge.relay(

@@ -33,6 +33,8 @@ export interface BridgeConfigInfo {
 }
 
 export interface ConfigInfo {
+  indexer: string;
+  relayGasLimit: number;
   chains: ChainConfigInfo[];
   bridges: BridgeConfigInfo[];
 }
@@ -41,9 +43,6 @@ export interface ConfigInfo {
 export class ConfigureService {
   private readonly configPath =
     this.configService.get<string>("LP_BRIDGE_PATH");
-  public readonly indexer = this.configService.get<string>("LP_INDEXER_URL");
-  public readonly relayGasLimit =
-    this.configService.get<string>("LP_RELAY_GASLIMIT");
   public readonly storePath = this.configService.get<string>(
     "LP_BRIDGE_STORE_PATH"
   );
