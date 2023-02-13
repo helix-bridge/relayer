@@ -16,6 +16,7 @@ import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from "../configure/configure.service";
 import { PriceOracle } from "../base/oracle";
+import { Ether } from "../base/bignumber";
 
 export class ChainInfo {
   chainName: string;
@@ -43,6 +44,7 @@ export class TokenInfo {
 export class LpBridges {
   isProcessing: boolean;
   toBridge: BridgeConnectInfo;
+  minProfit: Ether;
   tokens: TokenInfo[];
   priceOracle: PriceOracle.TokenPriceOracle;
   relayerGasFeeToken: string;
@@ -129,6 +131,7 @@ export class RelayerService implements OnModuleInit {
         return {
           isProcessing: false,
           toBridge: toConnectInfo,
+          minProfit: new Ether(config.minProfit),
           tokens: tokens,
           priceOracle: new (<any>PriceOracle)[oracleName](
             oracleProvider,
@@ -209,6 +212,7 @@ export class RelayerService implements OnModuleInit {
           0
         );
       if (needRelayRecords && needRelayRecords.length > 0) {
+        this.logger.log(`some tx need to relay, size ${needRelayRecords.length}, toChain ${toChainInfo.chainName}`);
         for (const record of needRelayRecords) {
           let fromItem = token.fromTokens.find((fromToken) => {
             return (
@@ -220,6 +224,7 @@ export class RelayerService implements OnModuleInit {
           const profitable = await this.dataworkerService.checkProfitable(
             record,
             bridge.toBridge.bridge,
+            bridge.minProfit,
             fromItem.chainInfo.provider,
             toChainInfo.provider,
             bridge.priceOracle,
@@ -260,8 +265,9 @@ export class RelayerService implements OnModuleInit {
             );
             if (err === null) {
               this.logger.log(
-                `find valid relay info, id: ${record.id}, nonce: ${nonce}`
+                `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
               );
+              //return;
               // relay and return
               const tx = await bridge.toBridge.bridge.relay(
                 args,

@@ -22,6 +22,7 @@ export interface ChainWithTokenInfo {
 export interface BridgeConfigInfo {
   privateKey: string;
   toChain: string;
+  minProfit: string;
   bridgeAddress: string;
   tokens: ChainWithTokenInfo[];
   priceOracle: {

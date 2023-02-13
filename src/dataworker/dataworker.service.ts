@@ -81,6 +81,7 @@ export class DataworkerService implements OnModuleInit {
   async checkProfitable(
     record: HistoryRecord,
     toBridge: LpSub2SubBridgeContract,
+    minProfit: Ether,
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
     priceOracle: PriceOracle.TokenPriceOracle,
@@ -107,6 +108,9 @@ export class DataworkerService implements OnModuleInit {
     const transferId = this.getTransferId(record.id);
     const relayer = await toBridge.issuedMessages(transferId);
     if (relayer != this.zeroAddress) {
+      this.logger.log(
+        `tx has been relayed, waiting for sync, id ${transferId}`
+      );
       return {
         gasPrice: null,
         result: false,
@@ -116,16 +120,20 @@ export class DataworkerService implements OnModuleInit {
     let gasPrice = await toProvider.feeData();
     let feeUsed: BigNumber;
     if (gasPrice.isEip1559) {
-      gasPrice.eip1559fee = {
-        maxFeePerGas: new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.2)
-          .Number,
-        maxPriorityFeePerGas: new GWei(
+      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.1).Number;
+      const maxPriorityFeePerGas = new GWei(
           gasPrice.eip1559fee.maxPriorityFeePerGas
-        ).mul(1.2).Number,
+      ).mul(1.1).Number
+      if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
+      }
+      gasPrice.eip1559fee = {
+        maxFeePerGas,
+        maxPriorityFeePerGas,
       };
       feeUsed = gasPrice.eip1559fee.maxFeePerGas.mul(this.relayGasLimit);
     } else {
-      gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.2).Number;
+      gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.1).Number;
       feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
     }
     const swapOut = await priceOracle.simulateSwap(
@@ -133,12 +141,15 @@ export class DataworkerService implements OnModuleInit {
       relayerGasFeeToken,
       new EtherBigNumber(record.fee).Number
     );
-    if (swapOut.lt(feeUsed.mul(2))) {
+    const thePrice = feeUsed.div(this.relayGasLimit).div(1e9);
+    if (swapOut.lt(feeUsed.add(minProfit.Number))) {
+      this.logger.log(`fee is not enough, swapOut ${swapOut}, feeUsed ${feeUsed}, gasPrice ${thePrice}`);
       return {
         gasPrice,
         result: false,
       };
     }
+    this.logger.log(`fee check passed, swapOut ${swapOut}, feeUsed ${feeUsed}, gasPrice ${thePrice}`);
     return {
       gasPrice,
       result: true,
