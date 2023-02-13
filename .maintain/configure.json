@@ -1,11 +1,3 @@
-## Description
-
-Helix relayer is a client to run the LpBridge to relay message from one chain to another chain supported by helix. You can use it to relay message and get reward from the fee payed by users.
-
-## Installation
-
-configure file
-```
 {
     "indexer": "https://apollo-stg.helixbridge.app/graphql",
     "relayGasLimit": 100000,
@@ -76,33 +68,3 @@ configure file
         }
     ]
 }
-```
-
-.env file
-```
-# The patch of the configure file
-LP_BRIDGE_PATH=./.maintain/configure.json
-# The store path, DB files to store the last tx hash relayer sent.
-LP_BRIDGE_STORE_PATH=./.maintain/db
-```
-
-```bash
-$ yarn install
-```
-
-## Running the app
-
-```bash
-$ yarn build
-
-$ yarn start
-```
-
-## Docker
-
-```bash
-docker build . -t relayer:v1.0.0
-
-# You need put the configure.json file in directory ./data first
-docker-compose up -d
-```

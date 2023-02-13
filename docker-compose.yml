@@ -1,0 +1,8 @@
+version: '3'
+services:
+  helix-relayer:
+    image: relayer:v1.0.0
+    restart: always
+    
+    volumes:
+        - ./data:/opt/data
