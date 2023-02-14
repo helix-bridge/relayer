@@ -78,29 +78,45 @@ configure file
 }
 ```
 
-```
 Each configuration of bridges is centered on a target chain that receives token assets from other chains. Each token asset has its address in both the source and target chains, and the relayer account has a balance for that asset. User payments are made using transfer tokens, relayer delivery transactions are paid using target chain gas fees, and no configuration requires a price conversion language machine between them.
 
-▾ indexer        ---  the indexer url, see repo https://github.com/helix-bridge/indexer, it support the helix cross-chain records query API.
-▾ relayGasLimit  --- use this limit value to send the relay transaction.
-▾ chains         --- all the chains information the relayer used. In other sections, they use the name of the chain in this section to find the info.
+▸ indexer        --- the indexer url, see repo https://github.com/helix-bridge/indexer, it support the helix cross-chain records query API.
+
+▸ relayGasLimit  --- use this limit value to send the relay transaction.
+
+▸ chains         --- all the chains information the relayer used. In other sections, they use the name of the chain in this section to find the info.
+
 ▾ bridges        --- bridge list
-  privateKey     --- the private key of the relayer
-  toChain        --- toChain name defined in section chains
-  minProfit      --- the min profit of each transaction (converted to gas token of the target chain)
-  bridgeAddress    --- the lpBridge contract address deployed by helix
-  ▾ tokens         --- the token list
-    toAddress      --- the token address on target chain
-    ▾ fromAddresses    --- the token list on different source chains
-      chainName        --- the source chain name defined in section chains
-      fromAddress      --- the token address on source chain
-      feeTokenAddress  --- the token address on price oracle
-  ▾ priceOracle    --- the price oracle, currently only support UniswapTokenPriceOracle, which is uniswap real-time exchange price
-    name               --- the oracle name
-    chainName          --- the chain name where oracle deployed
-    relayerGasFeeToken --- the gas token address on price oracle, usually the wrapped native token.
-    configure          --- the oracle configure, for UniswapTokenPriceOracle, it's uniswap router address
-```
+
+&nbsp;&nbsp;&nbsp;&nbsp;▸ privateKey     --- the private key of the relayer
+  
+&nbsp;&nbsp;&nbsp;&nbsp;▸ toChain        --- toChain name defined in section chains
+  
+&nbsp;&nbsp;&nbsp;&nbsp;▸ minProfit      --- the min profit of each transaction (converted to gas token of the target chain)
+  
+&nbsp;&nbsp;&nbsp;&nbsp;▸ bridgeAddress    --- the lpBridge contract address deployed by helix
+  
+&nbsp;&nbsp;&nbsp;&nbsp;▾ tokens         --- the token list
+  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ toAddress      --- the token address on target chain
+    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ fromAddresses    --- the token list on different source chains
+    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ chainName        --- the source chain name defined in section chains
+      
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ fromAddress      --- the token address on source chain
+      
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ feeTokenAddress  --- the token address on price oracle
+      
+&nbsp;&nbsp;&nbsp;&nbsp;▾ priceOracle    --- the price oracle, currently only support UniswapTokenPriceOracle, which is uniswap real-time exchange price
+  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ name               --- the oracle name
+    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ chainName          --- the chain name where oracle deployed
+    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ relayerGasFeeToken --- the gas token address on price oracle, usually the wrapped native token.
+    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ configure          --- the oracle configure, for UniswapTokenPriceOracle, it's uniswap router address
 
 .env file
 ```
