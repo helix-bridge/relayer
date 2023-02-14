@@ -80,7 +80,7 @@ configure file
 
 Each configuration of bridges is centered on a target chain that receives token assets from other chains. Each token asset has its address in both the source and target chains, and the relayer account has a balance for that asset. User payments are made using transfer tokens, relayer delivery transactions are paid using target chain gas fees, and no configuration requires a price conversion language machine between them.
 
-▸ indexer        --- the indexer url, see repo https://github.com/helix-bridge/indexer, it support the helix cross-chain records query API.
+▸ indexer        --- the indexer url, see [helix-indexer](https://github.com/helix-bridge/indexer), it support the helix cross-chain records query API.
 
 ▸ relayGasLimit  --- use this limit value to send the relay transaction.
 
