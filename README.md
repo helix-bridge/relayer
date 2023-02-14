@@ -84,7 +84,7 @@ Each configuration of bridges is centered on a target chain that receives token 
 
 ▸ relayGasLimit  --- use this limit value to send the relay transaction.
 
-▸ chains         --- all the chains information the relayer used. In other sections, they use the name of the chain in this section to find the info.
+▸ chains         --- chains infos. In other sections, they use the name of the chain in this section to find the info.
 
 ▾ bridges        --- bridge list
 
@@ -108,7 +108,7 @@ Each configuration of bridges is centered on a target chain that receives token 
       
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ feeTokenAddress  --- the token address on price oracle
       
-&nbsp;&nbsp;&nbsp;&nbsp;▾ priceOracle    --- the price oracle, currently only support UniswapTokenPriceOracle, which is uniswap real-time exchange price
+&nbsp;&nbsp;&nbsp;&nbsp;▾ priceOracle    --- currently only support UniswapTokenPriceOracle, which is uniswap real-time exchange price
   
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ name               --- the oracle name
     
