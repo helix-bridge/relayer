@@ -17,7 +17,7 @@ configure file
         },
         {
             "name": "ethereum",
-            "rpc": "https://eth-mainnet.g.alchemy.com/v2/hLv-Yy1rNIsGzTSzi1wtsFchMTPzXu6J",
+            "rpc": "https://eth-mainnet.g.alchemy.com/v2/KEY",
             "native": "ETH"
         }
     ],
