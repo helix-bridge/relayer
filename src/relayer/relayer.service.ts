@@ -54,9 +54,12 @@ export class LpBridges {
 export class RelayerService implements OnModuleInit {
   private readonly logger = new Logger("relayer");
   private readonly scheduleInterval = 10000;
+  private readonly waitingPendingTime = 12; // 2 minute
   private chainInfos = new Map();
   private lpBridges: LpBridges[];
   public store: Store;
+  private txHashCache: string;
+  private lastTxTimeout: number;
 
   constructor(
     protected taskService: TasksService,
@@ -170,11 +173,13 @@ export class RelayerService implements OnModuleInit {
   async relay(bridge: LpBridges) {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
-    let txHash = await this.store.getPendingTransaction(toChainInfo.chainName);
     let transactionInfo: TransactionInfo | null = null;
-    if (txHash) {
+    if (!this.txHashCache) {
+        this.txHashCache = await this.store.getPendingTransaction(toChainInfo.chainName);
+    }
+    if (this.txHashCache) {
       transactionInfo = await toChainInfo.provider.checkPendingTransaction(
-        txHash
+        this.txHashCache
       );
       // may be query error
       if (transactionInfo === null) {
@@ -182,17 +187,26 @@ export class RelayerService implements OnModuleInit {
       }
       // confirmed
       if (transactionInfo.confirmedBlock > 0) {
+        this.lastTxTimeout = 0;
         if (transactionInfo.confirmedBlock < 8) {
           this.logger.log(
-            `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${txHash}`
+            `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${this.txHashCache}`
           );
           return;
         } else {
           // delete in store
-          this.logger.log(`the pending tx is confirmed, txHash: ${txHash}`);
+          this.logger.log(`the pending tx is confirmed, txHash: ${this.txHashCache}`);
           await this.store.delPendingTransaction(toChainInfo.chainName);
+          this.txHashCache = null;
           return;
         }
+      } else {
+          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${this.txHashCache}, ${this.lastTxTimeout}`);
+          // if timeout, replace it by new tx, else waiting for confirmed
+          if (this.lastTxTimeout < this.waitingPendingTime) {
+              this.lastTxTimeout += 1;
+              return;
+          }
       }
     }
 
@@ -280,6 +294,8 @@ export class RelayerService implements OnModuleInit {
                 toChainInfo.chainName,
                 tx.hash
               );
+              this.txHashCache = tx.hash;
+              this.lastTxTimeout = 0;
               this.logger.log(`success relay message, txhash: ${tx.hash}`);
               return;
             } else {

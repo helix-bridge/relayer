@@ -1,0 +1,49 @@
+{
+    "indexer": "http://127.0.0.1:4002/graphql",
+    "relayGasLimit": 100000,
+    "chains": [
+        {
+            "name": "arbitrum-goerli",
+            "rpc": "https://goerli-rollup.arbitrum.io/rpc",
+            "native": "ETH"
+        },
+        {
+            "name": "goerli",
+            "rpc": "https://rpc.ankr.com/eth_goerli",
+            "native": "ETH"
+        },
+        {
+            "name": "ethereum",
+            "rpc": "https://eth-mainnet.g.alchemy.com/v2/hLv-Yy1rNIsGzTSzi1wtsFchMTPzXu6J",
+            "native": "ETH"
+        }
+    ],
+    "bridges": [
+        {
+            "privateKey": "0x...",
+            "toChain": "goerli",
+            "minProfit": "0.0002",
+            "bridgeAddress": "0x3d33856dCf74f110690f5a2647C7dFb9BB5Ff2d0",
+            "tokens": [
+                {
+                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E",
+                    "fromAddresses": [
+                        {
+                            "chainName": "arbitrum-goerli",
+                            "fromAddress": "0xFBAD806Bdf9cEC2943be281FB355Da05068DE925",
+                            "feeTokenAddress": "0x9469D013805bFfB7D3DEBe5E7839237e535ec483"
+                        }
+                    ]
+                }
+            ],
+            "priceOracle": {
+                "name": "UniswapTokenPriceOracle",
+                "chainName": "ethereum",
+                "relayerGasFeeToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                "configure": {
+                    "address": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+                }
+            }
+        }
+    ]
+}
