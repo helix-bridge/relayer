@@ -152,7 +152,7 @@ export class RelayerService implements OnModuleInit {
     this.store = new Store(this.configureService.storePath);
     this.lpBridges.forEach((item, index) => {
       this.taskService.addScheduleTask(
-        `${item.toBridge.chainInfo.chainName}-lpbridge-relayer`,
+        `${item.toBridge.bridge.address}-lpbridge-relayer`,
         this.scheduleInterval,
         async () => {
           if (item.isProcessing) {
@@ -201,7 +201,7 @@ export class RelayerService implements OnModuleInit {
           return;
         }
       } else {
-          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${this.txHashCache}, ${this.lastTxTimeout}`);
+          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${this.txHashCache}, ${this.lastTxTimeout}, ${transactionInfo.confirmedBlock}`);
           // if timeout, replace it by new tx, else waiting for confirmed
           if (this.lastTxTimeout < this.waitingPendingTime) {
               this.lastTxTimeout += 1;
@@ -281,7 +281,6 @@ export class RelayerService implements OnModuleInit {
               this.logger.log(
                 `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
               );
-              //return;
               // relay and return
               const tx = await bridge.toBridge.bridge.relay(
                 args,

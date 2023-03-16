@@ -13,12 +13,14 @@ import { GasPrice } from "../base/provider";
 
 export class EthereumContract {
   protected contract: Contract;
+  public address: string;
   constructor(
     address: string,
     abi: ContractInterface,
     signer: Wallet | providers.Provider
   ) {
     this.contract = new Contract(address, abi, signer);
+    this.address = address;
   }
 
   async call(
