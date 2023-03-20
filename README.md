@@ -1,10 +1,13 @@
 ## Description
 
-Helix relayer is a client to run the LpBridge to relay message from one chain to another chain supported by helix. You can use it to relay message and get reward from the fee payed by users.
+Helix relayer is a client to run the LnBridge(Liquidate Node Bridge) to relay message from source chain to target chain supported by helix. You can use it to relay message and get reward from the fee payed by users.
+
+The relayer periodically retrieves user transaction data from the helix indexer service, and when it finds a transaction that needs to be relayed, it calculates the transaction execution fee and compares it to the fee paid by the user, and if there is enough profit, it performs the relay operation.
 
 ## Installation
 
-configure file
+### configure file
+Edit the configure file and put it in the path .maintain/configure.json.
 ```
 {
     "indexer": "https://apollo-stg.helixbridge.app/graphql",
@@ -48,38 +51,13 @@ configure file
                 }
             }
         },
-        {
-            "privateKey": "0x...",
-            "toChain": "ethereum",
-            "minProfit": "0.002",
-            "bridgeAddress": "0x5F8D4232367759bCe5d9488D3ade77FCFF6B9b6B",
-            "tokens": [
-                {
-                    "toAddress": "0x9469D013805bFfB7D3DEBe5E7839237e535ec483",
-                    "fromAddresses": [
-                        {
-                            "chainName": "darwinia-dvm",
-                            "fromAddress": "0xE7578598Aac020abFB918f33A20faD5B71d670b4",
-                            "feeTokenAddress": "0x9469D013805bFfB7D3DEBe5E7839237e535ec483"
-                        }
-                    ]
-                }
-            ],
-            "priceOracle": {
-                "name": "UniswapTokenPriceOracle",
-                "chainName": "ethereum",
-                "relayerGasFeeToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-                "configure": {
-                    "address": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-                }
-            }
-        }
     ]
 }
 ```
 
-Each configuration of bridges is centered on a target chain that receives token assets from other chains. Each token asset has its address in both the source and target chains, and the relayer account has a balance for that asset. User payments are made using transfer tokens, relayer delivery transactions are paid using target chain gas fees, and no configuration requires a price conversion language machine between them.
+Each configuration of bridges is centered on a target chain that receives token assets from other chains. Each token asset has its address in both the source and target chains, and the relayer account has a balance for that asset. User payments are made using transfer tokens, relayer delivery transactions are paid using target chain gas fees, and the configuration requires a price oracle machine between them.
 
+#### Params
 ▸ indexer        --- the indexer url, see [helix-indexer](https://github.com/helix-bridge/indexer), it support the helix cross-chain records query API.
 
 ▸ relayGasLimit  --- use this limit value to send the relay transaction.
