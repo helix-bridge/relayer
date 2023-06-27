@@ -7,9 +7,11 @@ import {
 } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
-import { lpSub2SubBridge } from "../abi/lpbridge";
-import { uniswap } from "../abi/uniswap";
+import { lnTargetBridge } from "../abi/lnbridge";
 import { GasPrice } from "../base/provider";
+
+export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
+export const zeroTransferId: string = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export class EthereumContract {
   protected contract: Contract;
@@ -91,51 +93,34 @@ export class Erc20Contract extends EthereumContract {
   }
 }
 
-export interface TokenInfo {
-  localToken: string;
-  remoteToken: string;
-  helixFee: BigNumber;
-  remoteChainId: BigNumber;
-  localDecimals: number;
-  remoteDecimals: number;
-  remoteIsNative: boolean;
+export interface TransferParameter {
+  providerKey: number;
+  previousTransferId: string;
+  lastBlockHash: string;
+  amount: BigNumber;
+  nonce: BigNumber;
+  timestamp: BigNumber;
+  token: string;
+  receiver: string;
 }
 
 export interface RelayArgs {
-  messageNonce: BigNumber;
-  token: string;
-  sender: string;
-  receiver: string;
-  amount: BigNumber;
-  sourceChainId: BigNumber;
-  issuingNative: boolean;
+    transferParameter: TransferParameter;
+    expectedTransferId: string;
 }
 
-export class LpSub2SubBridgeContract extends EthereumContract {
+export interface FillTransfer {
+    latestSlashTransferId: string;
+    slasher: string;
+}
+
+export class LnBridgeTargetContract extends EthereumContract {
   constructor(address: string, signer: Wallet | providers.Provider) {
-    super(address, lpSub2SubBridge, signer);
+    super(address, lnTargetBridge, signer);
   }
 
-  async tokens(index: number): Promise<TokenInfo> {
-    const token = await this.contract.tokens(index);
-    const info: TokenInfo = {
-      localToken: token[0],
-      remoteToken: token[1],
-      helixFee: token[2],
-      remoteChainId: token[3],
-      localDecimals: token[4],
-      remoteDecimals: token[5],
-      remoteIsNative: token[6],
-    };
-    return info;
-  }
-
-  async tokenLength(): Promise<BigNumber> {
-    return await this.contract.tokenLength();
-  }
-
-  async issuedMessages(transferId: string): Promise<string> {
-    return await this.contract.issuedMessages(transferId);
+  async fillTransfers(transferId: string): Promise<FillTransfer> {
+    return await this.contract.fillTransfers(transferId);
   }
 
   async tryRelay(
@@ -143,19 +128,24 @@ export class LpSub2SubBridgeContract extends EthereumContract {
     gasLimit: BigNumber | null = null
   ): Promise<string> | null {
     var value = null;
-    if (args.issuingNative === true) {
-      value = args.amount;
+    const parameter = args.transferParameter;
+    if (parameter.token === zeroAddress) {
+      value = parameter.amount;
     }
     return this.staticCall(
-      "relay",
+      "transferAndReleaseMargin",
       [
-        args.messageNonce,
-        args.token,
-        args.sender,
-        args.receiver,
-        args.amount,
-        args.sourceChainId,
-        args.issuingNative,
+        [
+          parameter.providerKey,
+          parameter.previousTransferId,
+          parameter.lastBlockHash,
+          parameter.amount,
+          parameter.nonce,
+          parameter.timestamp,
+          parameter.token,
+          parameter.receiver,
+        ],
+        args.expectedTransferId,
       ],
       value,
       gasLimit
@@ -169,39 +159,29 @@ export class LpSub2SubBridgeContract extends EthereumContract {
     gasLimit: BigNumber | null = null
   ): Promise<TransactionResponse> {
     var value = null;
-    if (args.issuingNative === true) {
-      value = args.amount;
+    const parameter = args.transferParameter;
+    if (parameter.token === zeroAddress) {
+      value = parameter.amount;
     }
     return await this.call(
-      "relay",
+      "transferAndReleaseMargin",
       [
-        args.messageNonce,
-        args.token,
-        args.sender,
-        args.receiver,
-        args.amount,
-        args.sourceChainId,
-        args.issuingNative,
+        [
+          parameter.providerKey,
+          parameter.previousTransferId,
+          parameter.lastBlockHash,
+          parameter.amount,
+          parameter.nonce,
+          parameter.timestamp,
+          parameter.token,
+          parameter.receiver,
+        ],
+        args.expectedTransferId,
       ],
       gas,
       value,
       nonce,
       gasLimit
     );
-  }
-}
-
-export class UniswapContract extends EthereumContract {
-  constructor(address: string, signer: Wallet | providers.Provider) {
-    super(address, uniswap, signer);
-  }
-
-  async getAmountsOut(amountIn: BigNumber, path: string[]): Promise<BigNumber> {
-    const amountsOut = await this.contract.getAmountsOut(amountIn, path);
-    return amountsOut[amountsOut.length - 1];
-  }
-
-  async weth(): Promise<string> {
-    return await this.contract.WETH();
   }
 }

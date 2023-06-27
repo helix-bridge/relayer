@@ -3,7 +3,7 @@ import { TasksService } from "../tasks/tasks.service";
 import { Store } from "../base/store";
 import {
   Erc20Contract,
-  LpSub2SubBridgeContract,
+  LnBridgeTargetContract,
   RelayArgs,
 } from "../base/contract";
 import { EtherBigNumber } from "../base/bignumber";
@@ -15,8 +15,10 @@ import {
 import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from "../configure/configure.service";
-import { PriceOracle } from "../base/oracle";
 import { Ether } from "../base/bignumber";
+import { Encrypto } from "../base/encrypto";
+import { BigNumber } from "ethers";
+import { last } from "lodash";
 
 export class ChainInfo {
   chainName: string;
@@ -27,27 +29,20 @@ export class ChainInfo {
 
 export class BridgeConnectInfo {
   chainInfo: ChainInfo;
-  bridge: LpSub2SubBridgeContract;
+  bridge: LnBridgeTargetContract;
 }
 
-export class FromToken {
+export class LnProviderInfo {
+  providerKey: number;
   fromAddress: string;
-  feeTokenAddress: string;
-  chainInfo: ChainInfo;
-}
-
-export class TokenInfo {
   toAddress: string;
-  fromTokens: FromToken[];
 }
 
-export class LpBridges {
+export class LnBridge {
   isProcessing: boolean;
+  fromChain: string;
   toBridge: BridgeConnectInfo;
-  minProfit: Ether;
-  tokens: TokenInfo[];
-  priceOracle: PriceOracle.TokenPriceOracle;
-  relayerGasFeeToken: string;
+  lnProviders: LnProviderInfo[];
 }
 
 @Injectable()
@@ -56,7 +51,7 @@ export class RelayerService implements OnModuleInit {
   private readonly scheduleInterval = 10000;
   private readonly waitingPendingTime = 12; // 2 minute
   private chainInfos = new Map();
-  private lpBridges: LpBridges[];
+  private lnBridges: LnBridge[];
   public store: Store;
   private txHashCache: string;
   private lastTxTimeout: number;
@@ -65,92 +60,14 @@ export class RelayerService implements OnModuleInit {
     protected taskService: TasksService,
     protected dataworkerService: DataworkerService,
     protected configureService: ConfigureService
-  ) {
-    this.chainInfos = new Map(
-      this.configureService.config.chains.map((config) => {
-        return [
-          config.name,
-          {
-            chainName: config.name,
-            rpc: config.rpc,
-            native: config.native,
-            provider: new EthereumProvider(config.rpc),
-          },
-        ];
-      })
-    );
-    this.lpBridges = this.configureService.config.bridges
-      .map((config) => {
-        let toChainInfo = this.chainInfos.get(config.toChain);
-        if (!toChainInfo) {
-          this.logger.error(`to chain is not configured ${config.toChain}`);
-          return null;
-        }
-        let wallet = new EthereumConnectedWallet(
-          config.privateKey,
-          toChainInfo.provider
-        );
-        let bridge = new LpSub2SubBridgeContract(
-          config.bridgeAddress,
-          wallet.wallet
-        );
-        let toConnectInfo = {
-          chainInfo: toChainInfo,
-          bridge,
-        };
-        let tokens = config.tokens
-          .map((fromBridgeConfig) => {
-            let fromTokens = fromBridgeConfig.fromAddresses
-              .map((tokenConfig) => {
-                let fromChainInfo = this.chainInfos.get(tokenConfig.chainName);
-                if (!fromChainInfo) {
-                  this.logger.error(
-                    `from chain is not configured ${tokenConfig.chainName}`
-                  );
-                  return null;
-                }
-                return {
-                  fromAddress: tokenConfig.fromAddress.toLowerCase(),
-                  feeTokenAddress: tokenConfig.feeTokenAddress.toLowerCase(),
-                  chainInfo: fromChainInfo,
-                };
-              })
-              .filter((item) => item !== null);
-            if (fromTokens.length === 0) {
-              return null;
-            }
-            return {
-              toAddress: fromBridgeConfig.toAddress.toLowerCase(),
-              fromTokens: fromTokens,
-            };
-          })
-          .filter((item) => item !== null);
-
-        const oracleName = config.priceOracle.name;
-        const oracleConfig = config.priceOracle.configure;
-        const oracleProvider = this.chainInfos.get(
-          config.priceOracle.chainName
-        )?.provider;
-        return {
-          isProcessing: false,
-          toBridge: toConnectInfo,
-          minProfit: new Ether(config.minProfit),
-          tokens: tokens,
-          priceOracle: new (<any>PriceOracle)[oracleName](
-            oracleProvider,
-            oracleConfig
-          ),
-          relayerGasFeeToken: config.priceOracle.relayerGasFeeToken.toLowerCase(),
-        };
-      })
-      .filter((item) => item !== null);
-  }
+  ) {}
 
   // the target chain should not be conflict
   async onModuleInit() {
     this.logger.log("relayer service start");
+    this.initConfigure();
     this.store = new Store(this.configureService.storePath);
-    this.lpBridges.forEach((item, index) => {
+    this.lnBridges.forEach((item, index) => {
       this.taskService.addScheduleTask(
         `${item.toBridge.bridge.address}-lpbridge-relayer`,
         this.scheduleInterval,
@@ -170,7 +87,63 @@ export class RelayerService implements OnModuleInit {
     });
   }
 
-  async relay(bridge: LpBridges) {
+  async initConfigure() {
+    const e = new Encrypto();
+    e.readPasswd();
+
+    this.chainInfos = new Map(
+      this.configureService.config.chains.map((config) => {
+        return [
+          config.name,
+          {
+            chainName: config.name,
+            rpc: config.rpc,
+            native: config.native,
+            provider: new EthereumProvider(config.rpc),
+          },
+        ];
+      })
+    );
+    this.lnBridges = this.configureService.config.bridges
+      .map((config) => {
+        let toChainInfo = this.chainInfos.get(config.toChain);
+        if (!toChainInfo) {
+          this.logger.error(`to chain is not configured ${config.toChain}`);
+          return null;
+        }
+        const privateKey = e.decrypt(config.encryptedPrivateKey);
+        let wallet = new EthereumConnectedWallet(
+          privateKey,
+          toChainInfo.provider
+        );
+        let bridge = new LnBridgeTargetContract(
+          config.targetBridgeAddress,
+          wallet.wallet
+        );
+        let toConnectInfo = {
+          chainInfo: toChainInfo,
+          bridge,
+        };
+        let lnProviders = config.providers
+          .map((lnProviderConfig) => {
+            return {
+                fromAddress: lnProviderConfig.fromAddress,
+                toAddress: lnProviderConfig.toAddress,
+                providerKey: lnProviderConfig.providerKey,
+            };
+          });
+
+        return {
+          isProcessing: false,
+          fromChain: config.fromChain,
+          toBridge: toConnectInfo,
+          lnProviders: lnProviders,
+        };
+      })
+      .filter((item) => item !== null);
+  }
+
+  async relay(bridge: LnBridge) {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
     let transactionInfo: TransactionInfo | null = null;
@@ -211,97 +184,76 @@ export class RelayerService implements OnModuleInit {
     }
 
     // relay for each token configured
-    for (const token of bridge.tokens) {
+    for (const lnProvider of bridge.lnProviders) {
       // checkProfit
-      const fromChains = token.fromTokens.map((item) => {
-        return item.chainInfo.chainName;
-      });
-      const needRelayRecords =
+      const needRelayRecord =
         await this.dataworkerService.queryRecordNeedRelay(
           this.configureService.config.indexer,
-          fromChains,
+          bridge.fromChain,
           toChainInfo.chainName,
-          token.toAddress,
-          10,
-          0
+          lnProvider.toAddress,
+          lnProvider.providerKey,
         );
-      if (needRelayRecords && needRelayRecords.length > 0) {
-        this.logger.log(`some tx need to relay, size ${needRelayRecords.length}, toChain ${toChainInfo.chainName}`);
-        for (const record of needRelayRecords) {
-          let fromItem = token.fromTokens.find((fromToken) => {
-            return (
-              fromToken.fromAddress === record.sendTokenAddress &&
-              fromToken.chainInfo.chainName === record.fromChain
-            );
-          });
-
-          const profitable = await this.dataworkerService.checkProfitable(
-            record,
-            bridge.toBridge.bridge,
-            bridge.minProfit,
-            fromItem.chainInfo.provider,
-            toChainInfo.provider,
-            bridge.priceOracle,
-            fromItem.feeTokenAddress,
-            bridge.relayerGasFeeToken
+      if (needRelayRecord) {
+        this.logger.log(`some tx need to relay, toChain ${toChainInfo.chainName}`);
+        let fromChainInfo = this.chainInfos.get(bridge.fromChain);
+        if (!fromChainInfo) {
+          return;
+        }
+        const record = needRelayRecord.record;
+        const validInfo = await this.dataworkerService.checkValid(
+          record,
+          bridge.toBridge.bridge,
+          fromChainInfo.provider,
+          toChainInfo.provider
+        );
+        if (validInfo.isValid) {
+          let nonce: number | null = null;
+          // try relay: check balance and fee enough
+          const args: RelayArgs = {
+            transferParameter: {
+                providerKey: lnProvider.providerKey,
+                previousTransferId: needRelayRecord.lastTransferId,
+                lastBlockHash: record.lastBlockHash,
+                amount: new EtherBigNumber(record.sendAmount).Number,
+                nonce: new EtherBigNumber(record.messageNonce).Number,
+                timestamp: new EtherBigNumber(record.startTime).Number,
+                token: lnProvider.toAddress,
+                receiver: record.recipient,
+            },
+            expectedTransferId: last(record.id.split('-')),
+          }
+          const relayGasLimit = new EtherBigNumber(
+            this.configureService.config.relayGasLimit
+          ).Number;
+          const err = await bridge.toBridge.bridge.tryRelay(
+            args,
+            relayGasLimit
           );
-          if (profitable.result) {
-            // replace ?
-            let nonce: number | null = null;
-            if (transactionInfo !== null) {
-              const needReplace = scaleBigger(
-                profitable.gasPrice,
-                transactionInfo.gasPrice,
-                1.5
-              );
-              if (!needReplace) {
-                return;
-              }
-              nonce = transactionInfo.nonce;
-            }
-            // try relay: check balance and fee enough
-            const chainId = this.dataworkerService.getChainId(record.id);
-            const args: RelayArgs = {
-              messageNonce: new EtherBigNumber(record.messageNonce).Number,
-              token: token.toAddress,
-              sender: record.sender,
-              receiver: record.recipient,
-              amount: new EtherBigNumber(record.sendAmount).Number,
-              sourceChainId: new EtherBigNumber(chainId).Number,
-              issuingNative: toChainInfo.native === record.recvToken,
-            };
-            const relayGasLimit = new EtherBigNumber(
-              this.configureService.config.relayGasLimit
-            ).Number;
-            const err = await bridge.toBridge.bridge.tryRelay(
+          if (err === null) {
+            this.logger.log(
+              `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
+            );
+            // relay and return
+            const tx = await bridge.toBridge.bridge.relay(
               args,
+              validInfo.gasPrice,
+              nonce,
               relayGasLimit
             );
-            if (err === null) {
-              this.logger.log(
-                `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
-              );
-              // relay and return
-              const tx = await bridge.toBridge.bridge.relay(
-                args,
-                profitable.gasPrice,
-                nonce,
-                relayGasLimit
-              );
-              // save to store
-              await this.store.savePendingTransaction(
-                toChainInfo.chainName,
-                tx.hash
-              );
-              this.txHashCache = tx.hash;
-              this.lastTxTimeout = 0;
-              this.logger.log(`success relay message, txhash: ${tx.hash}`);
-              return;
-            } else {
-              this.logger.warn(
-                `try to relay failed, id: ${record.id}, err ${err}`
-              );
-            }
+            // save to store
+            await this.store.savePendingTransaction(
+              toChainInfo.chainName,
+              tx.hash
+            );
+            this.txHashCache = tx.hash;
+            this.lastTxTimeout = 0;
+            this.logger.log(`success relay message, txhash: ${tx.hash}`);
+            return;
+          } else {
+            this.logger.warn(
+              `try to relay failed, id: ${record.id}, err ${err}`
+            );
           }
         }
       }

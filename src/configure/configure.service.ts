@@ -8,29 +8,19 @@ export interface ChainConfigInfo {
   native: string;
 }
 
-export interface TokenConfigInfo {
-  chainName: string;
+export interface ProviderInfo {
+  providerKey: number;
   fromAddress: string;
-  feeTokenAddress: string;
-}
-
-export interface ChainWithTokenInfo {
   toAddress: string;
-  fromAddresses: TokenConfigInfo[];
 }
 
 export interface BridgeConfigInfo {
-  privateKey: string;
+  fromChain: string;
   toChain: string;
-  minProfit: string;
-  bridgeAddress: string;
-  tokens: ChainWithTokenInfo[];
-  priceOracle: {
-    name: string;
-    chainName: string;
-    relayerGasFeeToken: string;
-    configure: any;
-  };
+  sourceBridgeAddress: string;
+  targetBridgeAddress: string;
+  encryptedPrivateKey: string;
+  providers: ProviderInfo[];
 }
 
 export interface ConfigInfo {
