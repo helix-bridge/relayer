@@ -1,8 +1,8 @@
 ## Description
 
-Helix relayer is a client to run the LnBridge(Liquidate Node Bridge) to relay message from source chain to target chain supported by helix. You can use it to relay message and get reward from the fee payed by users.
+The Helix Relayer is a client designed to facilitate the operation of the LnBridge (Liquidate Node Bridge) by relaying messages from the source chain to the target chain. This relayer allows you to efficiently transmit messages and receive rewards from the fees paid by users.
 
-The relayer periodically retrieves user transaction data from the helix indexer service, and when it finds a transaction that needs to be relayed, it calculates the transaction execution fee and compares it to the fee paid by the user, and if there is enough profit, it performs the relay operation.
+The relayer functions by periodically fetching user transaction data from the Helix indexer service. When it identifies a transaction that requires relaying, it proceeds to perform the relay operation.
 
 ## Installation
 
@@ -10,91 +10,52 @@ The relayer periodically retrieves user transaction data from the helix indexer 
 Edit the configure file and put it in the path .maintain/configure.json.
 ```
 {
-    "indexer": "https://apollo-stg.helixbridge.app/graphql",
-    "relayGasLimit": 100000,
+    "indexer": "https://apollo-test.helixbridge.app/graphql",
+    "relayGasLimit": 120000,
     "chains": [
         {
-            "name": "darwinia-dvm",
-            "rpc": "https://darwinia-rpc.dwellir.com",
-            "native": "RING"
+            "name": "arbitrum-goerli",
+            "rpc": "https://goerli-rollup.arbitrum.io/rpc",
+            "native": "ETH"
         },
         {
-            "name": "ethereum",
-            "rpc": "https://eth-mainnet.g.alchemy.com/v2/KEY",
+            "name": "goerli",
+            "rpc": "https://rpc.ankr.com/eth_goerli",
             "native": "ETH"
         }
     ],
     "bridges": [
         {
-            "privateKey": "0x...",
-            "toChain": "darwinia-dvm",
-            "minProfit": "50.3",
-            "bridgeAddress": "0x84f7a56483C100ECb12CbB4A31b7873dAE0d8E9B",
-            "tokens": [
+            "fromChain": "arbitrum-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0xBfbCe15bb38a28add41f3Bf1B80E579ae7B7a4c0",
+            "targetBridgeAddress": "0xa5DE45d3eaabA9766B8494170F7E80fd41277a0B",
+            "encryptedPrivateKey": "......",
+            "providers": [
                 {
-                    "toAddress": "0xE7578598Aac020abFB918f33A20faD5B71d670b4",
-                    "fromAddresses": [
-                        {
-                            "chainName": "ethereum",
-                            "fromAddress": "0x9469D013805bFfB7D3DEBe5E7839237e535ec483",
-                            "feeTokenAddress": "0x9469D013805bFfB7D3DEBe5E7839237e535ec483"
-                        }
-                    ]
+                    "providerKey": 1,
+                    "fromAddress": "0xFBAD806Bdf9cEC2943be281FB355Da05068DE925",
+                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E"
                 }
-            ],
-            "priceOracle": {
-                "name": "UniswapTokenPriceOracle",
-                "chainName": "ethereum",
-                "relayerGasFeeToken": "0x9469D013805bFfB7D3DEBe5E7839237e535ec483",
-                "configure": {
-                    "address": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
-                }
-            }
-        },
+            ]
+        }
     ]
 }
 ```
 
-Each configuration of bridges is centered on a target chain that receives token assets from other chains. Each token asset has its address in both the source and target chains, and the relayer account has a balance for that asset. User payments are made using transfer tokens, relayer delivery transactions are paid using target chain gas fees, and the configuration requires a price oracle machine between them.
+* indexer
+The relayer relies on the trustworthiness of the indexer, which you can find in the provided GitHub repository [indexer](https://github.com/helix-bridge/indexer). Relayers have the option to deploy their own indexer service using this repository.
+Please note that Helix also deploys an indexer service, but relayers who choose to use it should be aware that there is a risk of data correctness. It is recommended that relayers proceed with caution and assume responsibility for any potential inaccuracies.
 
-#### Params
-▸ indexer        --- the indexer url, see [helix-indexer](https://github.com/helix-bridge/indexer), it support the helix cross-chain records query API.
+* relayGasLimit
+This is the gas limit to send the relay transaction.
 
-▸ relayGasLimit  --- use this limit value to send the relay transaction.
+* chains
+The chain name, native gas token and it's rpc node url.
 
-▸ chains         --- chains infos. In other sections, they use the name of the chain in this section to find the info.
-
-▾ bridges        --- bridge list
-
-&nbsp;&nbsp;&nbsp;&nbsp;▸ privateKey     --- the private key of the relayer
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▸ toChain        --- toChain name defined in section chains
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▸ minProfit      --- the min profit of each transaction (converted to gas token of the target chain)
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▸ bridgeAddress    --- the lpBridge contract address deployed by helix
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▾ tokens         --- the token list
-  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ toAddress      --- the token address on target chain
-    
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ fromAddresses    --- the token list on different source chains
-    
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ chainName        --- the source chain name defined in section chains
-      
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ fromAddress      --- the token address on source chain
-      
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ feeTokenAddress  --- the token address on price oracle
-      
-&nbsp;&nbsp;&nbsp;&nbsp;▾ priceOracle    --- currently only support UniswapTokenPriceOracle, which is uniswap real-time exchange price
-  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ name               --- the oracle name
-    
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ chainName          --- the chain name where oracle deployed
-    
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ relayerGasFeeToken --- the gas token address on price oracle, usually the wrapped native token.
-    
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▾ configure          --- the oracle configure, for UniswapTokenPriceOracle, it's uniswap router address
+* bridges
+The relayer configuration includes the definition of the fromChain and toChain, specifying the source and target chains respectively. Additionally, it requires the LnBridge address and the wallet private key, which should be encrypted for security purposes.
+Furthermore, the relayer configuration encompasses the registration of provider information on the source chain. These provider infos are registered initially to facilitate the relay process.
 
 .env file
 ```
@@ -108,19 +69,25 @@ LP_BRIDGE_STORE_PATH=./.maintain/db
 $ yarn install
 ```
 
+## Encrypt your private key
+```bash
+$ yarn crypto
+```
+To execute the command mentioned above and update the .maintain/configure.json file with the encrypted private key, please follow the steps below:
+
+1. Run the command as specified and provide the necessary input, including the password and private key.
+2. The command will output the encrypted private key.
+3. Open the .maintain/configure.json file in a text editor.
+4. Locate the "encryptedPrivateKey" field in the JSON file.
+5. Replace the existing value of "encryptedPrivateKey" with the newly generated encrypted private key obtained from the command's output.
+6. Save the changes to the .maintain/configure.json file.
+
+Please make sure to take proper precautions to protect your private key and encrypted private key.
+
 ## Running the app
 
 ```bash
 $ yarn build
 
 $ yarn start
-```
-
-## Docker
-
-```bash
-docker build . -t relayer:v1.0.0
-
-# You need put the configure.json file in directory ./data first
-docker-compose up -d
 ```

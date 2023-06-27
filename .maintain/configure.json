@@ -1,5 +1,5 @@
 {
-    "indexer": "http://localhost:4002/graphql",
+    "indexer": "https://apollo-test.helixbridge.app/graphql",
     "relayGasLimit": 120000,
     "chains": [
         {
