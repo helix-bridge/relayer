@@ -12,6 +12,7 @@ export interface ProviderInfo {
   providerKey: number;
   fromAddress: string;
   toAddress: string;
+  swapRate: number;
 }
 
 export interface BridgeConfigInfo {
@@ -20,6 +21,8 @@ export interface BridgeConfigInfo {
   sourceBridgeAddress: string;
   targetBridgeAddress: string;
   encryptedPrivateKey: string;
+  minProfit: number;
+  maxProfit: number;
   providers: ProviderInfo[];
 }
 

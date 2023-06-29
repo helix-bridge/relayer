@@ -2,7 +2,12 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers";
 import axios from "axios";
 import { last } from "lodash";
-import { Erc20Contract, LnBridgeTargetContract, zeroTransferId } from "../base/contract";
+import {
+    Erc20Contract,
+    LnBridgeTargetContract,
+    LnBridgeSourceContract,
+    zeroTransferId,
+} from "../base/contract";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { EthereumProvider, GasPrice } from "../base/provider";
 import { Ether, GWei, EtherBigNumber } from "../base/bignumber";
@@ -27,6 +32,7 @@ export interface HistoryRecord {
 
 export interface ValidInfo {
   gasPrice: GasPrice | null;
+  feeUsed: BigNumber | null;
   isValid: boolean;
 }
 
@@ -63,7 +69,7 @@ export class DataworkerService implements OnModuleInit {
     fromChain: string,
     toChain: string,
     recvTokenAddress: string,
-    providerKey: number,
+    providerKey: BigNumber,
   ): Promise<TransferRecord | null> {
     // query first pending tx
     let query = `{
@@ -112,6 +118,7 @@ export class DataworkerService implements OnModuleInit {
 
   async checkValid(
     record: HistoryRecord,
+    fromBridge: LnBridgeSourceContract,
     toBridge: LnBridgeTargetContract,
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider
@@ -129,6 +136,7 @@ export class DataworkerService implements OnModuleInit {
       );
       return {
         gasPrice: null,
+        feeUsed: null,
         isValid: false,
       };
     }
@@ -141,10 +149,11 @@ export class DataworkerService implements OnModuleInit {
       );
       return {
         gasPrice: null,
+        feeUsed: null,
         isValid: false,
       };
     }
-    // 3. fee satisfy profit, currently we don't check profit, we should check the gas and update the fee on source chain automaticaly
+    // 3. get current fee
     let gasPrice = await toProvider.feeData();
     let feeUsed: BigNumber;
     if (gasPrice.isEip1559) {
@@ -167,6 +176,7 @@ export class DataworkerService implements OnModuleInit {
     this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
     return {
       gasPrice,
+      feeUsed,
       isValid: true,
     };
   }

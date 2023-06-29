@@ -7,7 +7,8 @@ import {
 } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
-import { lnTargetBridge } from "../abi/lnbridge";
+import { lnSourceBridge } from "../abi/lnSourceBridge";
+import { lnTargetBridge } from "../abi/lnTargetBridge";
 import { GasPrice } from "../base/provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
@@ -94,7 +95,7 @@ export class Erc20Contract extends EthereumContract {
 }
 
 export interface TransferParameter {
-  providerKey: number;
+  providerKey: BigNumber;
   previousTransferId: string;
   lastBlockHash: string;
   amount: BigNumber;
@@ -112,6 +113,66 @@ export interface RelayArgs {
 export interface FillTransfer {
     latestSlashTransferId: string;
     slasher: string;
+}
+
+export interface LnProviderConfigure {
+    margin: BigNumber;
+    baseFee: BigNumber;
+    liquidityFeeRate: number;
+}
+
+export interface LnProviderInfo {
+    provider: string;
+    config: LnProviderConfigure ;
+    lastTransferId: string;
+}
+
+export class LnBridgeSourceContract extends EthereumContract {
+    constructor(address: string, signer: Wallet | providers.Provider) {
+        super(address, lnSourceBridge, signer);
+    }
+
+    async lnProviderInfo(providerKey: BigNumber): Promise<LnProviderInfo> {
+        return await this.contract.lnProviders(providerKey);
+    }
+
+    async tryUpdateFee(
+        providerKey: BigNumber,
+        baseFee: BigNumber,
+        liquidityFeeRate: number,
+        gasLimit: BigNumber | null = null
+    ) {
+        return this.staticCall(
+            "registerOrUpdateLnProvider",
+            [
+                providerKey.div(0xffffffff),
+                0,
+                baseFee,
+                liquidityFeeRate,
+            ],
+            gasLimit
+        )
+    }
+
+    async updateFee(
+        providerKey: BigNumber,
+        baseFee: BigNumber,
+        liquidityFeeRate: number,
+        gas: GasPrice,
+        gasLimit: BigNumber | null = null
+    ) {
+        return await this.call(
+            "registerOrUpdateLnProvider",
+            [
+                providerKey.div(0xffffffff),
+                0,
+                baseFee,
+                liquidityFeeRate,
+            ],
+            gas,
+            gasLimit
+        );
+    }
 }
 
 export class LnBridgeTargetContract extends EthereumContract {

@@ -19,12 +19,15 @@
             "toChain": "goerli",
             "sourceBridgeAddress": "0xBfbCe15bb38a28add41f3Bf1B80E579ae7B7a4c0",
             "targetBridgeAddress": "0xa5DE45d3eaabA9766B8494170F7E80fd41277a0B",
-            "encryptedPrivateKey": "......",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
             "providers": [
                 {
                     "providerKey": 1,
                     "fromAddress": "0xFBAD806Bdf9cEC2943be281FB355Da05068DE925",
-                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E"
+                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E",
+                    "swapRate": 30000
                 }
             ]
         }
