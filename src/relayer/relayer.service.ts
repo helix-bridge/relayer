@@ -34,7 +34,7 @@ export class BridgeConnectInfo {
 }
 
 export class LnProviderInfo {
-  providerKey: BigNumber;
+  relayer: string;
   swapRate: number;
   fromAddress: string;
   toAddress: string;
@@ -150,7 +150,7 @@ export class RelayerService implements OnModuleInit {
             return {
                 fromAddress: lnProviderConfig.fromAddress,
                 toAddress: lnProviderConfig.toAddress,
-                providerKey: new EtherBigNumber(lnProviderConfig.providerKey).Number,
+                relayer: toWallet.address,
                 swapRate: lnProviderConfig.swapRate,
             };
           });
@@ -175,7 +175,7 @@ export class RelayerService implements OnModuleInit {
       lnProviderInfo: LnProviderInfo,
   ) {
       const gasLimit = new EtherBigNumber(1000000).Number;
-      let lnProviderInfoOnChain = await sourceContract.lnProviderInfo(lnProviderInfo.providerKey)
+      let lnProviderInfoOnChain = await sourceContract.lnProviderInfo(lnProviderInfo.relayer, lnProviderInfo.fromAddress)
       let baseFee = lnProviderInfoOnChain.config.baseFee;
       let tokenUsed = feeUsed.mul(lnProviderInfo.swapRate);
       let profit = baseFee.sub(tokenUsed);
@@ -185,7 +185,7 @@ export class RelayerService implements OnModuleInit {
           const sensibleProfit = (new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number).mul(lnProviderInfo.swapRate);
           const sensibleBaseFee = tokenUsed.add(sensibleProfit);
           let err = await sourceContract.tryUpdateFee(
-              lnProviderInfo.providerKey,
+              lnProviderInfo.fromAddress,
               sensibleBaseFee,
               lnProviderInfoOnChain.config.liquidityFeeRate,
               gasLimit,
@@ -194,7 +194,7 @@ export class RelayerService implements OnModuleInit {
               this.logger.log(`fee is not sensible, update to new: ${sensibleBaseFee}`);
               let gasPrice = await fromProvider.feeData();
               await sourceContract.updateFee(
-                  lnProviderInfo.providerKey,
+                  lnProviderInfo.fromAddress,
                   sensibleBaseFee,
                   lnProviderInfoOnChain.config.liquidityFeeRate,
                   gasPrice,
@@ -253,8 +253,8 @@ export class RelayerService implements OnModuleInit {
           this.configureService.config.indexer,
           fromChainInfo.chainName,
           toChainInfo.chainName,
-          lnProvider.toAddress,
-          lnProvider.providerKey,
+          lnProvider.relayer,
+          lnProvider.fromAddress
         );
       if (needRelayRecord) {
         this.logger.log(`some tx need to relay, toChain ${toChainInfo.chainName}`);
@@ -276,13 +276,12 @@ export class RelayerService implements OnModuleInit {
           // try relay: check balance and fee enough
           const args: RelayArgs = {
             transferParameter: {
-                providerKey: lnProvider.providerKey,
                 previousTransferId: needRelayRecord.lastTransferId,
-                lastBlockHash: record.lastBlockHash,
+                relayer: lnProvider.relayer,
+                sourceToken: lnProvider.fromAddress,
+                targetToken: lnProvider.toAddress,
                 amount: new EtherBigNumber(record.sendAmount).Number,
-                nonce: new EtherBigNumber(record.messageNonce).Number,
                 timestamp: new EtherBigNumber(record.startTime).Number,
-                token: lnProvider.toAddress,
                 receiver: record.recipient,
             },
             expectedTransferId: last(record.id.split('-')),

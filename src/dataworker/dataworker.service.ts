@@ -14,12 +14,8 @@ import { Ether, GWei, EtherBigNumber } from "../base/bignumber";
 
 export interface HistoryRecord {
   id: string;
-  providerKey: number;
-  lastBlockHash: string;
-  messageNonce: string;
   startTime: number;
   sendTokenAddress: string;
-  recvTokenAddress: string;
   recvToken: string;
   sender: string;
   recipient: string;
@@ -68,8 +64,8 @@ export class DataworkerService implements OnModuleInit {
     url: string,
     fromChain: string,
     toChain: string,
-    recvTokenAddress: string,
-    providerKey: BigNumber,
+    relayer: string,
+    token: string
   ): Promise<TransferRecord | null> {
     // query first pending tx
     let query = `{
@@ -78,9 +74,10 @@ export class DataworkerService implements OnModuleInit {
                 toChain: \"${toChain}\",
                 bridge: \"lnbridgev20\",
                 results: [${this.statusPending}],
-                providerKey: ${providerKey},
+                relayer: \"${relayer.toLowerCase()}\",
+                token: \"${token.toLowerCase()}\",
                 order: "startTime_asc"
-            ) {id, messageNonce, startTime, sendTokenAddress, recvTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash, lastBlockHash}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -99,7 +96,8 @@ export class DataworkerService implements OnModuleInit {
                 toChain: \"${toChain}\",
                 bridge: \"lnbridgev20\",
                 results: [${this.statusSuccess}, ${this.statusRefund}, ${this.pendingToConfirmRefund}],
-                providerKey: ${providerKey},
+                relayer: \"${relayer.toLowerCase()}\",
+                token: \"${token.toLowerCase()}\",
                 order: "startTime_desc"
             ) {id}}`;
     const lastRecord = await axios
@@ -143,7 +141,7 @@ export class DataworkerService implements OnModuleInit {
     // 2. tx is not relayed
     const transferId = this.getTransferId(record.id);
     const fillTransfer = await toBridge.fillTransfers(transferId);
-    if (fillTransfer.latestSlashTransferId != zeroTransferId) {
+    if (fillTransfer != zeroTransferId) {
       this.logger.log(
         `tx has been relayed, waiting for sync, id ${transferId}, fillinfo ${fillTransfer}`
       );

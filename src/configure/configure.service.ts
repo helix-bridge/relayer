@@ -9,7 +9,6 @@ export interface ChainConfigInfo {
 }
 
 export interface ProviderInfo {
-  providerKey: number;
   fromAddress: string;
   toAddress: string;
   swapRate: number;

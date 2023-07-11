@@ -95,24 +95,18 @@ export class Erc20Contract extends EthereumContract {
 }
 
 export interface TransferParameter {
-  providerKey: BigNumber;
   previousTransferId: string;
-  lastBlockHash: string;
+  relayer: string;
+  sourceToken: string;
+  targetToken: string;
   amount: BigNumber;
-  nonce: BigNumber;
   timestamp: BigNumber;
-  token: string;
   receiver: string;
 }
 
 export interface RelayArgs {
     transferParameter: TransferParameter;
     expectedTransferId: string;
-}
-
-export interface FillTransfer {
-    latestSlashTransferId: string;
-    slasher: string;
 }
 
 export interface LnProviderConfigure {
@@ -122,7 +116,6 @@ export interface LnProviderConfigure {
 }
 
 export interface LnProviderInfo {
-    provider: string;
     config: LnProviderConfigure ;
     lastTransferId: string;
 }
@@ -132,20 +125,21 @@ export class LnBridgeSourceContract extends EthereumContract {
         super(address, lnSourceBridge, signer);
     }
 
-    async lnProviderInfo(providerKey: BigNumber): Promise<LnProviderInfo> {
+    async lnProviderInfo(relayer: string, token: string): Promise<LnProviderInfo> {
+        const providerKey = await this.contract.getProviderKey(relayer, token);
         return await this.contract.lnProviders(providerKey);
     }
 
     async tryUpdateFee(
-        providerKey: BigNumber,
+        token: string,
         baseFee: BigNumber,
         liquidityFeeRate: number,
         gasLimit: BigNumber | null = null
     ) {
         return this.staticCall(
-            "registerOrUpdateLnProvider",
+            "updateProviderFeeAndMargin",
             [
-                providerKey.div(0xffffffff),
+                token,
                 0,
                 baseFee,
                 liquidityFeeRate,
@@ -155,16 +149,16 @@ export class LnBridgeSourceContract extends EthereumContract {
     }
 
     async updateFee(
-        providerKey: BigNumber,
+        token: string,
         baseFee: BigNumber,
         liquidityFeeRate: number,
         gas: GasPrice,
         gasLimit: BigNumber | null = null
     ) {
         return await this.call(
-            "registerOrUpdateLnProvider",
+            "updateProviderFeeAndMargin",
             [
-                providerKey.div(0xffffffff),
+                token,
                 0,
                 baseFee,
                 liquidityFeeRate,
@@ -180,7 +174,7 @@ export class LnBridgeTargetContract extends EthereumContract {
     super(address, lnTargetBridge, signer);
   }
 
-  async fillTransfers(transferId: string): Promise<FillTransfer> {
+  async fillTransfers(transferId: string): Promise<string> {
     return await this.contract.fillTransfers(transferId);
   }
 
@@ -190,20 +184,19 @@ export class LnBridgeTargetContract extends EthereumContract {
   ): Promise<string> | null {
     var value = null;
     const parameter = args.transferParameter;
-    if (parameter.token === zeroAddress) {
+    if (parameter.targetToken === zeroAddress) {
       value = parameter.amount;
     }
     return this.staticCall(
       "transferAndReleaseMargin",
-      [
+      [  
         [
-          parameter.providerKey,
           parameter.previousTransferId,
-          parameter.lastBlockHash,
+          parameter.relayer,
+          parameter.sourceToken,
+          parameter.targetToken,
           parameter.amount,
-          parameter.nonce,
           parameter.timestamp,
-          parameter.token,
           parameter.receiver,
         ],
         args.expectedTransferId,
@@ -221,20 +214,19 @@ export class LnBridgeTargetContract extends EthereumContract {
   ): Promise<TransactionResponse> {
     var value = null;
     const parameter = args.transferParameter;
-    if (parameter.token === zeroAddress) {
+    if (parameter.targetToken === zeroAddress) {
       value = parameter.amount;
     }
     return await this.call(
       "transferAndReleaseMargin",
       [
         [
-          parameter.providerKey,
           parameter.previousTransferId,
-          parameter.lastBlockHash,
+          parameter.relayer,
+          parameter.sourceToken,
+          parameter.targetToken,
           parameter.amount,
-          parameter.nonce,
           parameter.timestamp,
-          parameter.token,
           parameter.receiver,
         ],
         args.expectedTransferId,
