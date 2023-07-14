@@ -22,6 +22,7 @@ export interface BridgeConfigInfo {
   encryptedPrivateKey: string;
   minProfit: number;
   maxProfit: number;
+  feeLimit: number;
   providers: ProviderInfo[];
 }
 

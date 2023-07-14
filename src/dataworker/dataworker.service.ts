@@ -114,6 +114,28 @@ export class DataworkerService implements OnModuleInit {
     }
   }
 
+  relayFee(gasPrice: GasPrice): BigNumber {
+    let feeUsed: BigNumber;
+    if (gasPrice.isEip1559) {
+      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.1).Number;
+      const maxPriorityFeePerGas = new GWei(
+          gasPrice.eip1559fee.maxPriorityFeePerGas
+      ).mul(1.1).Number
+      if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
+          maxFeePerGas = maxPriorityFeePerGas;
+      }
+      gasPrice.eip1559fee = {
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+      };
+      feeUsed = gasPrice.eip1559fee.maxFeePerGas.mul(this.relayGasLimit);
+    } else {
+      gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.1).Number;
+      feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
+    }
+    return feeUsed;
+  }
+
   async checkValid(
     record: HistoryRecord,
     fromBridge: LnBridgeSourceContract,
@@ -153,24 +175,7 @@ export class DataworkerService implements OnModuleInit {
     }
     // 3. get current fee
     let gasPrice = await toProvider.feeData();
-    let feeUsed: BigNumber;
-    if (gasPrice.isEip1559) {
-      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.1).Number;
-      const maxPriorityFeePerGas = new GWei(
-          gasPrice.eip1559fee.maxPriorityFeePerGas
-      ).mul(1.1).Number
-      if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
-          maxFeePerGas = maxPriorityFeePerGas;
-      }
-      gasPrice.eip1559fee = {
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-      };
-      feeUsed = gasPrice.eip1559fee.maxFeePerGas.mul(this.relayGasLimit);
-    } else {
-      gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.1).Number;
-      feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
-    }
+    let feeUsed = this.relayFee(gasPrice);
     this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
     return {
       gasPrice,

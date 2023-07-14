@@ -46,6 +46,7 @@ export class LnBridge {
   toBridge: BridgeConnectInfo;
   minProfit: number;
   maxProfit: number;
+  feeLimit: number;
   lnProviders: LnProviderInfo[];
 }
 
@@ -54,11 +55,13 @@ export class RelayerService implements OnModuleInit {
   private readonly logger = new Logger("relayer");
   private readonly scheduleInterval = 10000;
   private readonly waitingPendingTime = 12; // 2 minute
+  private readonly scheduleAdjustFeeInterval = 8640; // 1 day
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
   private txHashCache: string;
   private lastTxTimeout: number;
+  private lastAdjustTime: number;
 
   constructor(
     protected taskService: TasksService,
@@ -71,6 +74,7 @@ export class RelayerService implements OnModuleInit {
     this.logger.log("relayer service start");
     this.initConfigure();
     this.store = new Store(this.configureService.storePath);
+    this.lastAdjustTime = 0;
     this.lnBridges.forEach((item, index) => {
       this.taskService.addScheduleTask(
         `${item.toBridge.bridge.address}-lpbridge-relayer`,
@@ -159,6 +163,7 @@ export class RelayerService implements OnModuleInit {
           isProcessing: false,
           minProfit: config.minProfit,
           maxProfit: config.maxProfit,
+          feeLimit: config.feeLimit,
           fromBridge: fromConnectInfo,
           toBridge: toConnectInfo,
           lnProviders: lnProviders,
@@ -215,6 +220,8 @@ export class RelayerService implements OnModuleInit {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
     const fromChainInfo = bridge.fromBridge.chainInfo;
+    const fromBridgeContract = bridge.fromBridge.bridge as LnBridgeSourceContract;
+    const toBridgeContract = bridge.toBridge.bridge as LnBridgeTargetContract;
     let transactionInfo: TransactionInfo | null = null;
     if (!this.txHashCache) {
         this.txHashCache = await this.store.getPendingTransaction(toChainInfo.chainName);
@@ -252,8 +259,28 @@ export class RelayerService implements OnModuleInit {
       }
     }
 
+    this.lastAdjustTime += 1;
+    let needAdjustFee = false;
+    if (this.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
+        this.lastAdjustTime = 0;
+        needAdjustFee = true;
+        this.logger.log("schedule adjust fee");
+    }
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
+      // adjust fee
+      if (needAdjustFee) {
+        let gasPrice = await toChainInfo.provider.feeData();
+        const feeUsed = this.dataworkerService.relayFee(gasPrice);
+        await this.adjustFee(
+          bridge,
+          feeUsed,
+          fromBridgeContract,
+          fromChainInfo.provider,
+          lnProvider,
+        );
+      }
+
       // checkProfit
       const needRelayRecord =
         await this.dataworkerService.queryRecordNeedRelay(
@@ -269,8 +296,6 @@ export class RelayerService implements OnModuleInit {
           return;
         }
         const record = needRelayRecord.record;
-        const fromBridgeContract = bridge.fromBridge.bridge as LnBridgeSourceContract;
-        const toBridgeContract = bridge.toBridge.bridge as LnBridgeTargetContract;
         const validInfo = await this.dataworkerService.checkValid(
           record,
           fromBridgeContract,
@@ -278,6 +303,12 @@ export class RelayerService implements OnModuleInit {
           fromChainInfo.provider,
           toChainInfo.provider
         );
+        if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
+          this.logger.log(
+            `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
+          );
+          return;
+        }
         if (validInfo.isValid) {
           let nonce: number | null = null;
           // try relay: check balance and fee enough
@@ -319,7 +350,7 @@ export class RelayerService implements OnModuleInit {
             this.txHashCache = tx.hash;
             this.lastTxTimeout = 0;
             this.logger.log(`success relay message, txhash: ${tx.hash}`);
-            this.adjustFee(
+            await this.adjustFee(
                 bridge,
                 validInfo.feeUsed,
                 fromBridgeContract,
