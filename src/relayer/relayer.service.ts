@@ -7,7 +7,7 @@ import {
   LnBridgeTargetContract,
   RelayArgs,
 } from "../base/contract";
-import { EtherBigNumber } from "../base/bignumber";
+import { EtherBigNumber, GWei } from "../base/bignumber";
 import {
   EthereumProvider,
   TransactionInfo,
@@ -192,7 +192,14 @@ export class RelayerService implements OnModuleInit {
           );
           if (err === null) {
               this.logger.log(`fee is not sensible, update to new: ${sensibleBaseFee}`);
-              let gasPrice = await fromProvider.feeData();
+              // todo for arbitrum we use 0.1 gwei here
+              let gasPrice = {
+                  isEip1559: false,
+                  fee: {
+                      gasPrice: new GWei(0.1).Number,
+                  },
+                  eip1559fee: null,
+              };
               await sourceContract.updateFee(
                   lnProviderInfo.fromAddress,
                   sensibleBaseFee,
