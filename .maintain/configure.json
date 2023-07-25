@@ -23,6 +23,7 @@
             "minProfit": 0.002,
             "maxProfit": 0.01,
             "feeLimit": 0.01,
+            "reorgThreshold": 100,
             "providers": [
                 {
                     "fromAddress": "0x9e523234D36973f9e38642886197D023C88e307e",

@@ -44,7 +44,6 @@ export class DataworkerService implements OnModuleInit {
   private readonly statusSuccess = 3;
   private readonly statusRefund = 4;
   private readonly pendingToConfirmRefund = 5;
-  private readonly finalizeBlocks = 8;
   private readonly relayGasLimit = 100000;
 
   async onModuleInit() {
@@ -141,7 +140,8 @@ export class DataworkerService implements OnModuleInit {
     fromBridge: LnBridgeSourceContract,
     toBridge: LnBridgeTargetContract,
     fromProvider: EthereumProvider,
-    toProvider: EthereumProvider
+    toProvider: EthereumProvider,
+    reorgThreshold: number
   ): Promise<ValidInfo> {
     // 1. tx must be finalized
     const transactionInfo = await fromProvider.checkPendingTransaction(
@@ -149,7 +149,7 @@ export class DataworkerService implements OnModuleInit {
     );
     if (
       !transactionInfo ||
-      transactionInfo.confirmedBlock < this.finalizeBlocks
+      transactionInfo.confirmedBlock < reorgThreshold
     ) {
       this.logger.log(
         `request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`

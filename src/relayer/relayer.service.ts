@@ -47,6 +47,7 @@ export class LnBridge {
   minProfit: number;
   maxProfit: number;
   feeLimit: number;
+  reorgThreshold: number;
   lnProviders: LnProviderInfo[];
 }
 
@@ -164,6 +165,7 @@ export class RelayerService implements OnModuleInit {
           minProfit: config.minProfit,
           maxProfit: config.maxProfit,
           feeLimit: config.feeLimit,
+          reorgThreshold: config.reorgThreshold,
           fromBridge: fromConnectInfo,
           toBridge: toConnectInfo,
           lnProviders: lnProviders,
@@ -301,7 +303,8 @@ export class RelayerService implements OnModuleInit {
           fromBridgeContract,
           toBridgeContract,
           fromChainInfo.provider,
-          toChainInfo.provider
+          toChainInfo.provider,
+          bridge.reorgThreshold
         );
         if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
           this.logger.log(

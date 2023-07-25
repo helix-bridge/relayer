@@ -23,6 +23,7 @@ export interface BridgeConfigInfo {
   minProfit: number;
   maxProfit: number;
   feeLimit: number;
+  reorgThreshold: number;
   providers: ProviderInfo[];
 }
 
