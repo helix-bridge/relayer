@@ -24,6 +24,7 @@ export interface BridgeConfigInfo {
   maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
+  direction: string;
   providers: ProviderInfo[];
 }
 

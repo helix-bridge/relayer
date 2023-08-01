@@ -48,6 +48,7 @@ export class LnBridge {
   maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
+  direction: string;
   lnProviders: LnProviderInfo[];
 }
 
@@ -166,6 +167,7 @@ export class RelayerService implements OnModuleInit {
           maxProfit: config.maxProfit,
           feeLimit: config.feeLimit,
           reorgThreshold: config.reorgThreshold,
+          direction: config.direction,
           fromBridge: fromConnectInfo,
           toBridge: toConnectInfo,
           lnProviders: lnProviders,
@@ -290,7 +292,8 @@ export class RelayerService implements OnModuleInit {
           fromChainInfo.chainName,
           toChainInfo.chainName,
           lnProvider.relayer,
-          lnProvider.fromAddress
+          lnProvider.fromAddress,
+          bridge.direction,
         );
       if (needRelayRecord) {
         this.logger.log(`some tx need to relay, toChain ${toChainInfo.chainName}`);
@@ -306,13 +309,14 @@ export class RelayerService implements OnModuleInit {
           toChainInfo.provider,
           bridge.reorgThreshold
         );
-        if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
-          this.logger.log(
-            `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
-          );
-          return;
-        }
+        
         if (validInfo.isValid) {
+          if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
+              this.logger.log(
+                  `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
+              );
+              return;
+          }
           let nonce: number | null = null;
           // try relay: check balance and fee enough
           const args: RelayArgs = {

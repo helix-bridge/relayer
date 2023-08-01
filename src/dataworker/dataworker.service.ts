@@ -64,14 +64,15 @@ export class DataworkerService implements OnModuleInit {
     fromChain: string,
     toChain: string,
     relayer: string,
-    token: string
+    token: string,
+    direction: string,
   ): Promise<TransferRecord | null> {
     // query first pending tx
     let query = `{
             firstHistoryRecord(
                 fromChain: \"${fromChain}\",
                 toChain: \"${toChain}\",
-                bridge: \"lnbridgev20\",
+                bridge: \"lnbridgev20-${direction}\",
                 results: [${this.statusPending}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
@@ -93,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
             firstHistoryRecord(
                 fromChain: \"${fromChain}\",
                 toChain: \"${toChain}\",
-                bridge: \"lnbridgev20\",
+                bridge: \"lnbridgev20-${direction}\",
                 results: [${this.statusSuccess}, ${this.statusRefund}, ${this.pendingToConfirmRefund}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
