@@ -174,7 +174,23 @@ export class DataworkerService implements OnModuleInit {
         isValid: false,
       };
     }
-    // 3. get current fee
+    // 3. the lock info verify
+    const lockInfo = await fromBridge.lockInfo(transferId);
+    if (lockInfo.isLocked == false) {
+        this.logger.log(
+            `lock info not exist, maybe reorged, id ${transferId}`
+        );
+        return {
+            gasPrice: null,
+            feeUsed: null,
+            isValid: false,
+        };
+    } else {
+        this.logger.log(
+            `check lock info success, fee ${lockInfo.fee}, penalty ${lockInfo.penalty}`
+        );
+    }
+    // 4. get current fee
     let gasPrice = await toProvider.feeData();
     let feeUsed = this.relayFee(gasPrice);
     this.logger.log(`fee check passed, feeUsed ${feeUsed}`);

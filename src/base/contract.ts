@@ -120,6 +120,12 @@ export interface LnProviderInfo {
     lastTransferId: string;
 }
 
+export interface LockInfo {
+    fee: BigNumber;
+    penalty: BigNumber;
+    isLocked: boolean;
+}
+
 export class LnBridgeSourceContract extends EthereumContract {
     constructor(address: string, signer: Wallet | providers.Provider) {
         super(address, lnSourceBridge, signer);
@@ -128,6 +134,10 @@ export class LnBridgeSourceContract extends EthereumContract {
     async lnProviderInfo(relayer: string, token: string): Promise<LnProviderInfo> {
         const providerKey = await this.contract.getProviderKey(relayer, token);
         return await this.contract.lnProviders(providerKey);
+    }
+
+    async lockInfo(transferId: string): Promise<LockInfo> {
+        return await this.contract.lockInfos(transferId);
     }
 
     async tryUpdateFee(
