@@ -175,7 +175,7 @@ export class DataworkerService implements OnModuleInit {
       };
     }
     // 3. the lock info verify
-    const existInfo = fromBridge.transferIdExist(transferId);
+    const existInfo = await fromBridge.transferIdExist(transferId);
     if (!existInfo[0]) {
         this.logger.log(
             `lock info not exist, maybe reorged, id ${transferId}`
