@@ -133,7 +133,8 @@ export class RelayerService implements OnModuleInit {
         );
         let toBridge = new LnBridgeTargetContract(
           config.targetBridgeAddress,
-          toWallet.wallet
+          toWallet.wallet,
+          config.direction
         );
         let toConnectInfo = {
           chainInfo: toChainInfo,
@@ -145,7 +146,8 @@ export class RelayerService implements OnModuleInit {
         );
         let fromBridge = new LnBridgeSourceContract(
           config.sourceBridgeAddress,
-          fromWallet.wallet
+          fromWallet.wallet,
+          config.direction
         );
         let fromConnectInfo = {
           chainInfo: fromChainInfo,
@@ -226,6 +228,7 @@ export class RelayerService implements OnModuleInit {
     const fromChainInfo = bridge.fromBridge.chainInfo;
     const fromBridgeContract = bridge.fromBridge.bridge as LnBridgeSourceContract;
     const toBridgeContract = bridge.toBridge.bridge as LnBridgeTargetContract;
+
     let transactionInfo: TransactionInfo | null = null;
     if (!this.txHashCache) {
         this.txHashCache = await this.store.getPendingTransaction(toChainInfo.chainName);

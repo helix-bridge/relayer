@@ -163,10 +163,10 @@ export class DataworkerService implements OnModuleInit {
     }
     // 2. tx is not relayed
     const transferId = this.getTransferId(record.id);
-    const fillTransfer = await toBridge.fillTransfers(transferId);
-    if (fillTransfer != zeroTransferId) {
+    const transferFilled = await toBridge.transferHasFilled(transferId);
+    if (transferFilled) {
       this.logger.log(
-        `tx has been relayed, waiting for sync, id ${transferId}, fillinfo ${fillTransfer}`
+        `tx has been relayed, waiting for sync, id ${transferId}`
       );
       return {
         gasPrice: null,
@@ -175,8 +175,8 @@ export class DataworkerService implements OnModuleInit {
       };
     }
     // 3. the lock info verify
-    const lockInfo = await fromBridge.lockInfo(transferId);
-    if (lockInfo.isLocked == false) {
+    const existInfo = fromBridge.transferIdExist(transferId);
+    if (!existInfo[0]) {
         this.logger.log(
             `lock info not exist, maybe reorged, id ${transferId}`
         );
@@ -187,7 +187,7 @@ export class DataworkerService implements OnModuleInit {
         };
     } else {
         this.logger.log(
-            `check lock info success, fee ${lockInfo.fee}, penalty ${lockInfo.penalty}`
+            `transfer locked success, info ${existInfo[1]}`
         );
     }
     // 4. get current fee

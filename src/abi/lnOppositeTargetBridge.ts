@@ -1,4 +1,4 @@
-export const lnTargetBridge = [
+export const lnOppositeTargetBridge = [
     {
       "anonymous": false,
       "inputs": [

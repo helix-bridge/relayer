@@ -1,4 +1,4 @@
-export const lnSourceBridge = [
+export const lnOppositeSourceBridge = [
     {
       "anonymous": false,
       "inputs": [
@@ -202,7 +202,36 @@ export const lnSourceBridge = [
         },
         {
           "internalType": "address",
-          "name": "token",
+          "name": "sourceToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "targetToken",
+          "type": "address"
+        }
+      ],
+      "name": "getDefaultProviderKey",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "provider",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "sourceToken",
           "type": "address"
         }
       ],

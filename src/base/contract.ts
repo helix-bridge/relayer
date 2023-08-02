@@ -7,8 +7,10 @@ import {
 } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
-import { lnSourceBridge } from "../abi/lnSourceBridge";
-import { lnTargetBridge } from "../abi/lnTargetBridge";
+import { lnDefaultSourceBridge } from "../abi/lnDefaultSourceBridge";
+import { lnDefaultTargetBridge } from "../abi/lnDefaultTargetBridge";
+import { lnOppositeSourceBridge } from "../abi/lnOppositeSourceBridge";
+import { lnOppositeTargetBridge } from "../abi/lnOppositeTargetBridge";
 import { GasPrice } from "../base/provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
@@ -120,15 +122,15 @@ export interface LnProviderInfo {
     lastTransferId: string;
 }
 
-export interface LockInfo {
-    fee: BigNumber;
-    penalty: BigNumber;
-    isLocked: boolean;
-}
-
 export class LnBridgeSourceContract extends EthereumContract {
-    constructor(address: string, signer: Wallet | providers.Provider) {
-        super(address, lnSourceBridge, signer);
+    private bridgeType: string;
+    constructor(address: string, signer: Wallet | providers.Provider, bridgeType: string) {
+      if (bridgeType === 'default') {
+        super(address, lnDefaultSourceBridge, signer);
+      } else {
+        super(address, lnOppositeSourceBridge, signer);
+      }
+      this.bridgeType = bridgeType;
     }
 
     async lnProviderInfo(relayer: string, token: string): Promise<LnProviderInfo> {
@@ -136,8 +138,13 @@ export class LnBridgeSourceContract extends EthereumContract {
         return await this.contract.lnProviders(providerKey);
     }
 
-    async lockInfo(transferId: string): Promise<LockInfo> {
-        return await this.contract.lockInfos(transferId);
+    async transferIdExist(transferId: string): Promise<[boolean, any]> {
+        const lockInfo = await this.contract.lockInfos(transferId);
+        if (this.bridgeType === 'default') {
+            return [lockInfo.isLocked, lockInfo];
+        } else {
+            return [lockInfo.amountWithFeeAndPenalty > 0, lockInfo];
+        }
     }
 
     async tryUpdateFee(
@@ -146,16 +153,28 @@ export class LnBridgeSourceContract extends EthereumContract {
         liquidityFeeRate: number,
         gasLimit: BigNumber | null = null
     ) {
-        return this.staticCall(
-            "updateProviderFeeAndMargin",
-            [
-                token,
-                0,
-                baseFee,
-                liquidityFeeRate,
-            ],
-            gasLimit
-        )
+        if (this.bridgeType === 'default') {
+            return await this.staticCall(
+                "setProviderFee",
+                [
+                    token,
+                    baseFee,
+                    liquidityFeeRate,
+                ],
+                gasLimit
+            )
+        } else {
+            return await this.staticCall(
+                "updateProviderFeeAndMargin",
+                [
+                    token,
+                    0,
+                    baseFee,
+                    liquidityFeeRate,
+                ],
+                gasLimit
+            )
+        }
     }
 
     async updateFee(
@@ -165,26 +184,54 @@ export class LnBridgeSourceContract extends EthereumContract {
         gas: GasPrice,
         gasLimit: BigNumber | null = null
     ) {
-        return await this.call(
-            "updateProviderFeeAndMargin",
-            [
-                token,
-                0,
-                baseFee,
-                liquidityFeeRate,
-            ],
-            gas,
-            gasLimit
-        );
+        if (this.bridgeType === 'default') {
+            return await this.call(
+                "setProviderFee",
+                [
+                    token,
+                    baseFee,
+                    liquidityFeeRate,
+                ],
+                gas,
+                gasLimit
+            )
+        } else {
+            return await this.call(
+                "updateProviderFeeAndMargin",
+                [
+                    token,
+                    0,
+                    baseFee,
+                    liquidityFeeRate,
+                ],
+                gas,
+                gasLimit
+            );
+        }
     }
 }
 
 export class LnBridgeTargetContract extends EthereumContract {
-  constructor(address: string, signer: Wallet | providers.Provider) {
-    super(address, lnTargetBridge, signer);
+  private bridgeType: string;
+  constructor(address: string, signer: Wallet | providers.Provider, bridgeType: string) {
+    if (bridgeType === 'default') {
+      super(address, lnDefaultTargetBridge, signer);
+    } else {
+      super(address, lnOppositeTargetBridge, signer);
+    }
+    this.bridgeType = bridgeType;
   }
 
-  async fillTransfers(transferId: string): Promise<string> {
+  async transferHasFilled(transferId: string): Promise<boolean> {
+      const fillInfo = await this.contract.fillTransfers(transferId);
+      if (this.bridgeType === 'default') {
+          return fillInfo.timestamp > 0;
+      } else {
+          return fillInfo != zeroTransferId;
+      }
+  }
+
+  async fillTransfers(transferId: string): Promise<any> {
     return await this.contract.fillTransfers(transferId);
   }
 
@@ -197,7 +244,7 @@ export class LnBridgeTargetContract extends EthereumContract {
     if (parameter.targetToken === zeroAddress) {
       value = parameter.amount;
     }
-    return this.staticCall(
+    return await this.staticCall(
       "transferAndReleaseMargin",
       [  
         [
