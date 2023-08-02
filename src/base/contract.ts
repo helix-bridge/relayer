@@ -111,15 +111,9 @@ export interface RelayArgs {
     expectedTransferId: string;
 }
 
-export interface LnProviderConfigure {
-    margin: BigNumber;
+export interface LnProviderFeeInfo {
     baseFee: BigNumber;
     liquidityFeeRate: number;
-}
-
-export interface LnProviderInfo {
-    config: LnProviderConfigure ;
-    lastTransferId: string;
 }
 
 export class LnBridgeSourceContract extends EthereumContract {
@@ -133,9 +127,22 @@ export class LnBridgeSourceContract extends EthereumContract {
       this.bridgeType = bridgeType;
     }
 
-    async lnProviderInfo(relayer: string, token: string): Promise<LnProviderInfo> {
-        const providerKey = await this.contract.getProviderKey(relayer, token);
-        return await this.contract.lnProviders(providerKey);
+    async lnProviderInfo(relayer: string, sourceToken: string, targetToken: string): Promise<LnProviderFeeInfo> {
+        if (this.bridgeType === 'default') {
+            const providerKey = await this.contract.getDefaultProviderKey(relayer, sourceToken, targetToken);
+            const lnProviderInfo = await this.contract.lnProviders(providerKey);
+            return {
+                baseFee: lnProviderInfo.fee.baseFee,
+                liquidityFeeRate: lnProviderInfo.fee.liquidityFeeRate
+            };
+        } else {
+            const providerKey = await this.contract.getProviderKey(relayer, sourceToken);
+            const lnProviderInfo = await this.contract.lnProviders(providerKey);
+            return {
+                baseFee: lnProviderInfo.config.baseFee,
+                liquidityFeeRate: lnProviderInfo.config.liquidityFeeRate
+            };
+        }
     }
 
     async transferIdExist(transferId: string): Promise<[boolean, any]> {

@@ -186,8 +186,8 @@ export class RelayerService implements OnModuleInit {
       lnProviderInfo: LnProviderInfo,
   ) {
       const gasLimit = new EtherBigNumber(1000000).Number;
-      let lnProviderInfoOnChain = await sourceContract.lnProviderInfo(lnProviderInfo.relayer, lnProviderInfo.fromAddress)
-      let baseFee = lnProviderInfoOnChain.config.baseFee;
+      let lnProviderInfoOnChain = await sourceContract.lnProviderInfo(lnProviderInfo.relayer, lnProviderInfo.fromAddress, lnProviderInfo.toAddress)
+      let baseFee = lnProviderInfoOnChain.baseFee;
       let tokenUsed = feeUsed.mul(lnProviderInfo.swapRate);
       let profit = baseFee.sub(tokenUsed);
       const minProfit = (new Ether(lnBridge.minProfit).Number).mul(lnProviderInfo.swapRate);
@@ -198,7 +198,7 @@ export class RelayerService implements OnModuleInit {
           let err = await sourceContract.tryUpdateFee(
               lnProviderInfo.fromAddress,
               sensibleBaseFee,
-              lnProviderInfoOnChain.config.liquidityFeeRate,
+              lnProviderInfoOnChain.liquidityFeeRate,
               gasLimit,
           );
           if (err === null) {
@@ -214,7 +214,7 @@ export class RelayerService implements OnModuleInit {
               await sourceContract.updateFee(
                   lnProviderInfo.fromAddress,
                   sensibleBaseFee,
-                  lnProviderInfoOnChain.config.liquidityFeeRate,
+                  lnProviderInfoOnChain.liquidityFeeRate,
                   gasPrice,
                   gasLimit,
               );
