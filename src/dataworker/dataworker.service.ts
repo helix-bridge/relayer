@@ -24,6 +24,7 @@ export interface HistoryRecord {
   reason: string;
   fee: string;
   requestTxHash: string;
+  confirmedBlocks: string;
 }
 
 export interface ValidInfo {
@@ -77,7 +78,7 @@ export class DataworkerService implements OnModuleInit {
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
                 order: "startTime_asc"
-            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash, confirmedBlocks}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -136,7 +137,21 @@ export class DataworkerService implements OnModuleInit {
     return feeUsed;
   }
 
+  async updateConfirmedBlock(
+    url: string,
+    id: string,
+    block: number,
+    reorgThreshold: number
+  ) {
+    const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${block}/${reorgThreshold}\")}`;
+    await axios.post(url, {
+        query: mutation,
+        variables: null,
+    });
+  }
+
   async checkValid(
+    url: string,
     record: HistoryRecord,
     fromBridge: LnBridgeSourceContract,
     toBridge: LnBridgeTargetContract,
@@ -155,6 +170,11 @@ export class DataworkerService implements OnModuleInit {
       this.logger.log(
         `request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`
       );
+      // update confirmed block
+      const confirmedBlock = record.confirmedBlocks === '' ? 0 : Number(record.confirmedBlocks.split('/')[0]);
+      if (transactionInfo.confirmedBlock > confirmedBlock) {
+          await this.updateConfirmedBlock(url, record.id, transactionInfo.confirmedBlock, reorgThreshold);
+      }
       return {
         gasPrice: null,
         feeUsed: null,

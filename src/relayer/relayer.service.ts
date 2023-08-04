@@ -305,6 +305,7 @@ export class RelayerService implements OnModuleInit {
         }
         const record = needRelayRecord.record;
         const validInfo = await this.dataworkerService.checkValid(
+          this.configureService.config.indexer,
           record,
           fromBridgeContract,
           toBridgeContract,
