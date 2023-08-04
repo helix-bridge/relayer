@@ -76,7 +76,7 @@ export class RelayerService implements OnModuleInit {
     this.logger.log("relayer service start");
     this.initConfigure();
     this.store = new Store(this.configureService.storePath);
-    this.lastAdjustTime = 0;
+    this.lastAdjustTime = this.scheduleAdjustFeeInterval;
     this.lnBridges.forEach((item, index) => {
       this.taskService.addScheduleTask(
         `${item.toBridge.bridge.address}-lpbridge-relayer`,
