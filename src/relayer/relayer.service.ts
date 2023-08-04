@@ -199,7 +199,7 @@ export class RelayerService implements OnModuleInit {
       const minProfit = nativeFeeToToken(new Ether(lnBridge.minProfit).Number);
       const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
       if (profit.lt(minProfit) || profit.gt(maxProfit)) {
-          const sensibleProfit = (new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number).mul(lnProviderInfo.swapRate);
+          const sensibleProfit = nativeFeeToToken(new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number);
           const sensibleBaseFee = tokenUsed.add(sensibleProfit);
           let err = await sourceContract.tryUpdateFee(
               lnProviderInfo.fromAddress,
