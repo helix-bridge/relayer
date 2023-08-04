@@ -12,6 +12,7 @@ export interface ProviderInfo {
   fromAddress: string;
   toAddress: string;
   swapRate: number;
+  srcDecimals: number;
 }
 
 export interface BridgeConfigInfo {

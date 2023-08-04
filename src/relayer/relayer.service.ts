@@ -7,7 +7,7 @@ import {
   LnBridgeTargetContract,
   RelayArgs,
 } from "../base/contract";
-import { EtherBigNumber, GWei } from "../base/bignumber";
+import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
   EthereumProvider,
   TransactionInfo,
@@ -16,7 +16,6 @@ import {
 import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from "../configure/configure.service";
-import { Ether } from "../base/bignumber";
 import { Encrypto } from "../base/encrypto";
 import { BigNumber } from "ethers";
 import { last } from "lodash";
@@ -38,6 +37,7 @@ export class LnProviderInfo {
   swapRate: number;
   fromAddress: string;
   toAddress: string;
+  srcDecimals: number;
 }
 
 export class LnBridge {
@@ -160,6 +160,7 @@ export class RelayerService implements OnModuleInit {
                 toAddress: lnProviderConfig.toAddress,
                 relayer: toWallet.address,
                 swapRate: lnProviderConfig.swapRate,
+                srcDecimals: lnProviderConfig.srcDecimals,
             };
           });
 
@@ -185,13 +186,18 @@ export class RelayerService implements OnModuleInit {
       fromProvider: EthereumProvider,
       lnProviderInfo: LnProviderInfo,
   ) {
+      // native fee decimals = 10**18
+      function nativeFeeToToken(fee: BigNumber): BigNumber {
+          return fee.mul(lnProviderInfo.swapRate).mul(new Any(10, lnProviderInfo.srcDecimals).Number).div(new Ether(1).Number);
+      }
+
       const gasLimit = new EtherBigNumber(1000000).Number;
       let lnProviderInfoOnChain = await sourceContract.lnProviderInfo(lnProviderInfo.relayer, lnProviderInfo.fromAddress, lnProviderInfo.toAddress)
       let baseFee = lnProviderInfoOnChain.baseFee;
-      let tokenUsed = feeUsed.mul(lnProviderInfo.swapRate);
+      let tokenUsed = nativeFeeToToken(feeUsed);
       let profit = baseFee.sub(tokenUsed);
-      const minProfit = (new Ether(lnBridge.minProfit).Number).mul(lnProviderInfo.swapRate);
-      const maxProfit = (new Ether(lnBridge.maxProfit).Number).mul(lnProviderInfo.swapRate);
+      const minProfit = nativeFeeToToken(new Ether(lnBridge.minProfit).Number);
+      const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
       if (profit.lt(minProfit) || profit.gt(maxProfit)) {
           const sensibleProfit = (new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number).mul(lnProviderInfo.swapRate);
           const sensibleBaseFee = tokenUsed.add(sensibleProfit);
