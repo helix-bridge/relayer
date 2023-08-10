@@ -70,8 +70,8 @@
         {
             "fromChain": "goerli",
             "toChain": "zksync-goerli",
-            "sourceBridgeAddress": "0xEe054E798EAf000D0F36484e4994214344474F2C",
-            "targetBridgeAddress": "0x5cd77e187A65fED270E469b2f2b9eF18708EB859",
+            "sourceBridgeAddress": "0xBE4a32f37d11e8227444837DFb3c634d189ccEDc",
+            "targetBridgeAddress": "0xC9933868e268802262D8DFeB374D72FB01b952e7",
             "encryptedPrivateKey": "...",
             "minProfit": 0,
             "maxProfit": 1,
@@ -90,6 +90,12 @@
                     "toAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
                     "swapRate": 2000,
                     "srcDecimals": 6
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1,
+                    "srcDecimals": 18
                 }
             ]
         }
