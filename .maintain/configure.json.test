@@ -84,6 +84,12 @@
                     "toAddress": "0x61C31A1fA4a8D765e63D4285f368aA2f4d912DbB",
                     "swapRate": 650000,
                     "srcDecimals": 18
+                },
+                {
+                    "fromAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
+                    "toAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
                 }
             ]
         }
