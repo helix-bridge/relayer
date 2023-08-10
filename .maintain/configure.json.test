@@ -1,10 +1,15 @@
 {
     "indexer": "https://apollo-test.helixbridge.app/graphql",
-    "relayGasLimit": 120000,
+    "relayGasLimit": 600000,
     "chains": [
         {
             "name": "arbitrum-goerli",
             "rpc": "https://goerli-rollup.arbitrum.io/rpc",
+            "native": "ETH"
+        },
+        {
+            "name": "zksync-goerli",
+            "rpc": "https://zksync2-testnet.zksync.dev",
             "native": "ETH"
         },
         {
@@ -59,6 +64,26 @@
                     "fromAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
                     "toAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
                     "swapRate": 2000
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0xEe054E798EAf000D0F36484e4994214344474F2C",
+            "targetBridgeAddress": "0x5cd77e187A65fED270E469b2f2b9eF18708EB859",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0,
+            "maxProfit": 1,
+            "feeLimit": 0.01,
+            "reorgThreshold": 10,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E",
+                    "toAddress": "0x61C31A1fA4a8D765e63D4285f368aA2f4d912DbB",
+                    "swapRate": 650000,
+                    "srcDecimals": 18
                 }
             ]
         }
