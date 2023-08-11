@@ -1,5 +1,5 @@
 {
-    "indexer": "https://apollo-test.helixbridge.app/graphql",
+    "indexer": "https://apollo-test.helix.io/graphql",
     "relayGasLimit": 600000,
     "chains": [
         {
@@ -70,8 +70,8 @@
         {
             "fromChain": "goerli",
             "toChain": "zksync-goerli",
-            "sourceBridgeAddress": "0xBE4a32f37d11e8227444837DFb3c634d189ccEDc",
-            "targetBridgeAddress": "0xC9933868e268802262D8DFeB374D72FB01b952e7",
+            "sourceBridgeAddress": "0xc05ca63DAB6b48bcd82320d29Ad44BD6A3C21160",
+            "targetBridgeAddress": "0xe0be4a2b4B0846fB088F720D3D0DFE725b9c91ee",
             "encryptedPrivateKey": "...",
             "minProfit": 0,
             "maxProfit": 1,
@@ -88,6 +88,38 @@
                 {
                     "fromAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
                     "toAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1,
+                    "srcDecimals": 18
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0x9422E7883d1F9Dd2E0f5926D585115542D6C71dA",
+            "targetBridgeAddress": "0x6E7b0Af10aB840a47c47AeC97107487D2a17Eb2F",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "opposite",
+            "providers": [
+                {
+                    "fromAddress": "0x61C31A1fA4a8D765e63D4285f368aA2f4d912DbB",
+                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E",
+                    "swapRate": 6500,
+                    "srcDecimals": 18
+                },
+                {
+                    "fromAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "toAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
                     "swapRate": 2000,
                     "srcDecimals": 6
                 },

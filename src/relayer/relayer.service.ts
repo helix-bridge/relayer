@@ -209,7 +209,9 @@ export class RelayerService implements OnModuleInit {
           );
           if (err === null) {
               this.logger.log(`fee is not sensible, update to new: ${sensibleBaseFee}`);
+              let gasPrice = await fromProvider.feeData(1);
               // todo for arbitrum we use 0.1 gwei here
+              /*
               let gasPrice = {
                   isEip1559: false,
                   fee: {
@@ -217,6 +219,7 @@ export class RelayerService implements OnModuleInit {
                   },
                   eip1559fee: null,
               };
+              */
               await sourceContract.updateFee(
                   lnProviderInfo.fromAddress,
                   sensibleBaseFee,
@@ -250,7 +253,7 @@ export class RelayerService implements OnModuleInit {
       // confirmed
       if (transactionInfo.confirmedBlock > 0) {
         this.lastTxTimeout = 0;
-        if (transactionInfo.confirmedBlock < 8) {
+        if (transactionInfo.confirmedBlock < 3) {
           this.logger.log(
             `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${this.txHashCache}`
           );
@@ -283,7 +286,7 @@ export class RelayerService implements OnModuleInit {
     for (const lnProvider of bridge.lnProviders) {
       // adjust fee
       if (needAdjustFee) {
-        let gasPrice = await toChainInfo.provider.feeData();
+        let gasPrice = await toChainInfo.provider.feeData(1);
         const feeUsed = this.dataworkerService.relayFee(gasPrice);
         await this.adjustFee(
           bridge,

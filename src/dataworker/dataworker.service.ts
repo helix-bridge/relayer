@@ -77,7 +77,7 @@ export class DataworkerService implements OnModuleInit {
                 results: [${this.statusPending}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "startTime_asc"
+                order: "messageNonce_asc"
             ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash, confirmedBlocks}}`;
     const pendingRecord = await axios
       .post(url, {
@@ -99,7 +99,7 @@ export class DataworkerService implements OnModuleInit {
                 results: [${this.statusSuccess}, ${this.statusRefund}, ${this.pendingToConfirmRefund}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "startTime_desc"
+                order: "messageNonce_desc"
             ) {id}}`;
     const lastRecord = await axios
       .post(url, {
@@ -211,7 +211,7 @@ export class DataworkerService implements OnModuleInit {
         );
     }
     // 4. get current fee
-    let gasPrice = await toProvider.feeData();
+    let gasPrice = await toProvider.feeData(1);
     let feeUsed = this.relayFee(gasPrice);
     this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
     return {
