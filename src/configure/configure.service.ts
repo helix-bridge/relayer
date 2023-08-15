@@ -6,6 +6,7 @@ export interface ChainConfigInfo {
   name: string;
   rpc: string;
   native: string;
+  fixedGasPrice: number;
 }
 
 export interface ProviderInfo {

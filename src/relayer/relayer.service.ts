@@ -25,6 +25,7 @@ export class ChainInfo {
   rpc: string;
   native: string;
   provider: EthereumProvider;
+  fixedGasPrice: number;
 }
 
 export class BridgeConnectInfo {
@@ -110,6 +111,7 @@ export class RelayerService implements OnModuleInit {
             rpc: config.rpc,
             native: config.native,
             provider: new EthereumProvider(config.rpc),
+            fixedGasPrice: config.fixedGasPrice,
           },
         ];
       })
@@ -183,12 +185,12 @@ export class RelayerService implements OnModuleInit {
       lnBridge: LnBridge,
       feeUsed: BigNumber,
       sourceContract: LnBridgeSourceContract,
-      fromProvider: EthereumProvider,
+      fromChainInfo: ChainInfo,
       lnProviderInfo: LnProviderInfo,
   ) {
       // native fee decimals = 10**18
       function nativeFeeToToken(fee: BigNumber): BigNumber {
-          return fee.mul(lnProviderInfo.swapRate).mul(new Any(10, lnProviderInfo.srcDecimals).Number).div(new Ether(1).Number);
+          return fee.mul(lnProviderInfo.swapRate).mul(new Any(1, lnProviderInfo.srcDecimals).Number).div(new Ether(1).Number);
       }
 
       const gasLimit = new EtherBigNumber(1000000).Number;
@@ -209,17 +211,19 @@ export class RelayerService implements OnModuleInit {
           );
           if (err === null) {
               this.logger.log(`fee is not sensible, update to new: ${sensibleBaseFee}`);
-              let gasPrice = await fromProvider.feeData(1);
-              // todo for arbitrum we use 0.1 gwei here
-              /*
-              let gasPrice = {
-                  isEip1559: false,
-                  fee: {
-                      gasPrice: new GWei(0.1).Number,
-                  },
-                  eip1559fee: null,
-              };
-              */
+              var gasPrice;
+              if (fromChainInfo.fixedGasPrice !== undefined) {
+                  gasPrice = {
+                      isEip1559: false,
+                      fee: {
+                          gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
+                      },
+                      eip1559fee: null,
+                  };
+              } else {
+                  gasPrice = await fromChainInfo.provider.feeData(1);
+              }
+              return;
               await sourceContract.updateFee(
                   lnProviderInfo.fromAddress,
                   sensibleBaseFee,
@@ -292,7 +296,7 @@ export class RelayerService implements OnModuleInit {
           bridge,
           feeUsed,
           fromBridgeContract,
-          fromChainInfo.provider,
+          fromChainInfo,
           lnProvider,
         );
       }
@@ -374,7 +378,7 @@ export class RelayerService implements OnModuleInit {
                 bridge,
                 validInfo.feeUsed,
                 fromBridgeContract,
-                fromChainInfo.provider,
+                fromChainInfo,
                 lnProvider,
             );
             return;
