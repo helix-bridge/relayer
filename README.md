@@ -11,7 +11,7 @@ Edit the configure file and put it in the path .maintain/configure.json.
 ```
 {
     "indexer": "https://apollo-test.helixbridge.app/graphql",
-    "relayGasLimit": 120000,
+    "relayGasLimit": 600000,
     "chains": [
         {
             "name": "arbitrum-goerli",
@@ -28,19 +28,58 @@ Edit the configure file and put it in the path .maintain/configure.json.
         {
             "fromChain": "arbitrum-goerli",
             "toChain": "goerli",
-            "sourceBridgeAddress": "0xBfbCe15bb38a28add41f3Bf1B80E579ae7B7a4c0",
-            "targetBridgeAddress": "0xa5DE45d3eaabA9766B8494170F7E80fd41277a0B",
-            "encryptedPrivateKey": "......",
+            "sourceBridgeAddress": "0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA",
+            "targetBridgeAddress": "0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 100,
+            "direction": "opposite",
             "providers": [
                 {
-                    "providerKey": 1,
                     "fromAddress": "0xFBAD806Bdf9cEC2943be281FB355Da05068DE925",
-                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E"
+                    "toAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E",
+                    "swapRate": 30000,
+                    "srcDecimals": 18
+                },
+                {
+                    "fromAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
+                    "toAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA",
+            "targetBridgeAddress": "0x4112c9d474951246fBC2B4D868D247e714698aE1",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0,
+            "maxProfit": 1,
+            "feeLimit": 0.01,
+            "reorgThreshold": 10,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x1836BAFa3016Dd5Ce543D0F7199cB858ec69F41E",
+                    "toAddress": "0xFBAD806Bdf9cEC2943be281FB355Da05068DE925",
+                    "swapRate": 650000,
+                    "srcDecimals": 18
+                },
+                {
+                    "fromAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
+                    "toAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
                 }
             ]
         }
     ]
 }
+
 ```
 
 * indexer
