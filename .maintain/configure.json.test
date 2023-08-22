@@ -16,6 +16,11 @@
             "name": "goerli",
             "rpc": "https://rpc.ankr.com/eth_goerli",
             "native": "ETH"
+        },
+        {
+            "name": "linea-goerli",
+            "rpc": "https://rpc.goerli.linea.build",
+            "native": "ETH"
         }
     ],
     "bridges": [
@@ -124,6 +129,58 @@
                 {
                     "fromAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
                     "toAddress": "0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1,
+                    "srcDecimals": 18
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0x5A351EA4F4128F58EA13DDa52E3d1842c0b3B690",
+            "targetBridgeAddress": "0xeA5f0a09A8723444965FDd6f76523C338faB00f7",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0,
+            "maxProfit": 1,
+            "feeLimit": 0.01,
+            "reorgThreshold": 10,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
+                    "toAddress": "0xB4257F31750961C8e536f5cfCBb3079437700416",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1,
+                    "srcDecimals": 18
+                }
+            ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0x9C80EdD342b5D179c3a87946fC1F0963BfcaAa09",
+            "targetBridgeAddress": "0x91bdd735Dc214876605C18A57C7841CFF7eE959a",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "opposite",
+            "providers": [
+                {
+                    "fromAddress": "0xB4257F31750961C8e536f5cfCBb3079437700416",
+                    "toAddress": "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
                     "swapRate": 2000,
                     "srcDecimals": 6
                 },

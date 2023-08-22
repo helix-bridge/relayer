@@ -210,7 +210,7 @@ export class RelayerService implements OnModuleInit {
               gasLimit,
           );
           if (err === null) {
-              this.logger.log(`fee is not sensible, update to new: ${sensibleBaseFee}`);
+              this.logger.log(`[${fromChainInfo.chainName}-${lnProviderInfo.fromAddress}]fee is not sensible, update to new: ${sensibleBaseFee}`);
               var gasPrice;
               if (fromChainInfo.fixedGasPrice !== undefined) {
                   gasPrice = {
