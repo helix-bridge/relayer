@@ -77,21 +77,26 @@ export class RelayerService implements OnModuleInit {
     this.initConfigure();
     this.store = new Store(this.configureService.storePath);
     this.lastAdjustTime = this.scheduleAdjustFeeInterval;
-    this.lnBridges.forEach((item, index) => {
+    this.chainInfos.forEach((value, key) => {
       this.taskService.addScheduleTask(
-        `${item.toBridge.bridge.address}-lpbridge-relayer`,
+        `${key}-lnbridge-relayer`,
         this.scheduleInterval,
         async () => {
-          if (item.isProcessing) {
-            return;
+          for (let item of this.lnBridges.values()) {
+              if (item.toBridge.chainInfo.chainName !== key) {
+                  continue;
+              }
+              if (item.isProcessing) {
+                  return;
+              }
+              item.isProcessing = true;
+              try {
+                  await this.relay(item);
+              } catch (err) {
+                  this.logger.warn(`relay bridge failed, err: ${err}`);
+              }
+              item.isProcessing = false;
           }
-          item.isProcessing = true;
-          try {
-            await this.relay(item);
-          } catch (err) {
-            this.logger.warn(`relay bridge failed, err: ${err}`);
-          }
-          item.isProcessing = false;
         }
       );
     });
