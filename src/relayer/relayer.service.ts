@@ -62,7 +62,6 @@ export class RelayerService implements OnModuleInit {
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
-  private txHashCache: string;
   private lastTxTimeout: number;
   private lastAdjustTime: number;
 
@@ -261,18 +260,18 @@ export class RelayerService implements OnModuleInit {
         this.lastTxTimeout = 0;
         if (transactionInfo.confirmedBlock < 3) {
           this.logger.log(
-            `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${this.txHashCache}`
+            `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${chainInfo.txHashCache}`
           );
           return;
         } else {
           // delete in store
-          this.logger.log(`the pending tx is confirmed, txHash: ${this.txHashCache}`);
+          this.logger.log(`the pending tx is confirmed, txHash: ${chainInfo.txHashCache}`);
           await this.store.delPendingTransaction(toChainInfo.chainName);
-          this.txHashCache = null;
+          chainInfo.txHashCache = null;
           return;
         }
       } else {
-          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${this.txHashCache}, ${this.lastTxTimeout}, ${transactionInfo.confirmedBlock}`);
+          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${this.lastTxTimeout}, ${transactionInfo.confirmedBlock}`);
           // if timeout, replace it by new tx, else waiting for confirmed
           if (this.lastTxTimeout < this.waitingPendingTime) {
               this.lastTxTimeout += 1;
@@ -373,7 +372,8 @@ export class RelayerService implements OnModuleInit {
               toChainInfo.chainName,
               tx.hash
             );
-            this.txHashCache = tx.hash;
+            let chainInfo = this.chainInfos.get(toChainInfo.chainName);
+            chainInfo.txHashCache = tx.hash;
             this.lastTxTimeout = 0;
             this.logger.log(`success relay message, txhash: ${tx.hash}`);
             await this.adjustFee(
