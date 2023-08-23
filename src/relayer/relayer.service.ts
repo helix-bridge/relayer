@@ -112,6 +112,7 @@ export class RelayerService implements OnModuleInit {
             native: config.native,
             provider: new EthereumProvider(config.rpc),
             fixedGasPrice: config.fixedGasPrice,
+            txHashCache: '',
           },
         ];
       })
@@ -223,7 +224,6 @@ export class RelayerService implements OnModuleInit {
               } else {
                   gasPrice = await fromChainInfo.provider.feeData(1);
               }
-              return;
               await sourceContract.updateFee(
                   lnProviderInfo.fromAddress,
                   sensibleBaseFee,
@@ -243,12 +243,14 @@ export class RelayerService implements OnModuleInit {
     const toBridgeContract = bridge.toBridge.bridge as LnBridgeTargetContract;
 
     let transactionInfo: TransactionInfo | null = null;
-    if (!this.txHashCache) {
-        this.txHashCache = await this.store.getPendingTransaction(toChainInfo.chainName);
+    let chainInfo = this.chainInfos.get(toChainInfo.chainName);
+
+    if (chainInfo.txHashCache) {
+        chainInfo.txHashCache = await this.store.getPendingTransaction(toChainInfo.chainName);
     }
-    if (this.txHashCache) {
+    if (chainInfo.txHashCache) {
       transactionInfo = await toChainInfo.provider.checkPendingTransaction(
-        this.txHashCache
+        chainInfo.txHashCache
       );
       // may be query error
       if (transactionInfo === null) {
