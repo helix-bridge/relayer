@@ -92,7 +92,8 @@ export class RelayerService implements OnModuleInit {
               try {
                   const txPending = await this.relay(item);
                   if (txPending) {
-                      break;
+                      item.isProcessing = false;
+                      return;
                   }
               } catch (err) {
                   this.logger.warn(`relay bridge failed, err: ${err}`);
