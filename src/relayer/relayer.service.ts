@@ -62,7 +62,6 @@ export class RelayerService implements OnModuleInit {
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
-  private lastTxTimeout: number;
   private lastAdjustTime: number;
 
   constructor(
@@ -91,7 +90,10 @@ export class RelayerService implements OnModuleInit {
               }
               item.isProcessing = true;
               try {
-                  await this.relay(item);
+                  const txPending = await this.relay(item);
+                  if (txPending) {
+                      break;
+                  }
               } catch (err) {
                   this.logger.warn(`relay bridge failed, err: ${err}`);
               }
@@ -258,30 +260,25 @@ export class RelayerService implements OnModuleInit {
       );
       // may be query error
       if (transactionInfo === null) {
-        return;
+        return true;
       }
       // confirmed
       if (transactionInfo.confirmedBlock > 0) {
-        this.lastTxTimeout = 0;
         if (transactionInfo.confirmedBlock < 3) {
           this.logger.log(
             `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${chainInfo.txHashCache}`
           );
-          return;
+          return true;
         } else {
           // delete in store
           this.logger.log(`the pending tx is confirmed, txHash: ${chainInfo.txHashCache}`);
           await this.store.delPendingTransaction(toChainInfo.chainName);
           chainInfo.txHashCache = null;
-          return;
+          return false;
         }
       } else {
-          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${this.lastTxTimeout}, ${transactionInfo.confirmedBlock}`);
-          // if timeout, replace it by new tx, else waiting for confirmed
-          if (this.lastTxTimeout < this.waitingPendingTime) {
-              this.lastTxTimeout += 1;
-              return;
-          }
+          this.logger.log(`the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${transactionInfo.confirmedBlock}`);
+          return true;
       }
     }
 
@@ -317,85 +314,87 @@ export class RelayerService implements OnModuleInit {
           lnProvider.fromAddress,
           bridge.direction,
         );
-      if (needRelayRecord) {
-        this.logger.log(`some tx need to relay, toChain ${toChainInfo.chainName}`);
-        if (!fromChainInfo) {
-          return;
-        }
-        const record = needRelayRecord.record;
-        const validInfo = await this.dataworkerService.checkValid(
-          this.configureService.config.indexer,
-          record,
-          fromBridgeContract,
-          toBridgeContract,
-          fromChainInfo.provider,
-          toChainInfo.provider,
-          bridge.reorgThreshold
-        );
-        
-        if (validInfo.isValid) {
-          if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
-              this.logger.log(
-                  `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
-              );
-              return;
-          }
-          let nonce: number | null = null;
-          // try relay: check balance and fee enough
-          const args: RelayArgs = {
-            transferParameter: {
-                previousTransferId: needRelayRecord.lastTransferId,
-                relayer: lnProvider.relayer,
-                sourceToken: lnProvider.fromAddress,
-                targetToken: lnProvider.toAddress,
-                amount: new EtherBigNumber(record.sendAmount).Number,
-                timestamp: new EtherBigNumber(record.startTime).Number,
-                receiver: record.recipient,
-            },
-            expectedTransferId: last(record.id.split('-')),
-          }
-          const relayGasLimit = new EtherBigNumber(
-            this.configureService.config.relayGasLimit
-          ).Number;
-          const err = await toBridgeContract.tryRelay(
-            args,
-            relayGasLimit
-          );
-          if (err === null) {
-            this.logger.log(
-              `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
-            );
-            // relay and return
-            const tx = await toBridgeContract.relay(
-              args,
-              validInfo.gasPrice,
-              nonce,
-              relayGasLimit
-            );
-            // save to store
-            await this.store.savePendingTransaction(
-              toChainInfo.chainName,
-              tx.hash
-            );
-            let chainInfo = this.chainInfos.get(toChainInfo.chainName);
-            chainInfo.txHashCache = tx.hash;
-            this.lastTxTimeout = 0;
-            this.logger.log(`success relay message, txhash: ${tx.hash}`);
-            await this.adjustFee(
-                bridge,
-                validInfo.feeUsed,
-                fromBridgeContract,
-                fromChainInfo,
-                lnProvider,
-            );
-            return;
-          } else {
-            this.logger.warn(
-              `try to relay failed, id: ${record.id}, err ${err}`
-            );
-          }
-        }
+      if (!needRelayRecord) {
+        continue;
       }
+      this.logger.log(`some tx need to relay, toChain ${toChainInfo.chainName}`);
+      if (!fromChainInfo) {
+        continue;
+      }
+      const record = needRelayRecord.record;
+      const validInfo = await this.dataworkerService.checkValid(
+        this.configureService.config.indexer,
+        record,
+        fromBridgeContract,
+        toBridgeContract,
+        fromChainInfo.provider,
+        toChainInfo.provider,
+        bridge.reorgThreshold
+      );
+      
+      if (!validInfo.isValid) {
+        continue;
+      }
+      if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
+          this.logger.log(
+              `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
+          );
+          continue;
+      }
+      let nonce: number | null = null;
+      // try relay: check balance and fee enough
+      const args: RelayArgs = {
+        transferParameter: {
+            previousTransferId: needRelayRecord.lastTransferId,
+            relayer: lnProvider.relayer,
+            sourceToken: lnProvider.fromAddress,
+            targetToken: lnProvider.toAddress,
+            amount: new EtherBigNumber(record.sendAmount).Number,
+            timestamp: new EtherBigNumber(record.startTime).Number,
+            receiver: record.recipient,
+        },
+        expectedTransferId: last(record.id.split('-')),
+      }
+      const relayGasLimit = new EtherBigNumber(
+        this.configureService.config.relayGasLimit
+      ).Number;
+      const err = await toBridgeContract.tryRelay(
+        args,
+        relayGasLimit
+      );
+      if (err !== null) {
+        this.logger.warn(
+          `try to relay failed, id: ${record.id}, err ${err}`
+        );
+        continue;
+      }
+      this.logger.log(
+        `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
+      );
+      // relay and return
+      const tx = await toBridgeContract.relay(
+        args,
+        validInfo.gasPrice,
+        nonce,
+        relayGasLimit
+      );
+      // save to store
+      await this.store.savePendingTransaction(
+        toChainInfo.chainName,
+        tx.hash
+      );
+      let chainInfo = this.chainInfos.get(toChainInfo.chainName);
+      chainInfo.txHashCache = tx.hash;
+      this.logger.log(`success relay message, txhash: ${tx.hash}`);
+      await this.adjustFee(
+          bridge,
+          validInfo.feeUsed,
+          fromBridgeContract,
+          fromChainInfo,
+          lnProvider,
+      );
+      return true;
     }
+    return false;
   }
 }
