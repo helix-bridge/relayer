@@ -59,6 +59,7 @@ export class RelayerService implements OnModuleInit {
   private readonly scheduleInterval = 10000;
   private readonly waitingPendingTime = 12; // 2 minute
   private readonly scheduleAdjustFeeInterval = 8640; // 1 day
+  private readonly maxWaitingPendingTimes = 180;
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
@@ -120,6 +121,7 @@ export class RelayerService implements OnModuleInit {
             provider: new EthereumProvider(config.rpc),
             fixedGasPrice: config.fixedGasPrice,
             txHashCache: '',
+            checkTimes: 0,
           },
         ];
       })
@@ -261,7 +263,17 @@ export class RelayerService implements OnModuleInit {
       );
       // may be query error
       if (transactionInfo === null) {
+        chainInfo.checkTimes += 1;
+        // if always query null, maybe reorg or replaced
+        if (chainInfo.checkTimes >= this.maxWaitingPendingTimes) {
+          this.logger.warn(`this tx may replaced or reorged, reset txHash ${chainInfo.txHashCache}, ${toChainInfo.chainName}`);
+          await this.store.delPendingTransaction(toChainInfo.chainName);
+          chainInfo.txHashCache = null;
+          chainInfo.checkTimes = 0;
+        }
         return true;
+      } else {
+        chainInfo.checkTimes = 0;
       }
       // confirmed
       if (transactionInfo.confirmedBlock > 0) {
@@ -386,7 +398,7 @@ export class RelayerService implements OnModuleInit {
       );
       let chainInfo = this.chainInfos.get(toChainInfo.chainName);
       chainInfo.txHashCache = tx.hash;
-      this.logger.log(`success relay message, txhash: ${tx.hash}`);
+      this.logger.log(`success relay message, txhash: ${tx.hash}, chain: ${toChainInfo.chainName}`);
       await this.adjustFee(
           bridge,
           validInfo.feeUsed,
