@@ -191,6 +191,126 @@
                     "srcDecimals": 18
                 }
             ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0xE4B4b7707450b60421b5d7DE372fA5920F2bBDa8",
+            "targetBridgeAddress": "0x504F597CfB0A32704AA6533Fb75dCD60dB982836",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xB4257F31750961C8e536f5cfCBb3079437700416",
+                    "toAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
+        },
+        {
+            "fromChain": "arbitrum-goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0x504F597CfB0A32704AA6533Fb75dCD60dB982836",
+            "targetBridgeAddress": "0xE4B4b7707450b60421b5d7DE372fA5920F2bBDa8",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
+                    "toAddress": "0xB4257F31750961C8e536f5cfCBb3079437700416",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
+        },
+        {
+            "fromChain": "arbitrum-goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0xCAb1f69C671f1548fd3dE5d63852E9B9181a0D0E",
+            "targetBridgeAddress": "0xa88b0119753A0dC9cB27e54Ab9F333DAd80D6141",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
+                    "toAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0xa88b0119753A0dC9cB27e54Ab9F333DAd80D6141",
+            "targetBridgeAddress": "0xCAb1f69C671f1548fd3dE5d63852E9B9181a0D0E",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "toAddress": "0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0xAe753Ae021cf1Eb3ec55C5c8798C9015Acde6281",
+            "targetBridgeAddress": "0xA4A380B592ceC969bD43BA54F8833d88b8b24811",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "toAddress": "0xB4257F31750961C8e536f5cfCBb3079437700416",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0xA4A380B592ceC969bD43BA54F8833d88b8b24811",
+            "targetBridgeAddress": "0xAe753Ae021cf1Eb3ec55C5c8798C9015Acde6281",
+            "encryptedPrivateKey": "...",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xB4257F31750961C8e536f5cfCBb3079437700416",
+                    "toAddress": "0x0faF6df7054946141266420b43783387A78d82A9",
+                    "swapRate": 2000,
+                    "srcDecimals": 6
+                }
+            ]
         }
     ]
 }
