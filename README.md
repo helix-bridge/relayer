@@ -33,51 +33,67 @@ Please note that Helix also deploys an indexer service, but relayers who choose 
 ### relayGasLimit
 The gasLimit for relay transactions, which may be different for different chains, but we can pick the highest limit that supports them, because the actual transactions consume less gas than this limit.
 
-### chains`
+### chains
 Relayers need to configure the name(which will be used in a later field), rpc url and native token symbol (which is not used at the moment).
 
 ### bridges
 This client supports running multiple token bridges and tokens simultaneously, bridges is an array where each element of the array represents an instance of an asset bridge in one direction, with attributes such as:
 * fromChain
+
 Source chain name, which needs to be in the chains field.
 * toChain
+
 Target chain name, which also needs to be in the chains field.
 * sourceBridgeAddress 
+
 Source LnBridge Contract Address, Reference to.
 * targetBridgeAddress 
+
 Target LnBridge Contract Address, Reference to.
 * encryptedPrivateKey
+
 Encrypted private key by using `yarn crypto` command.
 * minProfit & maxProfit
+
 Maximum and Minimum Profit (Native token), as the price of the gas on the target chain adjusts, the client automatically adjusts the fee to the middle of the maximum and minimum profit range when it sees that the profit has jumped out of their range.
 * feeLimit
+
 Relay cost cap, used to protect against programmatic exceptions and to prevent the sending of transactions with too high a gas price.
 * reorgThreshold
+
 This threshold is used to prevent the reorg of transactions on the source chain, and needs to be set by the relayer itself to a suitable value to prevent the loss of assets due to reorg.
 * direction
+
 The direction of the protocol used by the bridge, the optional values are opposite and default.
 * providers
+
 Is an array indicating that a relayer can provide bridge services for multiple tokens in the same direction. Include
-** fromAddress
-The address of the token on the source chain, or all zeros in the case of native tokens
-** toAddress
-The address of the token on the target chain, or all zeros in the case of native tokens
-** swapRate
-The exchange rate between the native token on the target chain and the transfer token is used to calculate cross-chain costs and profits.
-** srcDecimals
-The decimals of the token on the source chain.
+1. fromAddress: The address of the token on the source chain, or all zeros in the case of native tokens
+2. toAddress: The address of the token on the target chain, or all zeros in the case of native tokens
+3. swapRate: The exchange rate between the native token on the target chain and the transfer token is used to calculate cross-chain costs and profits.
+4. srcDecimals: The decimals of the token on the source chain.
 
 ### Example
 Here is a specific example on testnet arbitrum-goerli <-> goerli.
 
-USDC: [0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963](https://goerli.arbiscan.io/address/0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963)(arbitrum-goerli), [0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4](https://goerli.etherscan.io/address/0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4)(goerli)
+USDC
+
+[0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963](https://goerli.arbiscan.io/address/0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963)(arbitrum-goerli)
+
+[0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4](https://goerli.etherscan.io/address/0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4)(goerli)
+
 * arbitrum-goerli -> goerli
+
 LnBridgeSourceAddress: [0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA](https://goerli.arbiscan.io/address/0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA)
+
 LnBridgeTargetAddress: [0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550](https://goerli.etherscan.io/address/0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550)
+
 Direction: Opposite
+
 Register:
 ```
 Erc20(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).approve(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA, 10000000000);
+
 LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProviderFeeAndMargin(
   0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA,
   10000000000,
@@ -86,9 +102,13 @@ LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProvide
 );
 ```
 * goerli -> arbitrum-goerli
+
 LnBridgeSourceAddress: [0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA](https://goerli.etherscan.io/address/0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA)
+
 LnBridgeTargetAddress: [0x4112c9d474951246fBC2B4D868D247e714698aE1](https://goerli.arbiscan.io/address/0x4112c9d474951246fBC2B4D868D247e714698aE1)
+
 Direction: Default
+
 Register:
 ```
 LnDefaultBridgeTarget(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee(
@@ -96,7 +116,9 @@ LnDefaultBridgeTarget(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee
   3000000,
   100
 );
+
 Erc20(0x4112c9d474951246fBC2B4D868D247e714698aE1).approve(0x4112c9d474951246fBC2B4D868D247e714698aE1, 10000000000);
+
 LnDefaultBridgeTarget(0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963).depositProviderMargin(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
   0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963,
@@ -105,6 +127,7 @@ LnDefaultBridgeTarget(0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963).depositProvide
 ```
 
 * configure file
+
 Edit the configure file and put it in the path .maintain/configure.json.
 ```
 {
