@@ -18,7 +18,7 @@ The default configure file path is
 .maintain/configure.json
 ```
 
-You need configure the .env file as follows to indict the configure file path and store path.
+You need configure the `.env` file as follows to indict the configure file path and store path.
 ```
 # The path of the configure file
 LP_BRIDGE_PATH=./.maintain/configure.json
@@ -38,35 +38,25 @@ Relayers need to configure the name(which will be used in a later field), rpc ur
 
 ### bridges
 This client supports running multiple token bridges and tokens simultaneously, bridges is an array where each element of the array represents an instance of an asset bridge in one direction, with attributes such as:
-* fromChain
-
+#### fromChain
 Source chain name, which needs to be in the chains field.
-* toChain
-
+#### toChain
 Target chain name, which also needs to be in the chains field.
-* sourceBridgeAddress 
-
+#### sourceBridgeAddress 
 Source LnBridge Contract Address, Reference to.
-* targetBridgeAddress 
-
+#### targetBridgeAddress 
 Target LnBridge Contract Address, Reference to.
-* encryptedPrivateKey
-
+#### encryptedPrivateKey
 Encrypted private key by using `yarn crypto` command.
-* minProfit & maxProfit
-
+#### minProfit & maxProfit
 Maximum and Minimum Profit (Native token), as the price of the gas on the target chain adjusts, the client automatically adjusts the fee to the middle of the maximum and minimum profit range when it sees that the profit has jumped out of their range.
-* feeLimit
-
+#### feeLimit
 Relay cost cap, used to protect against programmatic exceptions and to prevent the sending of transactions with too high a gas price.
-* reorgThreshold
-
+#### reorgThreshold
 This threshold is used to prevent the reorg of transactions on the source chain, and needs to be set by the relayer itself to a suitable value to prevent the loss of assets due to reorg.
-* direction
-
+#### direction
 The direction of the protocol used by the bridge, the optional values are opposite and default.
-* providers
-
+#### providers
 Is an array indicating that a relayer can provide bridge services for multiple tokens in the same direction. Include
 1. fromAddress: The address of the token on the source chain, or all zeros in the case of native tokens
 2. toAddress: The address of the token on the target chain, or all zeros in the case of native tokens
@@ -75,15 +65,11 @@ Is an array indicating that a relayer can provide bridge services for multiple t
 
 ### Example
 Here is a specific example on testnet arbitrum-goerli <-> goerli.
-
-USDC
-
+##### USDC
 [0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963](https://goerli.arbiscan.io/address/0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963)(arbitrum-goerli)
 
 [0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4](https://goerli.etherscan.io/address/0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4)(goerli)
-
-* arbitrum-goerli -> goerli
-
+##### arbitrum-goerli -> goerli
 LnBridgeSourceAddress: [0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA](https://goerli.arbiscan.io/address/0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA)
 
 LnBridgeTargetAddress: [0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550](https://goerli.etherscan.io/address/0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550)
@@ -101,8 +87,7 @@ LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProvide
   100
 );
 ```
-* goerli -> arbitrum-goerli
-
+##### goerli -> arbitrum-goerli
 LnBridgeSourceAddress: [0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA](https://goerli.etherscan.io/address/0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA)
 
 LnBridgeTargetAddress: [0x4112c9d474951246fBC2B4D868D247e714698aE1](https://goerli.arbiscan.io/address/0x4112c9d474951246fBC2B4D868D247e714698aE1)
@@ -126,7 +111,7 @@ LnDefaultBridgeTarget(0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963).depositProvide
 );
 ```
 
-* configure file
+#### configure file
 
 Edit the configure file and put it in the path .maintain/configure.json.
 ```
