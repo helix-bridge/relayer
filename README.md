@@ -49,11 +49,11 @@ The attributes of `bridges` are as follows
 
 ### Example
 Here is a specific example on testnet arbitrum-goerli <-> goerli.
-##### USDC
+#### USDC
 [0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963](https://goerli.arbiscan.io/address/0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963)(arbitrum-goerli)
 
 [0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4](https://goerli.etherscan.io/address/0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4)(goerli)
-##### arbitrum-goerli -> goerli
+#### arbitrum-goerli -> goerli
 LnBridgeSourceAddress: [0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA](https://goerli.arbiscan.io/address/0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA)
 
 LnBridgeTargetAddress: [0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550](https://goerli.etherscan.io/address/0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550)
@@ -62,7 +62,11 @@ Direction: Opposite
 
 Register:
 ```
+Step1:
+
 Erc20(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).approve(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA, 10000000000);
+
+Step2:
 
 LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProviderFeeAndMargin(
   0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA,
@@ -71,7 +75,7 @@ LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProvide
   100
 );
 ```
-##### goerli -> arbitrum-goerli
+#### goerli -> arbitrum-goerli
 LnBridgeSourceAddress: [0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA](https://goerli.etherscan.io/address/0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA)
 
 LnBridgeTargetAddress: [0x4112c9d474951246fBC2B4D868D247e714698aE1](https://goerli.arbiscan.io/address/0x4112c9d474951246fBC2B4D868D247e714698aE1)
@@ -80,13 +84,19 @@ Direction: Default
 
 Register:
 ```
+Step1:
+
 LnDefaultBridgeTarget(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
   3000000,
   100
 );
 
+Step2:
+
 Erc20(0x4112c9d474951246fBC2B4D868D247e714698aE1).approve(0x4112c9d474951246fBC2B4D868D247e714698aE1, 10000000000);
+
+Step3:
 
 LnDefaultBridgeTarget(0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963).depositProviderMargin(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
@@ -174,14 +184,14 @@ $ yarn start
 ```bash
 $ yarn crypto
 ```
-To execute the command mentioned above and update the .maintain/configure.json file with the encrypted private key, please follow the steps below:
+To execute the command mentioned above and update the `.maintain/configure.json` file with the encrypted private key, please follow the steps below:
 
 1. Run the command as specified and provide the necessary input, including the password and private key.
 2. The command will output the encrypted private key.
-3. Open the .maintain/configure.json file in a text editor.
+3. Open the `.maintain/configure.json` file in a text editor.
 4. Locate the "encryptedPrivateKey" field in the JSON file.
-5. Replace the existing value of "encryptedPrivateKey" with the newly generated encrypted private key obtained from the command's output.
-6. Save the changes to the .maintain/configure.json file.
+5. Replace the existing value of `encryptedPrivateKey` with the newly generated encrypted private key obtained from the command's output.
+6. Save the changes to the `.maintain/configure.json` file.
 
 Please make sure to take proper precautions to protect your private key and encrypted private key.
 
@@ -249,7 +259,7 @@ After waiting about 15 minutes for the transaction hash to be relayed to the tar
 
 Execute `requestWithdrawMargin` on source chain ethereum with cost set to 0.
 After waiting about 15 minutes for the transaction hash to be relayed to the target chain, execute the `claimMessage` interface of the Linea messageService contract.
-### Linea<>zkSync<>arbitrum（default, based on LayerZero）
+### Linea<>zkSync<>arbitrum（default, based on [LayerZero](https://github.com/LayerZero-Labs/LayerZero)）
 1. Slash
 
 The `estimateSlashFee` interface is used on the source chain to estimate the cost, and the `slashAndRemoteRelease` interface is called to send the request to the target chain.
