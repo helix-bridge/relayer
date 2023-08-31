@@ -53,21 +53,17 @@ Here is a specific example on testnet arbitrum-goerli <-> goerli.
 [0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963](https://goerli.arbiscan.io/address/0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963)(arbitrum-goerli)
 
 [0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4](https://goerli.etherscan.io/address/0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4)(goerli)
-#### arbitrum-goerli -> goerli
+#### arbitrum-goerli -> goerli (opposite)
 LnBridgeSourceAddress: [0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA](https://goerli.arbiscan.io/address/0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA)
 
 LnBridgeTargetAddress: [0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550](https://goerli.etherscan.io/address/0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550)
 
-Direction: Opposite
-
 Register:
 ```
 Step1:
-
 Erc20(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).approve(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA, 10000000000);
 
 Step2:
-
 LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProviderFeeAndMargin(
   0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA,
   10000000000,
@@ -75,17 +71,14 @@ LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProvide
   100
 );
 ```
-#### goerli -> arbitrum-goerli
+#### goerli -> arbitrum-goerli (default)
 LnBridgeSourceAddress: [0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA](https://goerli.etherscan.io/address/0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA)
 
 LnBridgeTargetAddress: [0x4112c9d474951246fBC2B4D868D247e714698aE1](https://goerli.arbiscan.io/address/0x4112c9d474951246fBC2B4D868D247e714698aE1)
 
-Direction: Default
-
 Register:
 ```
 Step1:
-
 LnDefaultBridgeTarget(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
   3000000,
@@ -93,11 +86,9 @@ LnDefaultBridgeTarget(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee
 );
 
 Step2:
-
 Erc20(0x4112c9d474951246fBC2B4D868D247e714698aE1).approve(0x4112c9d474951246fBC2B4D868D247e714698aE1, 10000000000);
 
 Step3:
-
 LnDefaultBridgeTarget(0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963).depositProviderMargin(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
   0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963,
