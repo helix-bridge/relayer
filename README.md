@@ -185,3 +185,72 @@ To execute the command mentioned above and update the .maintain/configure.json f
 
 Please make sure to take proper precautions to protect your private key and encrypted private key.
 
+## Slash & Margin Withdraw
+When the relayer is not working, Slasher needs to call the contract interface to help the user to complete the transfer and get a penalty from the relayer as a reward. When the relayer wishes to exit, it needs to call the contract interface to complete the exit and withdraw the pledge margin. There is a difference in the contract operation here for different chains, due to the different messages used in the message layer.
+### arbitrum -> ethereum
+1. Slash
+
+First call submissionRefundFee on the target chain ethereum to get the submissionFee fee.
+Then call slashAndRemoteRefund to send a Slash request to the source chain The cost is `submissionFee + maxGas * gasPriceBid`, and the excess cost is refunded to the sending account.
+If the execution of the target chain fails, call retryRemoteRefund to retry.
+2. Withdraw
+
+First call submissionWithdrawFee on the target chain ethereum to get the submissionFee fee.
+Then call requestWithdrawMargin to send a Withdraw request to the source chain, the cost is `submissionFee + maxGas * gasPriceBid`, and the excess cost is refunded to the sending account.
+### ethereum -> arbitrum
+1. Slash
+
+First call submissionSlashFee on the source ethereum chain to get the submissionFee fee.
+Then call slashAndRemoteRelease to send a slash request to the target chain, the cost is `submissionFee + maxGas * gasPriceBid`, the excess cost will be refunded to the sending account.
+2. Withdraw
+
+The submissionWithdrawFee is first called on the source chain ethereum to get the submissionFee fee.
+Then call requestWithdrawMargin to send the Withdraw request to the target chain, the cost is `submissionFee + maxGas * gasPriceBid`, the excess cost will be refunded to the sending account.
+### zkSync -> ethereum
+1. Slash
+
+First use l2Fee to get fees on the target chain ethereum.
+Then call slashAndRemoteRefund to send a Slash request to the source chain at a cost of l2Fee.
+If the execution of the target chain fails, call retryRemoteRefund to retry.
+2. Withdraw
+
+First use l2Fee to get fees on the target chain ethereum.
+Then call requestWithdrawMargin to send an Withdraw request to the source chain, at a cost of l2Fee.
+### ethereum -> zkSync
+1. Slash
+
+First use l2Fee to get fees on the source chain ethereum.
+Then call slashAndRemoteRelease to send a slash request to the target chain with the cost of l2Fee.
+2. Withdraw
+
+First use l2Fee to get fees on the source chain ethereum.
+Then call requestWithdrawMargin to send an Withdraw request to the target chain, at a cost of l2Fee
+### Linea -> ethereum
+1. Slash
+
+Execute slashAndRemoteRefund on the target chain ethereum with the cost set to 0.
+After waiting about 15 minutes for the transaction hash to be relayed to the source chain, execute the claimMessage interface of the Linea messageService contract on the source chain.
+2. Withdraw
+
+Execute requestWithdrawMargin on the target chain ethereum with the cost set to 0.
+After the transaction hash has been relayed to the source chain in about 15 minutes, execute the claimMessage interface of the Linea messageService contract.
+### ethereum -> Linea
+1. Slash
+
+Execute slashAndRemoteRelease on source chain ethereum with cost set to 0.
+After waiting about 15 minutes for the transaction hash to be relayed to the target chain, execute the claimMessage interface of the Linea messageService contract.
+2. Withdraw
+
+Execute requestWithdrawMargin on source chain ethereum with cost set to 0.
+After waiting about 15 minutes for the transaction hash to be relayed to the target chain, execute the claimMessage interface of the Linea messageService contract.
+### Linea<>zkSync<>arbitrum（based on LayerZero）
+1. Slash
+
+The estimateSlashFee interface is used on the source chain to estimate the cost, and the slashAndRemoteRelease interface is called to send the request to the target chain.
+If the execution of the target chain fails and needs to be retried, use the retryPayload interface of the layerzero endpoint contract to do so.
+2. Withdraw
+
+The estimateWithdrawFee interface is used on the source chain to estimate the cost, and the requestWithdrawMargin interface is called to send the request to the target chain.
+If the target chain fails and needs to be retried, use the retryPayload interface of the layerzero endpoint contract to do so.
+It is possible that the target chain succeeds, but the result fails, so if you want to retry, you can only retry in the source chain.
+
