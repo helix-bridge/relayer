@@ -10,7 +10,7 @@ The relayer functions by periodically fetching user transaction data from the He
 2. Call `depositProviderMargin` method of the LnBridge contract on the target chain to deposit margin. Before calling the method, relayer should approve the contract to use the source token.
 3. Optional method `depositSlashFundReserve` is used to deposit for Slasher a certain amount of gas fee compensation, if there is no pledge of this compensation, the backend will reduce the probability of recommending the relayer to the user.
 ### LnBridge with direction "Opposite"
-Call `updateProviderFeeAndMargin` method of the LnBridge contract on the source chain to set fee and deposit maring. Before doing this, relayer should approve token transfer first.
+Call `updateProviderFeeAndMargin` method of the LnBridge contract on the source chain to set fee and deposit margin. Before doing this, relayer should approve token transfer first.
 
 ## Configure
 The default configure file path is
@@ -25,6 +25,8 @@ LP_BRIDGE_PATH=./.maintain/configure.json
 # The store path, DB files to store the last tx hash relayer sent.
 LP_BRIDGE_STORE_PATH=./.maintain/db
 ```
+
+The details of each field in the configuration file are as follows.
 
 | Field | Description |
 |-------| ----------- |
@@ -60,10 +62,10 @@ LnBridgeTargetAddress: [0x3B1A953bFa72Af4ae3494b08e453BFF30a06A550](https://goer
 
 Register:
 ```
-Step1:
+Step1(arbitrum-goerli):
 Erc20(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).approve(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA, 10000000000);
 
-Step2:
+Step2(arbitrum-goerli):
 LnOppositeBridgeSource(0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA).updateProviderFeeAndMargin(
   0x7B8413FA1c1033844ac813A2E6475E15FB0fb3BA,
   10000000000,
@@ -78,17 +80,17 @@ LnBridgeTargetAddress: [0x4112c9d474951246fBC2B4D868D247e714698aE1](https://goer
 
 Register:
 ```
-Step1:
-LnDefaultBridgeTarget(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee(
+Step1(goerli):
+LnDefaultBridgeSource(0xcD86cf37a4Dc6f78B4899232E7dD1b5c8130EFDA).setProviderFee(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
   3000000,
   100
 );
 
-Step2:
+Step2(arbitrum-goerli):
 Erc20(0x4112c9d474951246fBC2B4D868D247e714698aE1).approve(0x4112c9d474951246fBC2B4D868D247e714698aE1, 10000000000);
 
-Step3:
+Step3(arbitrum-goerli):
 LnDefaultBridgeTarget(0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963).depositProviderMargin(
   0xd35CCeEAD182dcee0F148EbaC9447DA2c4D449c4,
   0xEA70a40Df1432A1b38b916A51Fb81A4cc805a963,
@@ -162,13 +164,15 @@ Edit the configure file and put it in the path .maintain/configure.json.
 ```
 
 ## Install & Run Client
-Before start, relayer needs to approve LnBridge to transferFrom their tokens.
+Before start, relayers need to approve LnBridge to transferFrom their tokens.
 ```bash
 $ yarn install
 
 $ yarn build
 
 $ yarn start
+
+# Enter Password to Start
 ```
 
 ## Encrypt your private key
