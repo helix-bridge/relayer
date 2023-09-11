@@ -6,6 +6,7 @@ export interface ChainConfigInfo {
   name: string;
   rpc: string;
   native: string;
+  chainId: number;
   fixedGasPrice: number;
 }
 
@@ -13,7 +14,6 @@ export interface ProviderInfo {
   fromAddress: string;
   toAddress: string;
   swapRate: number;
-  srcDecimals: number;
 }
 
 export interface BridgeConfigInfo {

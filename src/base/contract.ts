@@ -4,13 +4,12 @@ import {
   Contract,
   ContractInterface,
   BigNumber,
+  utils,
 } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
-import { lnDefaultSourceBridge } from "../abi/lnDefaultSourceBridge";
-import { lnDefaultTargetBridge } from "../abi/lnDefaultTargetBridge";
-import { lnOppositeSourceBridge } from "../abi/lnOppositeSourceBridge";
-import { lnOppositeTargetBridge } from "../abi/lnOppositeTargetBridge";
+import { lnDefaultBridge } from "../abi/lnDefaultBridge";
+import { lnOppositeBridge } from "../abi/lnOppositeBridge";
 import { GasPrice } from "../base/provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
@@ -108,6 +107,7 @@ export interface TransferParameter {
 
 export interface RelayArgs {
     transferParameter: TransferParameter;
+    remoteChainId: number;
     expectedTransferId: string;
 }
 
@@ -116,46 +116,51 @@ export interface LnProviderFeeInfo {
     liquidityFeeRate: number;
 }
 
-export class LnBridgeSourceContract extends EthereumContract {
+export class LnBridgeContract extends EthereumContract {
     private bridgeType: string;
     constructor(address: string, signer: Wallet | providers.Provider, bridgeType: string) {
       if (bridgeType === 'default') {
-        super(address, lnDefaultSourceBridge, signer);
+        super(address, lnDefaultBridge, signer);
       } else {
-        super(address, lnOppositeSourceBridge, signer);
+        super(address, lnOppositeBridge, signer);
       }
       this.bridgeType = bridgeType;
     }
 
-    async lnProviderInfo(relayer: string, sourceToken: string, targetToken: string): Promise<LnProviderFeeInfo> {
-        if (this.bridgeType === 'default') {
-            const providerKey = await this.contract.getDefaultProviderKey(relayer, sourceToken, targetToken);
-            const lnProviderInfo = await this.contract.lnProviders(providerKey);
-            return {
-                baseFee: lnProviderInfo.fee.baseFee,
-                liquidityFeeRate: lnProviderInfo.fee.liquidityFeeRate
-            };
-        } else {
-            const providerKey = await this.contract.getProviderKey(relayer, sourceToken);
-            const lnProviderInfo = await this.contract.lnProviders(providerKey);
-            return {
-                baseFee: lnProviderInfo.config.baseFee,
-                liquidityFeeRate: lnProviderInfo.config.liquidityFeeRate
-            };
-        }
+    private getProviderKey(
+        remoteChainId,
+        provider,
+        sourceToken,
+        targetToken
+    ) {
+        const encode = utils.solidityPack([
+            "uint256",
+            "address",
+            "address",
+            "address",
+        ], [remoteChainId, provider, sourceToken, targetToken]);
+        return utils.keccak256(encode);
+    }
+
+
+    async lnProviderInfo(remoteChainId: number, relayer: string, sourceToken: string, targetToken: string): Promise<LnProviderFeeInfo> {
+        const providerKey = await this.getProviderKey(remoteChainId, relayer, sourceToken, targetToken);
+        const lnProviderInfo = await this.contract.srcProviders(providerKey);
+        return {
+            baseFee: lnProviderInfo.config.baseFee,
+            liquidityFeeRate: lnProviderInfo.config.liquidityFeeRate
+        };
     }
 
     async transferIdExist(transferId: string): Promise<[boolean, any]> {
         const lockInfo = await this.contract.lockInfos(transferId);
-        if (this.bridgeType === 'default') {
-            return [lockInfo.isLocked, lockInfo];
-        } else {
-            return [lockInfo.amountWithFeeAndPenalty > 0, lockInfo];
-        }
+        return [lockInfo.timestamp > 0, lockInfo];
     }
 
     async tryUpdateFee(
-        token: string,
+        remoteChainId: number,
+        sourceToken: string,
+        targetToken: string,
         baseFee: BigNumber,
         liquidityFeeRate: number,
         gasLimit: BigNumber | null = null
@@ -164,7 +169,9 @@ export class LnBridgeSourceContract extends EthereumContract {
             return await this.staticCall(
                 "setProviderFee",
                 [
-                    token,
+                    remoteChainId,
+                    sourceToken,
+                    targetToken,
                     baseFee,
                     liquidityFeeRate,
                 ],
@@ -174,7 +181,9 @@ export class LnBridgeSourceContract extends EthereumContract {
             return await this.staticCall(
                 "updateProviderFeeAndMargin",
                 [
-                    token,
+                    remoteChainId,
+                    sourceToken,
+                    targetToken,
                     0,
                     baseFee,
                     liquidityFeeRate,
@@ -185,7 +194,9 @@ export class LnBridgeSourceContract extends EthereumContract {
     }
 
     async updateFee(
-        token: string,
+        remoteChainId: number,
+        sourceToken: string,
+        targetToken: string,
         baseFee: BigNumber,
         liquidityFeeRate: number,
         gas: GasPrice,
@@ -195,7 +206,9 @@ export class LnBridgeSourceContract extends EthereumContract {
             return await this.call(
                 "setProviderFee",
                 [
-                    token,
+                    remoteChainId,
+                    sourceToken,
+                    targetToken,
                     baseFee,
                     liquidityFeeRate,
                 ],
@@ -206,7 +219,9 @@ export class LnBridgeSourceContract extends EthereumContract {
             return await this.call(
                 "updateProviderFeeAndMargin",
                 [
-                    token,
+                    remoteChainId,
+                    sourceToken,
+                    targetToken,
                     0,
                     baseFee,
                     liquidityFeeRate,
@@ -216,89 +231,79 @@ export class LnBridgeSourceContract extends EthereumContract {
             );
         }
     }
-}
 
-export class LnBridgeTargetContract extends EthereumContract {
-  private bridgeType: string;
-  constructor(address: string, signer: Wallet | providers.Provider, bridgeType: string) {
-    if (bridgeType === 'default') {
-      super(address, lnDefaultTargetBridge, signer);
-    } else {
-      super(address, lnOppositeTargetBridge, signer);
+    async transferHasFilled(transferId: string): Promise<boolean> {
+        const fillInfo = await this.contract.fillTransfers(transferId);
+        if (this.bridgeType === 'default') {
+            return fillInfo.timestamp > 0;
+        } else {
+            return fillInfo != zeroTransferId;
+        }
     }
-    this.bridgeType = bridgeType;
-  }
 
-  async transferHasFilled(transferId: string): Promise<boolean> {
-      const fillInfo = await this.contract.fillTransfers(transferId);
-      if (this.bridgeType === 'default') {
-          return fillInfo.timestamp > 0;
-      } else {
-          return fillInfo != zeroTransferId;
-      }
-  }
-
-  async fillTransfers(transferId: string): Promise<any> {
-    return await this.contract.fillTransfers(transferId);
-  }
-
-  async tryRelay(
-    args: RelayArgs,
-    gasLimit: BigNumber | null = null
-  ): Promise<string> | null {
-    var value = null;
-    const parameter = args.transferParameter;
-    if (parameter.targetToken === zeroAddress) {
-      value = parameter.amount;
+    async fillTransfers(transferId: string): Promise<any> {
+        return await this.contract.fillTransfers(transferId);
     }
-    return await this.staticCall(
-      "transferAndReleaseMargin",
-      [  
-        [
-          parameter.previousTransferId,
-          parameter.relayer,
-          parameter.sourceToken,
-          parameter.targetToken,
-          parameter.amount,
-          parameter.timestamp,
-          parameter.receiver,
-        ],
-        args.expectedTransferId,
-      ],
-      value,
-      gasLimit
-    );
-  }
 
-  async relay(
-    args: RelayArgs,
-    gas: GasPrice,
-    nonce: number | null = null,
-    gasLimit: BigNumber | null = null
-  ): Promise<TransactionResponse> {
-    var value = null;
-    const parameter = args.transferParameter;
-    if (parameter.targetToken === zeroAddress) {
-      value = parameter.amount;
+    async tryRelay(
+        args: RelayArgs,
+        gasLimit: BigNumber | null = null
+    ): Promise<string> | null {
+        var value = null;
+        const parameter = args.transferParameter;
+        if (parameter.targetToken === zeroAddress) {
+            value = parameter.amount;
+        }
+        return await this.staticCall(
+            "transferAndReleaseMargin",
+            [  
+                [
+                    parameter.previousTransferId,
+                    parameter.relayer,
+                    parameter.sourceToken,
+                    parameter.targetToken,
+                    parameter.amount,
+                    parameter.timestamp,
+                    parameter.receiver,
+                ],
+                args.remoteChainId,
+                args.expectedTransferId,
+            ],
+            value,
+            gasLimit
+        );
     }
-    return await this.call(
-      "transferAndReleaseMargin",
-      [
-        [
-          parameter.previousTransferId,
-          parameter.relayer,
-          parameter.sourceToken,
-          parameter.targetToken,
-          parameter.amount,
-          parameter.timestamp,
-          parameter.receiver,
-        ],
-        args.expectedTransferId,
-      ],
-      gas,
-      value,
-      nonce,
-      gasLimit
-    );
-  }
+
+    async relay(
+        args: RelayArgs,
+        gas: GasPrice,
+        nonce: number | null = null,
+            gasLimit: BigNumber | null = null
+    ): Promise<TransactionResponse> {
+        var value = null;
+        const parameter = args.transferParameter;
+        if (parameter.targetToken === zeroAddress) {
+            value = parameter.amount;
+        }
+        return await this.call(
+            "transferAndReleaseMargin",
+            [
+                [
+                    parameter.previousTransferId,
+                    parameter.relayer,
+                    parameter.sourceToken,
+                    parameter.targetToken,
+                    parameter.amount,
+                    parameter.timestamp,
+                    parameter.receiver,
+                ],
+                args.remoteChainId,
+                args.expectedTransferId,
+            ],
+            gas,
+            value,
+            nonce,
+            gasLimit
+        );
+    }
 }

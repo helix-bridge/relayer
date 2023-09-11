@@ -4,8 +4,7 @@ import axios from "axios";
 import { last } from "lodash";
 import {
     Erc20Contract,
-    LnBridgeTargetContract,
-    LnBridgeSourceContract,
+    LnBridgeContract,
     zeroTransferId,
 } from "../base/contract";
 import { EthereumConnectedWallet } from "../base/wallet";
@@ -21,6 +20,7 @@ export interface HistoryRecord {
   recipient: string;
   sendAmount: string;
   fromChain: string;
+  toChain: string;
   reason: string;
   fee: string;
   requestTxHash: string;
@@ -78,7 +78,7 @@ export class DataworkerService implements OnModuleInit {
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
                 order: "messageNonce_asc"
-            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash, confirmedBlocks}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -153,8 +153,8 @@ export class DataworkerService implements OnModuleInit {
   async checkValid(
     url: string,
     record: HistoryRecord,
-    fromBridge: LnBridgeSourceContract,
-    toBridge: LnBridgeTargetContract,
+    fromBridge: LnBridgeContract,
+    toBridge: LnBridgeContract,
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
     reorgThreshold: number
@@ -186,7 +186,7 @@ export class DataworkerService implements OnModuleInit {
     const transferFilled = await toBridge.transferHasFilled(transferId);
     if (transferFilled) {
       this.logger.log(
-        `tx has been relayed, waiting for sync, id ${transferId}`
+        `[${record.fromChain}>>${record.toChain}]tx has been relayed, waiting for sync, id ${transferId}, txHash ${record.requestTxHash}`
       );
       return {
         gasPrice: null,
