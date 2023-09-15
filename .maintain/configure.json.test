@@ -110,7 +110,7 @@
             "maxProfit": 0.01,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "opposite",
+            "direction": "default",
             "providers": [
                 {
                     "fromAddress": "0x0258Eb547bFEd540ed17843658C018569fe1E328",
