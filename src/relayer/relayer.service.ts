@@ -370,7 +370,7 @@ export class RelayerService implements OnModuleInit {
             relayer: lnProvider.relayer,
             sourceToken: lnProvider.fromAddress,
             targetToken: lnProvider.toAddress,
-            amount: new EtherBigNumber(record.sendAmount).Number,
+            amount: new EtherBigNumber(record.recvAmount).Number,
             timestamp: new EtherBigNumber(record.startTime).Number,
             receiver: record.recipient,
         },

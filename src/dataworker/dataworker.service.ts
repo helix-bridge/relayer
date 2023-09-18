@@ -18,7 +18,7 @@ export interface HistoryRecord {
   recvToken: string;
   sender: string;
   recipient: string;
-  sendAmount: string;
+  recvAmount: string;
   fromChain: string;
   toChain: string;
   reason: string;
@@ -78,7 +78,7 @@ export class DataworkerService implements OnModuleInit {
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
                 order: "messageNonce_asc"
-            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
