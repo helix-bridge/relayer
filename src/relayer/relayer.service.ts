@@ -258,6 +258,17 @@ export class RelayerService implements OnModuleInit {
     const fromBridgeContract = bridge.fromBridge.bridge;
     const toBridgeContract = bridge.toBridge.bridge;
 
+    // send heartbeat first
+    for (const lnProvider of bridge.lnProviders) {
+        await this.dataworkerService.sendHeartBeat(
+            this.configureService.config.indexer,
+            fromChainInfo.chainId,
+            toChainInfo.chainId,
+            lnProvider.relayer,
+            lnProvider.fromAddress,
+        );
+    }
+
     let transactionInfo: TransactionInfo | null = null;
     let chainInfo = this.chainInfos.get(toChainInfo.chainName);
 

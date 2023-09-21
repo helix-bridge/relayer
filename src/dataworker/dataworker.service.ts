@@ -150,6 +150,20 @@ export class DataworkerService implements OnModuleInit {
     });
   }
 
+  async sendHeartBeat(
+    url: string,
+    fromChainId: number,
+    toChainId: number,
+    relayer: string,
+    tokenAddress: string
+  ) {
+    const mutation = `mutation {lnBridgeHeartBeat( fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
+    await axios.post(url, {
+        query: mutation,
+        variables: null,
+    });
+  }
+
   async checkValid(
     url: string,
     record: HistoryRecord,
