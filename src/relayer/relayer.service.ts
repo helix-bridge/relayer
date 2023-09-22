@@ -51,6 +51,7 @@ export class LnBridge {
   reorgThreshold: number;
   direction: string;
   lnProviders: LnProviderInfo[];
+  heartBeatTime: number;
 }
 
 @Injectable()
@@ -60,12 +61,11 @@ export class RelayerService implements OnModuleInit {
   private readonly waitingPendingTime = 12; // 2 minute
   private readonly scheduleAdjustFeeInterval = 8640; // 1 day
   private readonly maxWaitingPendingTimes = 180;
-  private readonly heartBeatInterval = 30; // 5 minute
+  private readonly heartBeatInterval = 6; // 1 minute
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
   private lastAdjustTime: number;
-  private lastheartBeatTime: number;
 
   constructor(
     protected taskService: TasksService,
@@ -79,7 +79,6 @@ export class RelayerService implements OnModuleInit {
     this.initConfigure();
     this.store = new Store(this.configureService.storePath);
     this.lastAdjustTime = this.scheduleAdjustFeeInterval;
-    this.lastheartBeatTime = this.heartBeatInterval;
     this.chainInfos.forEach((value, key) => {
       this.taskService.addScheduleTask(
         `${key}-lnbridge-relayer`,
@@ -190,6 +189,7 @@ export class RelayerService implements OnModuleInit {
           fromBridge: fromConnectInfo,
           toBridge: toConnectInfo,
           lnProviders: lnProviders,
+          heartBeatTime: this.heartBeatInterval,
         };
       })
       .filter((item) => item !== null);
@@ -262,9 +262,9 @@ export class RelayerService implements OnModuleInit {
     const toBridgeContract = bridge.toBridge.bridge;
 
     // send heartbeat first
-    this.lastheartBeatTime += 1;
-    if (this.lastheartBeatTime > this.heartBeatInterval) {
-        this.lastheartBeatTime = 0;
+    bridge.heartBeatTime += 1;
+    if (bridge.heartBeatTime > this.heartBeatInterval) {
+        bridge.heartBeatTime = 0;
         for (const lnProvider of bridge.lnProviders) {
             await this.dataworkerService.sendHeartBeat(
                 this.configureService.config.indexer,
