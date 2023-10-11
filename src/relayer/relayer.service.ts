@@ -5,6 +5,7 @@ import {
   Erc20Contract,
   RelayArgs,
   LnBridgeContract,
+  zeroAddress,
 } from "../base/contract";
 import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
@@ -203,7 +204,10 @@ export class RelayerService implements OnModuleInit {
       toChainInfo: ChainInfo,
       lnProviderInfo: LnProviderInfo,
   ) {
-      const srcDecimals = await lnProviderInfo.fromToken.decimals();
+      let srcDecimals = 18;
+      if (lnProviderInfo.fromAddress !== zeroAddress) {
+          srcDecimals = await lnProviderInfo.fromToken.decimals();
+      }
       // native fee decimals = 10**18
       function nativeFeeToToken(fee: BigNumber): BigNumber {
           return fee.mul(lnProviderInfo.swapRate).mul(new Any(1, srcDecimals).Number).div(new Ether(1).Number);
