@@ -203,6 +203,7 @@ If the execution of the target chain fails, call `retryRemoteRefund` to retry.
 
 First call `submissionWithdrawFee` on the target chain ethereum to get the submissionFee fee.
 Then call `requestWithdrawMargin` to send a Withdraw request to the source chain, the cost is `submissionFee + maxGas * gasPriceBid`, and the excess cost is refunded to the sending account.
+
 ### ethereum -> arbitrum (default)
 1. Slash
 
@@ -265,4 +266,52 @@ If the execution of the target chain fails and needs to be retried, use the `ret
 The `estimateWithdrawFee` interface is used on the source chain to estimate the cost, and the `requestWithdrawMargin` interface is called to send the request to the target chain.
 If the target chain fails and needs to be retried, use the `retryPayload` interface of the layerzero endpoint contract to do so.
 It is possible that the target chain succeeds, but the result fails, so if you want to retry, you can only retry in the source chain.
+
+## Message Channel
+* arbitrum L2
+
+```
+// 1. call function fee() to get submissionCost[message channel]
+function fee(
+    uint256 _callSize,
+    uint256 _l1GasPrice,
+    uint256 _l2GasPrice,
+    uint256 _l2GasLimit,
+    uint256 _percentIncrease
+) external view returns(uint256, uint256);
+// 2. call encodeParams to get _extParams[message channel]
+function encodeParams(
+   uint256 _maxSubmissionCost,
+   uint256 _l2GasPrice,
+   uint256 _l2GasLimit,
+   address _refunder
+);
+```
+
+* linea L2
+
+
+```
+// 1. set fee to be zero
+// 2. call claimMessage on target chain
+```
+
+* Layerzero
+
+```
+// 1. call function fee to get bridge fee
+function fee(
+    uint256 _remoteChainId,
+    bytes memory _message
+)
+// 2. params is the refund address
+```
+
+* axelar
+
+```
+// 1. estimate bridge fee, more then required, example 0.001 eth on goerli
+// 2. params is the refund address
+// 3. on target chain, the gas fee will be refund
+```
 
