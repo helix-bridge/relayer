@@ -11,6 +11,13 @@ export class EtherBigNumber {
   }
 }
 
+export class Any extends EtherBigNumber {
+  constructor(value: string | number, pow: number) {
+    const bignumber = ethers.utils.parseUnits(value.toString(), pow);
+    super(bignumber);
+  }
+}
+
 export class Ether extends EtherBigNumber {
   constructor(value: string | number | BigNumber) {
     const bignumber = ethers.utils.parseEther(value.toString());

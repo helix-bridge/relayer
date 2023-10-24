@@ -26,4 +26,8 @@ export class EthereumConnectedWallet {
   constructor(privateKey: string, provider: EthereumProvider) {
     this.wallet = new Wallet(privateKey, provider.provider);
   }
+
+  get address() {
+    return this.wallet.address;
+  }
 }

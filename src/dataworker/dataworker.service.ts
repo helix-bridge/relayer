@@ -2,38 +2,49 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { BigNumber } from "ethers";
 import axios from "axios";
 import { last } from "lodash";
-import { Erc20Contract, LpSub2SubBridgeContract } from "../base/contract";
+import {
+    Erc20Contract,
+    LnBridgeContract,
+    zeroTransferId,
+} from "../base/contract";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { EthereumProvider, GasPrice } from "../base/provider";
 import { Ether, GWei, EtherBigNumber } from "../base/bignumber";
-import { PriceOracle } from "../base/oracle";
 
 export interface HistoryRecord {
   id: string;
-  messageNonce: string;
+  startTime: number;
   sendTokenAddress: string;
-  recvTokenAddress: string;
   recvToken: string;
   sender: string;
   recipient: string;
-  sendAmount: string;
+  recvAmount: string;
   fromChain: string;
+  toChain: string;
   reason: string;
   fee: string;
   requestTxHash: string;
+  confirmedBlocks: string;
 }
 
-export interface ProfitableInfo {
+export interface ValidInfo {
   gasPrice: GasPrice | null;
-  result: boolean;
+  feeUsed: BigNumber | null;
+  isValid: boolean;
+}
+
+export interface TransferRecord {
+  lastTransferId: string;
+  record: HistoryRecord;
 }
 
 @Injectable()
 export class DataworkerService implements OnModuleInit {
   private readonly logger = new Logger("dataworker");
   private readonly statusPending = 0;
-  private readonly finalizeBlocks = 8;
-  private readonly zeroAddress = "0x0000000000000000000000000000000000000000";
+  private readonly statusSuccess = 3;
+  private readonly statusRefund = 4;
+  private readonly pendingToConfirmRefund = 5;
   private readonly relayGasLimit = 100000;
 
   async onModuleInit() {
@@ -51,73 +62,60 @@ export class DataworkerService implements OnModuleInit {
   // query record from apollo
   async queryRecordNeedRelay(
     url: string,
-    fromChains: string[],
+    fromChain: string,
     toChain: string,
-    recvTokenAddress: string,
-    row: number,
-    page: number
-  ): Promise<[HistoryRecord]> {
-    const fromChain = fromChains.map((item) => `${item}`).join(",");
-    const query = `query {
-            historyRecords(
-                fromChains: [\"${fromChain}\"],
-                toChains: [\"${toChain}\"],
-                bridges: [\"lpbridge-${fromChain}\"],
+    relayer: string,
+    token: string,
+    direction: string,
+  ): Promise<TransferRecord | null> {
+    // query first pending tx
+    let query = `{
+            firstHistoryRecord(
+                fromChain: \"${fromChain}\",
+                toChain: \"${toChain}\",
+                bridge: \"lnbridgev20-${direction}\",
                 results: [${this.statusPending}],
-                recvTokenAddress: \"${recvTokenAddress}\",
-                row: ${row},
-                page: ${page},
-                order: "fee"
-            ) {records {id, messageNonce, sendTokenAddress, recvTokenAddress, recvToken, sender, recipient, sendAmount, fromChain, reason, fee, requestTxHash}}}`;
-    const records = await axios
+                relayer: \"${relayer.toLowerCase()}\",
+                token: \"${token.toLowerCase()}\",
+                order: "messageNonce_asc"
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks}}`;
+    const pendingRecord = await axios
+      .post(url, {
+        query,
+        variables: {},
+        operationName: null,
+      })
+      .then((res) => res.data.data.firstHistoryRecord);
+    if (pendingRecord === null) {
+      return null
+    }
+
+    // query the first successed record
+    query = `query {
+            firstHistoryRecord(
+                fromChain: \"${fromChain}\",
+                toChain: \"${toChain}\",
+                bridge: \"lnbridgev20-${direction}\",
+                results: [${this.statusSuccess}, ${this.statusRefund}, ${this.pendingToConfirmRefund}],
+                relayer: \"${relayer.toLowerCase()}\",
+                token: \"${token.toLowerCase()}\",
+                order: "messageNonce_desc"
+            ) {id}}`;
+    const lastRecord = await axios
       .post(url, {
         query,
         variables: null,
       })
-      .then((res) => res.data.data.historyRecords);
-    return records.records;
+      .then((res) => res.data.data.firstHistoryRecord);
+
+    const lastTransferId = lastRecord === null ? zeroTransferId : last(lastRecord.id.split('-'));
+    return {
+      lastTransferId: lastTransferId,
+      record: pendingRecord,
+    }
   }
 
-  async checkProfitable(
-    record: HistoryRecord,
-    toBridge: LpSub2SubBridgeContract,
-    minProfit: Ether,
-    fromProvider: EthereumProvider,
-    toProvider: EthereumProvider,
-    priceOracle: PriceOracle.TokenPriceOracle,
-    userFeeToken: string,
-    relayerGasFeeToken: string
-  ): Promise<ProfitableInfo> {
-    // 1. tx must be finalized
-    const transactionInfo = await fromProvider.checkPendingTransaction(
-      record.requestTxHash
-    );
-    if (
-      !transactionInfo ||
-      transactionInfo.confirmedBlock < this.finalizeBlocks
-    ) {
-      this.logger.log(
-        `request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`
-      );
-      return {
-        gasPrice: null,
-        result: false,
-      };
-    }
-    // 2. tx is not relayed
-    const transferId = this.getTransferId(record.id);
-    const relayer = await toBridge.issuedMessages(transferId);
-    if (relayer != this.zeroAddress) {
-      this.logger.log(
-        `tx has been relayed, waiting for sync, id ${transferId}`
-      );
-      return {
-        gasPrice: null,
-        result: false,
-      };
-    }
-    // 3. fee satisfy profit
-    let gasPrice = await toProvider.feeData();
+  relayFee(gasPrice: GasPrice): BigNumber {
     let feeUsed: BigNumber;
     if (gasPrice.isEip1559) {
       let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.1).Number;
@@ -136,23 +134,104 @@ export class DataworkerService implements OnModuleInit {
       gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.1).Number;
       feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
     }
-    const swapOut = await priceOracle.simulateSwap(
-      userFeeToken,
-      relayerGasFeeToken,
-      new EtherBigNumber(record.fee).Number
+    return feeUsed;
+  }
+
+  async updateConfirmedBlock(
+    url: string,
+    id: string,
+    block: number,
+    reorgThreshold: number
+  ) {
+    const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${block}/${reorgThreshold}\")}`;
+    await axios.post(url, {
+        query: mutation,
+        variables: null,
+    });
+  }
+
+  async sendHeartBeat(
+    url: string,
+    fromChainId: number,
+    toChainId: number,
+    relayer: string,
+    tokenAddress: string
+  ) {
+    const mutation = `mutation {lnBridgeHeartBeat( fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
+    await axios.post(url, {
+        query: mutation,
+        variables: null,
+    });
+  }
+
+  async checkValid(
+    url: string,
+    record: HistoryRecord,
+    fromBridge: LnBridgeContract,
+    toBridge: LnBridgeContract,
+    fromProvider: EthereumProvider,
+    toProvider: EthereumProvider,
+    reorgThreshold: number
+  ): Promise<ValidInfo> {
+    // 1. tx must be finalized
+    const transactionInfo = await fromProvider.checkPendingTransaction(
+      record.requestTxHash
     );
-    const thePrice = feeUsed.div(this.relayGasLimit).div(1e9);
-    if (swapOut.lt(feeUsed.add(minProfit.Number))) {
-      this.logger.log(`fee is not enough, swapOut ${swapOut}, feeUsed ${feeUsed}, gasPrice ${thePrice}`);
+    if (
+      !transactionInfo ||
+      transactionInfo.confirmedBlock < reorgThreshold
+    ) {
+      this.logger.log(
+        `request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`
+      );
+      // update confirmed block
+      const confirmedBlock = record.confirmedBlocks === '' ? 0 : Number(record.confirmedBlocks.split('/')[0]);
+      if (transactionInfo.confirmedBlock > confirmedBlock) {
+          await this.updateConfirmedBlock(url, record.id, transactionInfo.confirmedBlock, reorgThreshold);
+      }
       return {
-        gasPrice,
-        result: false,
+        gasPrice: null,
+        feeUsed: null,
+        isValid: false,
       };
     }
-    this.logger.log(`fee check passed, swapOut ${swapOut}, feeUsed ${feeUsed}, gasPrice ${thePrice}`);
+    // 2. tx is not relayed
+    const transferId = this.getTransferId(record.id);
+    const transferFilled = await toBridge.transferHasFilled(transferId);
+    if (transferFilled) {
+      this.logger.log(
+        `[${record.fromChain}>>${record.toChain}]tx has been relayed, waiting for sync, id ${transferId}, txHash ${record.requestTxHash}`
+      );
+      return {
+        gasPrice: null,
+        feeUsed: null,
+        isValid: false,
+      };
+    }
+    // 3. the lock info verify
+    const existInfo = await fromBridge.transferIdExist(transferId);
+    if (!existInfo[0]) {
+        this.logger.log(
+            `lock info not exist, maybe reorged, id ${transferId}`
+        );
+        return {
+            gasPrice: null,
+            feeUsed: null,
+            isValid: false,
+        };
+    } else {
+        this.logger.log(
+            `transfer locked success, info ${existInfo[1]}`
+        );
+    }
+    // 4. get current fee
+    let gasPrice = await toProvider.feeData(1);
+    let feeUsed = this.relayFee(gasPrice);
+    this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
     return {
       gasPrice,
-      result: true,
+      feeUsed,
+      isValid: true,
     };
   }
 }

@@ -6,31 +6,28 @@ export interface ChainConfigInfo {
   name: string;
   rpc: string;
   native: string;
+  chainId: number;
+  fixedGasPrice: number;
 }
 
-export interface TokenConfigInfo {
-  chainName: string;
+export interface ProviderInfo {
   fromAddress: string;
-  feeTokenAddress: string;
-}
-
-export interface ChainWithTokenInfo {
   toAddress: string;
-  fromAddresses: TokenConfigInfo[];
+  swapRate: number;
 }
 
 export interface BridgeConfigInfo {
-  privateKey: string;
+  fromChain: string;
   toChain: string;
-  minProfit: string;
-  bridgeAddress: string;
-  tokens: ChainWithTokenInfo[];
-  priceOracle: {
-    name: string;
-    chainName: string;
-    relayerGasFeeToken: string;
-    configure: any;
-  };
+  sourceBridgeAddress: string;
+  targetBridgeAddress: string;
+  encryptedPrivateKey: string;
+  minProfit: number;
+  maxProfit: number;
+  feeLimit: number;
+  reorgThreshold: number;
+  direction: string;
+  providers: ProviderInfo[];
 }
 
 export interface ConfigInfo {

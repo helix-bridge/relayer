@@ -1,0 +1,588 @@
+{
+    "indexer": "https://apollo-test.helixbridge.app/graphql",
+    "relayGasLimit": 600000,
+    "chains": [
+        {
+            "name": "arbitrum-goerli",
+            "rpc": "https://goerli-rollup.arbitrum.io/rpc",
+            "native": "ETH",
+            "chainId": 421613
+        },
+        {
+            "name": "mantle-goerli",
+            "rpc": "https://rpc.testnet.mantle.xyz",
+            "native": "MNT",
+            "chainId": 5001
+        },
+        {
+            "name": "goerli",
+            "rpc": "https://rpc.ankr.com/eth_goerli",
+            "native": "ETH",
+            "chainId": 5
+        },
+        {
+            "name": "linea-goerli",
+            "rpc": "https://rpc.goerli.linea.build",
+            "native": "ETH",
+            "chainId": 59140
+        },
+        {
+            "name": "zksync-goerli",
+            "rpc": "https://zksync2-testnet.zksync.dev",
+            "native": "ETH",
+            "chainId": 280
+        }
+    ],
+    "bridges": [
+        {
+            "fromChain": "arbitrum-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0x4C538EfA6e3f9Dfb939AA4F0B224577DA665923a",
+            "targetBridgeAddress": "0x4C538EfA6e3f9Dfb939AA4F0B224577DA665923a",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 100,
+            "direction": "opposite",
+            "providers": [
+                {
+                    "fromAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "toAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "toAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0,
+            "maxProfit": 1,
+            "feeLimit": 0.01,
+            "reorgThreshold": 10,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "toAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "toAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "mantle-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0,
+            "maxProfit": 1,
+            "feeLimit": 0.01,
+            "reorgThreshold": 10,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "toAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "toAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xc1dC2d65A2243c22344E725677A3E3BEBD26E604",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "mantle-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "toAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "toAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0xc1dC2d65A2243c22344E725677A3E3BEBD26E604",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0,
+            "maxProfit": 1,
+            "feeLimit": 0.01,
+            "reorgThreshold": 10,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "toAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "toAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0x4C538EfA6e3f9Dfb939AA4F0B224577DA665923a",
+            "targetBridgeAddress": "0x4C538EfA6e3f9Dfb939AA4F0B224577DA665923a",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "opposite",
+            "providers": [
+                {
+                    "fromAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "toAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "toAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "toAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "toAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "arbitrum-goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "toAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "toAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "arbitrum-goerli",
+            "toChain": "mantle-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "toAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "toAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "swapRate": 2000
+                }
+            ]
+        },
+        {
+            "fromChain": "mantle-goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "toAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "toAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "swapRate": 2000
+                }
+            ]
+        },
+        {
+            "fromChain": "mantle-goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "toAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "toAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "swapRate": 2000
+                }
+            ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "mantle-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "toAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "toAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "swapRate": 2000
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "linea-goerli",
+            "sourceBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "toAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "toAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "linea-goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x8f3663930211f3DE17619FEB2eeB44c9c3F44a06",
+                    "toAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xeC89AF5FF618bbF667755BE9d63C69F21F1c00C8",
+                    "toAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "arbitrum-goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "toAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "toAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "arbitrum-goerli",
+            "sourceBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "toAddress": "0x543bf1AC41485dc78039b9351563E4Dd13A288cb",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "toAddress": "0xBAD026e314a77e727dF643B02f63adA573a3757c",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "toAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "toAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "goerli",
+            "sourceBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "toAddress": "0xa39cffE89567eBfb5c306a07dfb6e5B3ba41F358",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "toAddress": "0xe9784E0d9A939dbe966b021DE3cd877284DB1B99",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0x0000000000000000000000000000000000000000",
+                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "swapRate": 1
+                }
+            ]
+        },
+        {
+            "fromChain": "mantle-goerli",
+            "toChain": "zksync-goerli",
+            "sourceBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "targetBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "toAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "toAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "swapRate": 2000
+                }
+            ]
+        },
+        {
+            "fromChain": "zksync-goerli",
+            "toChain": "mantle-goerli",
+            "sourceBridgeAddress": "0xe8d55759c32fb608fD092aB2C0ef8A1F52B254d4",
+            "targetBridgeAddress": "0x7e101911E5FB461d78FBde3992f76F3Bf8BbA829",
+            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
+            "minProfit": 0.005,
+            "maxProfit": 0.01,
+            "feeLimit": 0.01,
+            "reorgThreshold": 20,
+            "direction": "default",
+            "providers": [
+                {
+                    "fromAddress": "0xb5372ed3bb2CbA63e7908066ac10ee94d30eA839",
+                    "toAddress": "0xDb06D904AC5Bdff3b8E6Ac96AFedd3381d94CFDD",
+                    "swapRate": 2000
+                },
+                {
+                    "fromAddress": "0xAe60e005C560E869a2bad271e38e3C9D78381aFF",
+                    "toAddress": "0xD610DE267f7590D5bCCE89489ECd2C1A4AfdF76B",
+                    "swapRate": 2000
+                }
+            ]
+        }
+    ]
+}
