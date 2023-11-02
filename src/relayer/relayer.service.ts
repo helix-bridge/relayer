@@ -378,6 +378,10 @@ export class RelayerService implements OnModuleInit {
       if (!validInfo.isValid) {
         continue;
       }
+      // Special treatment for polygon chain
+      if (toChainInfo.chainName === 'polygon') {
+        validInfo.gasPrice.eip1559fee.maxPriorityFeePerGas = new GWei(35).Number
+      }
       if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
           this.logger.log(
               `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
