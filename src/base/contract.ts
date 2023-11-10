@@ -10,6 +10,7 @@ import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
 import { lnDefaultBridge } from "../abi/lnDefaultBridge";
 import { lnOppositeBridge } from "../abi/lnOppositeBridge";
+import { abiSafe } from "../abi/abiSafe";
 import { GasPrice } from "../base/provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
@@ -25,6 +26,10 @@ export class EthereumContract {
   ) {
     this.contract = new Contract(address, abi, signer);
     this.address = address;
+  }
+
+  get interface() {
+    return this.contract.interface;
   }
 
   async call(
@@ -49,11 +54,19 @@ export class EthereumContract {
     method: string,
     args: any,
     value: BigNumber | null = null,
-    gasLimit: BigNumber | null = null
+    gasLimit: BigNumber | null = null,
+    from: string | null = null
   ): Promise<string> | null {
     try {
+      var options = {};
       if (value != null) {
-        args = [...args, { value: value }];
+          options = { value: value };
+      }
+      if (from != null) {
+          options[from] = from;
+      }
+      if (value != null) {
+        args = [...args, options];
       }
       await this.contract.callStatic[method](...args);
       return null;
@@ -114,6 +127,66 @@ export interface RelayArgs {
 export interface LnProviderFeeInfo {
     baseFee: BigNumber;
     liquidityFeeRate: number;
+}
+
+export class SafeContract extends EthereumContract {
+    constructor(address: string, signer: Wallet | providers.Provider) {
+        super(address, abiSafe, signer);
+    }
+
+    async tryExecTransaction(
+        to: string, 
+        data: string,
+        signatures: string,
+        value: BigNumber | null = null
+    ): Promise<string> | null {
+        return await this.staticCall(
+            "execTransaction",
+            [  
+                to,
+                0,
+                data,
+                0,
+                0,
+                0,
+                0,
+                zeroAddress,
+                zeroAddress,
+                signatures
+            ],
+            value
+        );
+    }
+
+    async execTransaction(
+        to: string, 
+        data: string,
+        signatures: string,
+        gas: GasPrice,
+        nonce: number | null = null,
+        gasLimit: BigNumber | null = null,
+        value: BigNumber | null = null
+    ): Promise<TransactionResponse> {
+        return await this.call(
+            "execTransaction",
+            [  
+                to,
+                0,
+                data,
+                0,
+                0,
+                0,
+                0,
+                zeroAddress,
+                zeroAddress,
+                signatures
+            ],
+            gas,
+            value,
+            nonce,
+            gasLimit
+        );
+    }
 }
 
 export class LnBridgeContract extends EthereumContract {
@@ -274,11 +347,35 @@ export class LnBridgeContract extends EthereumContract {
         );
     }
 
+    relayRawData(args: RelayArgs): string {
+        var value = null;
+        const parameter = args.transferParameter;
+        if (parameter.targetToken === zeroAddress) {
+            value = parameter.amount;
+        }
+        return this.interface.encodeFunctionData(
+            'transferAndReleaseMargin',
+            [  
+                [
+                    parameter.previousTransferId,
+                    parameter.relayer,
+                    parameter.sourceToken,
+                    parameter.targetToken,
+                    parameter.amount,
+                    parameter.timestamp,
+                    parameter.receiver,
+                ],
+                args.remoteChainId,
+                args.expectedTransferId,
+            ],
+        )
+    }
+
     async relay(
         args: RelayArgs,
         gas: GasPrice,
         nonce: number | null = null,
-            gasLimit: BigNumber | null = null
+        gasLimit: BigNumber | null = null
     ): Promise<TransactionResponse> {
         var value = null;
         const parameter = args.transferParameter;
