@@ -159,7 +159,7 @@ export class RelayerService implements OnModuleInit {
           config.direction
         );
         var toSafeWallet: SafeWallet;
-        if (config.safeWalletRole !== '') {
+        if (config.safeWalletRole !== undefined) {
             toSafeWallet = new SafeWallet(config.safeWalletAddress, config.safeWalletUrl, toWallet.wallet);
         }
         //toSafeWallet.connect();
