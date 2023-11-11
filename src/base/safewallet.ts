@@ -1,4 +1,4 @@
-import { SafeTransactionDataPartial, SafeMultisigTransactionResponse } from '@safe-global/safe-core-sdk-types';
+import { SafeTransactionDataPartial, SafeMultisigTransactionResponse, SafeMultisigConfirmationResponse } from '@safe-global/safe-core-sdk-types';
 import Safe, {EthersAdapter} from '@safe-global/protocol-kit';
 import SafeApiKit from '@safe-global/api-kit'
 import { ethers } from 'ethers';
@@ -14,7 +14,7 @@ export interface TransactionPropose {
     readyExecute: boolean;
     safeTxHash: string;
     txData: string;
-    signatures: string;
+    signatures: string | null;
 }
 
 export class SafeWallet {
@@ -46,6 +46,27 @@ export class SafeWallet {
         return !!confirmation
     }
 
+    private concatSignatures(tx: SafeMultisigTransactionResponse): string | null {
+        if (tx.confirmations.length < tx.confirmationsRequired) {
+            return null;
+        }
+        // must sort by address
+        tx.confirmations.sort((left: SafeMultisigConfirmationResponse, right: SafeMultisigConfirmationResponse) =>{
+            const leftAddress = left.owner.toUpperCase();
+            const rightAddress = right.owner.toUpperCase();
+            if (leftAddress < rightAddress) {
+                return -1;
+            } else {
+                return 1;
+            }
+        });
+        var signatures = "0x";
+        for (const confirmation of tx.confirmations) {
+            signatures += confirmation.signature.substring(2);
+        }
+        return signatures;
+    }
+
     async proposeTransaction(address: string, data: string, value: string = '0'): Promise<TransactionPropose> {
         this.safeSdk ?? await this.connect();
         const safeTransactionData: SafeTransactionDataPartial = {
@@ -57,19 +78,13 @@ export class SafeWallet {
         const safeTxHash = await this.safeSdk.getTransactionHash(tx);
         try {
             const transaction = await this.safeService.getTransaction(safeTxHash);
-            var signatures = '0x';
-            const signatureEnough = transaction.confirmations.length >= transaction.confirmationsRequired;
-            if (signatureEnough) {
-                for (const confirmation of transaction.confirmations) {
-                    signatures += confirmation.signature.substring(2);
-                }
-            }
+            var signatures = this.concatSignatures(transaction);
             const hasBeenSigned = this.isTransactionSignedByAddress(transaction);
-            if (hasBeenSigned || signatureEnough) {
+            if (hasBeenSigned || signatures !== null) {
                 //const isValidTx = await this.safeSdk.isValidTransaction(transaction);
                 return {
                     //readyExecute: signatureEnough && isValidTx,
-                    readyExecute: signatureEnough,
+                    readyExecute: signatures !== null,
                     safeTxHash: safeTxHash,
                     txData: transaction.data,
                     to: address,
