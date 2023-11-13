@@ -67,7 +67,11 @@ export class SafeWallet {
         return signatures;
     }
 
-    async proposeTransaction(address: string, data: string, value: string = '0'): Promise<TransactionPropose> {
+    async proposeTransaction(
+        address: string,
+        data: string,
+        isProposor: boolean,
+        value: string = '0'): Promise<TransactionPropose | null> {
         this.safeSdk ?? await this.connect();
         const safeTransactionData: SafeTransactionDataPartial = {
             to: address,
@@ -91,7 +95,11 @@ export class SafeWallet {
                     signatures,
                 }
             }
-        } catch(e) {}
+        } catch(e) {
+            if (!isProposor) {
+                return null;
+            }
+        }
         const senderSignature = await this.safeSdk.signTransactionHash(safeTxHash)
         const proposeTransactionProps = {
             safeAddress: this.address,

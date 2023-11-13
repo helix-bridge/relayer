@@ -433,10 +433,11 @@ export class RelayerService implements OnModuleInit {
         this.configureService.config.relayGasLimit
       ).Number;
 
-      if (bridge.safeWalletRole === 'signer' || bridge.safeWalletRole === 'executor') {
+      const isExecutor = (bridge.safeWalletRole === 'executor');
+      if (bridge.safeWalletRole === 'signer' || isExecutor) {
         const relayData = toBridgeContract.relayRawData(args);
-        const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(toBridgeContract.address, relayData);
-        if (txInfo.readyExecute && bridge.safeWalletRole === 'executor') {
+        const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(toBridgeContract.address, relayData, isExecutor);
+        if (txInfo !== null && txInfo.readyExecute && isExecutor) {
           const safeContract = new SafeContract(bridge.toBridge.safeWallet.address, bridge.toBridge.safeWallet.signer);
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
