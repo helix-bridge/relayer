@@ -430,7 +430,7 @@ export class RelayerService implements OnModuleInit {
         expectedTransferId: last(record.id.split('-')),
       }
       const configuredGasLimit = this.configureService.config.relayGasLimit;
-      const relayGasLimit = configuredGasLimit === undefined ? new EtherBigNumber(configuredGasLimit).Number : null;
+      const relayGasLimit = configuredGasLimit !== undefined ? new EtherBigNumber(configuredGasLimit).Number : null;
 
       const isExecutor = (bridge.safeWalletRole === 'executor');
       if (bridge.safeWalletRole === 'signer' || isExecutor) {
