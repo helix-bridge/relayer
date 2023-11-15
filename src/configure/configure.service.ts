@@ -22,6 +22,12 @@ export interface BridgeConfigInfo {
   sourceBridgeAddress: string;
   targetBridgeAddress: string;
   encryptedPrivateKey: string;
+  // signer: signer the transaction
+  // executer: signer & execute transaction
+  // undefined: not safe wallet
+  safeWalletAddress: string | undefined;
+  safeWalletUrl: string | undefined;
+  safeWalletRole: string | undefined;
   minProfit: number;
   maxProfit: number;
   feeLimit: number;
