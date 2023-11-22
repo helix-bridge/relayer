@@ -118,7 +118,7 @@ export class DataworkerService implements OnModuleInit {
   relayFee(gasPrice: GasPrice): BigNumber {
     let feeUsed: BigNumber;
     if (gasPrice.isEip1559) {
-      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.1).Number;
+      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.01).Number;
       const maxPriorityFeePerGas = new GWei(
           gasPrice.eip1559fee.maxPriorityFeePerGas
       ).mul(1.1).Number
@@ -131,7 +131,7 @@ export class DataworkerService implements OnModuleInit {
       };
       feeUsed = gasPrice.eip1559fee.maxFeePerGas.mul(this.relayGasLimit);
     } else {
-      gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.1).Number;
+      gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.01).Number;
       feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
     }
     return feeUsed;
