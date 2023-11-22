@@ -171,7 +171,8 @@ export class DataworkerService implements OnModuleInit {
     toBridge: LnBridgeContract,
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
-    reorgThreshold: number
+    reorgThreshold: number,
+    notSupport1559: boolean,
   ): Promise<ValidInfo> {
     // 1. tx must be finalized
     const transactionInfo = await fromProvider.checkPendingTransaction(
@@ -225,7 +226,7 @@ export class DataworkerService implements OnModuleInit {
         );
     }
     // 4. get current fee
-    let gasPrice = await toProvider.feeData(1);
+    let gasPrice = await toProvider.feeData(1, notSupport1559);
     let feeUsed = this.relayFee(gasPrice);
     this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
     return {

@@ -31,6 +31,7 @@ export class ChainInfo {
   chainId: number;
   provider: EthereumProvider;
   fixedGasPrice: number;
+  notSupport1559: boolean;
 }
 
 export class BridgeConnectInfo {
@@ -130,6 +131,7 @@ export class RelayerService implements OnModuleInit {
             chainId: config.chainId,
             provider: new EthereumProvider(config.rpc),
             fixedGasPrice: config.fixedGasPrice,
+            notSupport1559: config.notSupport1559,
             txHashCache: '',
             checkTimes: 0,
           },
@@ -258,7 +260,7 @@ export class RelayerService implements OnModuleInit {
                       eip1559fee: null,
                   };
               } else {
-                  gasPrice = await fromChainInfo.provider.feeData(1);
+                  gasPrice = await fromChainInfo.provider.feeData(1, fromChainInfo.notSupport1559);
               }
               await sourceContract.updateFee(
                   fromChainInfo.chainId,
@@ -360,7 +362,7 @@ export class RelayerService implements OnModuleInit {
     for (const lnProvider of bridge.lnProviders) {
       // adjust fee
       if (needAdjustFee) {
-        let gasPrice = await toChainInfo.provider.feeData(1);
+        let gasPrice = await toChainInfo.provider.feeData(1, toChainInfo.notSupport1559);
         const feeUsed = this.dataworkerService.relayFee(gasPrice);
         await this.adjustFee(
           bridge,
@@ -397,7 +399,8 @@ export class RelayerService implements OnModuleInit {
         toBridgeContract,
         fromChainInfo.provider,
         toChainInfo.provider,
-        bridge.reorgThreshold
+        bridge.reorgThreshold,
+        toChainInfo.notSupport1559,
       );
       
       if (!validInfo.isValid) {

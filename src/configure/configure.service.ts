@@ -8,6 +8,7 @@ export interface ChainConfigInfo {
   native: string;
   chainId: number;
   fixedGasPrice: number;
+  notSupport1559: boolean;
 }
 
 export interface ProviderInfo {
