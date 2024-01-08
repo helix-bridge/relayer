@@ -14,7 +14,6 @@ import { Ether, GWei, EtherBigNumber } from "../base/bignumber";
 
 export interface HistoryRecord {
   id: string;
-  version: string;
   startTime: number;
   sendTokenAddress: string;
   recvToken: string;
@@ -84,7 +83,7 @@ export class DataworkerService implements OnModuleInit {
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
                 order: "${orderBy}"
-            ) {id, version, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -94,6 +93,13 @@ export class DataworkerService implements OnModuleInit {
       .then((res) => res.data.data.firstHistoryRecord);
     if (pendingRecord === null) {
       return null;
+    }
+
+    if (direction === "lnv3") {
+      return {
+        lastTransferId: null,
+        record: pendingRecord,
+      };
     }
 
     // query the first successed record
@@ -166,9 +172,13 @@ export class DataworkerService implements OnModuleInit {
     fromChainId: number,
     toChainId: number,
     relayer: string,
-    tokenAddress: string
+    tokenAddress: string,
+    version: string
   ) {
-    const mutation = `mutation {lnBridgeHeartBeat( fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
+    if (version !== 'lnv3') {
+      version = 'lnv2';
+    }
+    const mutation = `mutation {lnBridgeHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
     await axios.post(url, {
       query: mutation,
       variables: null,

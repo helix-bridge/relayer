@@ -152,7 +152,10 @@ export class RelayerService implements OnModuleInit {
           privateKey,
           toChainInfo.provider
         );
-        let toBridge = new LnBridgeContract(
+        let toBridge = config.direction == 'lnv3' ? new Lnv3BridgeContract(
+          config.targetBridgeAddress,
+          toWallet.wallet
+        ) : new LnBridgeContract(
           config.targetBridgeAddress,
           toWallet.wallet,
           config.direction
@@ -175,7 +178,10 @@ export class RelayerService implements OnModuleInit {
           privateKey,
           fromChainInfo.provider
         );
-        let fromBridge = new LnBridgeContract(
+        let fromBridge = config.direction == 'lnv3' ? new Lnv3BridgeContract(
+          config.sourceBridgeAddress,
+          fromWallet.wallet,
+        ) : new LnBridgeContract(
           config.sourceBridgeAddress,
           fromWallet.wallet,
           config.direction
@@ -277,22 +283,32 @@ export class RelayerService implements OnModuleInit {
     const toBridgeContract = bridge.toBridge.bridge;
 
     // send heartbeat first
-    bridge.heartBeatTime += 1;
-    if (bridge.heartBeatTime > this.heartBeatInterval) {
-      bridge.heartBeatTime = 0;
-      for (const lnProvider of bridge.lnProviders) {
-        await this.dataworkerService.sendHeartBeat(
-          this.configureService.config.indexer,
-          fromChainInfo.chainId,
-          toChainInfo.chainId,
-          lnProvider.relayer,
-          lnProvider.fromAddress
-        );
+    try {
+      bridge.heartBeatTime += 1;
+      if (bridge.heartBeatTime > this.heartBeatInterval) {
+        bridge.heartBeatTime = 0;
+        for (const lnProvider of bridge.lnProviders) {
+          await this.dataworkerService.sendHeartBeat(
+            this.configureService.config.indexer,
+            fromChainInfo.chainId,
+            toChainInfo.chainId,
+            lnProvider.relayer,
+            lnProvider.fromAddress,
+            bridge.direction
+          );
+        }
       }
+    } catch (err) {
+      this.logger.warn(`heartbeat failed, err: ${err}`);
     }
 
     if (bridge.safeWalletRole !== "signer") {
-      if (await this.checkPendingTransaction(bridge)) {
+      try {
+        if (await this.checkPendingTransaction(bridge)) {
+          return true;
+        }
+      } catch (err) {
+        this.logger.warn(`check pendingtx failed: err: ${err}, bridge: ${bridge}`);
         return true;
       }
     }
@@ -348,7 +364,7 @@ export class RelayerService implements OnModuleInit {
       let nonce: number | null = null;
       // try relay: check balance and fee enough
       const args: RelayArgs | RelayArgsV3 =
-        record.version == "lnv2"
+        bridge.direction != "lnv3"
           ? {
               transferParameter: {
                 previousTransferId: needRelayRecord.lastTransferId,
