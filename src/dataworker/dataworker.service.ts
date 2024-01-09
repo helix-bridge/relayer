@@ -71,7 +71,8 @@ export class DataworkerService implements OnModuleInit {
     direction: string
   ): Promise<TransferRecord | null> {
     let bridge = direction === "lnv3" ? direction : `lnv2-${direction}`;
-    let orderBy = direction === "lnv3" ? "nonce_asc" : "messageNonce_asc";
+    let firstPendingOrderBy = direction === "lnv3" ? "nonce_asc" : "messageNonce_asc";
+    let lastSuccessOrderBy = direction === "lnv3" ? "nonce_desc" : "messageNonce_desc";
     // query first pending tx
     let query = `{
             firstHistoryRecord(
@@ -81,7 +82,7 @@ export class DataworkerService implements OnModuleInit {
                 results: [${this.statusPending}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "${orderBy}"
+                order: "${firstPendingOrderBy}"
             ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
     const pendingRecord = await axios
       .post(url, {
@@ -112,7 +113,7 @@ export class DataworkerService implements OnModuleInit {
     }],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "${orderBy}"
+                order: "${lastSuccessOrderBy}"
             ) {id}}`;
     const lastRecord = await axios
       .post(url, {

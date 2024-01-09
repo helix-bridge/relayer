@@ -71,7 +71,7 @@ export class EthereumContract {
       if (value != null) {
         args = [...args, options];
       }
-      await this.contract.callStatic[method](...args);
+      await this.contract[method].staticCall(...args);
       return null;
     } catch (error) {
       return error.message;
