@@ -1,36 +1,36 @@
-import { ethers, BigNumber } from "ethers";
+import { ethers } from "ethers";
 
 export class EtherBigNumber {
-  protected Data: BigNumber;
-  constructor(value: string | number | BigNumber) {
-    this.Data = BigNumber.from(value.toString());
+  protected Data: bigint;
+  constructor(value: string | number | bigint) {
+    this.Data = BigInt(value.toString());
   }
 
-  get Number(): BigNumber {
+  get Number(): bigint {
     return this.Data;
   }
 }
 
 export class Any extends EtherBigNumber {
   constructor(value: string | number, pow: number) {
-    const bignumber = ethers.utils.parseUnits(value.toString(), pow);
+    const bignumber = ethers.parseUnits(value.toString(), pow);
     super(bignumber);
   }
 }
 
 export class Ether extends EtherBigNumber {
-  constructor(value: string | number | BigNumber) {
-    const bignumber = ethers.utils.parseEther(value.toString());
+  constructor(value: string | number | bigint) {
+    const bignumber = ethers.parseEther(value.toString());
     super(bignumber);
   }
 }
 
 export class GWei extends EtherBigNumber {
-  constructor(value: string | number | BigNumber) {
-    if (value instanceof BigNumber) {
+  constructor(value: string | number | bigint) {
+    if (typeof value === 'bigint') {
       super(value);
     } else {
-      const bignumber = ethers.utils.parseUnits(value.toString(), 9);
+      const bignumber = ethers.parseUnits(value.toString(), 9);
       super(bignumber);
     }
   }
@@ -38,6 +38,6 @@ export class GWei extends EtherBigNumber {
   mul(scaleValue: number) {
     const scale = new GWei(scaleValue);
     const unit = new GWei(1);
-    return new GWei(this.Data.mul(scale.Number).div(unit.Number));
+    return new GWei(this.Data * scale.Number / unit.Number);
   }
 }

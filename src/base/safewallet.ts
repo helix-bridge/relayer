@@ -2,10 +2,11 @@ import {
   SafeTransactionDataPartial,
   SafeMultisigTransactionResponse,
   SafeMultisigConfirmationResponse,
+  MetaTransactionData,
 } from "@safe-global/safe-core-sdk-types";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
-import { ethers } from "ethers";
+import { ethers, Wallet, HDNodeWallet } from "ethers";
 const ApiKit = require("@safe-global/api-kit");
 
 type Opts = {
@@ -24,16 +25,16 @@ export interface TransactionPropose {
 export class SafeWallet {
   public address: string;
   public apiService: string;
-  public signer: ethers.Wallet;
+  public signer: Wallet | HDNodeWallet;
   private safeSdk: Safe;
   private safeService: SafeApiKit;
-  constructor(address: string, apiService: string, signer: ethers.Wallet) {
+  constructor(address: string, apiService: string, signer: Wallet | HDNodeWallet) {
     this.address = address;
     this.signer = signer;
     this.apiService = apiService;
   }
 
-  async connect() {
+  async connect(chainId: bigint) {
     const ethAdapter = new EthersAdapter({
       ethers,
       signerOrProvider: this.signer,
@@ -45,7 +46,7 @@ export class SafeWallet {
     });
     this.safeService = new SafeApiKit({
       txServiceUrl: this.apiService,
-      ethAdapter,
+      chainId,
     });
   }
 
@@ -88,15 +89,20 @@ export class SafeWallet {
     address: string,
     data: string,
     isProposor: boolean,
-    value: string = "0"
+    chainId: bigint,
+    value: string = "0",
   ): Promise<TransactionPropose | null> {
-    this.safeSdk ?? (await this.connect());
-    const safeTransactionData: SafeTransactionDataPartial = {
-      to: address,
-      value,
-      data,
-    };
-    const tx = await this.safeSdk.createTransaction({ safeTransactionData });
+    this.safeSdk ?? (await this.connect(chainId));
+
+    const transactions: MetaTransactionData[] = [
+      {
+        to: address,
+        value,
+        data
+      },
+    ]
+
+    const tx = await this.safeSdk.createTransaction({ transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
       const transaction = await this.safeService.getTransaction(safeTxHash);

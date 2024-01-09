@@ -20,7 +20,6 @@ import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from "../configure/configure.service";
 import { Encrypto } from "../base/encrypto";
-import { BigNumber } from "ethers";
 import { last } from "lodash";
 
 import { ethers } from "ethers";
@@ -349,13 +348,7 @@ export class RelayerService implements OnModuleInit {
         continue;
       }
 
-      // Special treatment for polygon chain
-      if (toChainInfo.chainName === "polygon") {
-        validInfo.gasPrice.eip1559fee.maxPriorityFeePerGas = new GWei(
-          35
-        ).Number;
-      }
-      if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
+      if (validInfo.feeUsed > new Ether(bridge.feeLimit).Number) {
         this.logger.log(
           `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
         );
@@ -403,7 +396,8 @@ export class RelayerService implements OnModuleInit {
         const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
           toBridgeContract.address,
           relayData,
-          isExecutor
+          isExecutor,
+          BigInt(toChainInfo.chainId),
         );
         if (txInfo !== null && txInfo.readyExecute && isExecutor) {
           const safeContract = new SafeContract(
