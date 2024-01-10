@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { BigNumber } from "ethers";
 import axios from "axios";
 import { last } from "lodash";
 import {
@@ -32,7 +31,7 @@ export interface HistoryRecord {
 
 export interface ValidInfo {
   gasPrice: GasPrice | null;
-  feeUsed: BigNumber | null;
+  feeUsed: bigint | null;
   isValid: boolean;
 }
 
@@ -48,7 +47,7 @@ export class DataworkerService implements OnModuleInit {
   private readonly statusSuccess = 3;
   private readonly statusRefund = 4;
   private readonly pendingToConfirmRefund = 5;
-  private readonly relayGasLimit = 100000;
+  private readonly relayGasLimit = BigInt(100000);
 
   async onModuleInit() {
     this.logger.log("data worker started");
@@ -130,26 +129,26 @@ export class DataworkerService implements OnModuleInit {
     };
   }
 
-  relayFee(gasPrice: GasPrice): BigNumber {
-    let feeUsed: BigNumber;
+  relayFee(gasPrice: GasPrice): bigint {
+    let feeUsed: bigint;
     if (gasPrice.isEip1559) {
       let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(
         1.05
       ).Number;
       const maxPriorityFeePerGas = new GWei(
-        gasPrice.eip1559fee.maxPriorityFeePerGas
-      ).mul(1.1).Number;
-      if (maxFeePerGas.lt(maxPriorityFeePerGas)) {
-        maxFeePerGas = maxPriorityFeePerGas;
+          gasPrice.eip1559fee.maxPriorityFeePerGas
+      ).mul(1.1).Number
+      if (maxFeePerGas < maxPriorityFeePerGas) {
+          maxFeePerGas = maxPriorityFeePerGas;
       }
       gasPrice.eip1559fee = {
         maxFeePerGas,
         maxPriorityFeePerGas,
       };
-      feeUsed = gasPrice.eip1559fee.maxFeePerGas.mul(this.relayGasLimit);
+      feeUsed = gasPrice.eip1559fee.maxFeePerGas * this.relayGasLimit;
     } else {
       gasPrice.fee.gasPrice = new GWei(gasPrice.fee.gasPrice).mul(1.05).Number;
-      feeUsed = gasPrice.fee.gasPrice.mul(this.relayGasLimit);
+      feeUsed = gasPrice.fee.gasPrice * this.relayGasLimit;
     }
     return feeUsed;
   }

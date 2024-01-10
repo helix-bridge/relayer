@@ -1,13 +1,13 @@
-import { ethers, BigNumber } from "ethers";
+import { ethers } from "ethers";
 import { GWei } from "./bignumber";
 
 export interface EIP1559Fee {
-  maxFeePerGas: BigNumber;
-  maxPriorityFeePerGas: BigNumber;
+  maxFeePerGas: bigint;
+  maxPriorityFeePerGas: bigint;
 }
 
 export interface GasFee {
-  gasPrice: BigNumber;
+  gasPrice: bigint;
 }
 
 export interface GasPrice {
@@ -30,31 +30,27 @@ export function scaleBigger(
   if (left.isEip1559) {
     const leftGasPrice = left.eip1559fee.maxFeePerGas;
     const rightGasPrice = new GWei(right.eip1559fee.maxFeePerGas);
-    return leftGasPrice.lt(rightGasPrice.mul(scale).Number);
+    return leftGasPrice < rightGasPrice.mul(scale).Number;
   } else {
     const leftGasPrice = left.fee.gasPrice;
     const rightGasPrice = new GWei(right.fee.gasPrice);
-    return leftGasPrice.lt(rightGasPrice.mul(scale).Number);
+    return leftGasPrice < rightGasPrice.mul(scale).Number;
   }
 }
 
 export class EthereumProvider {
-  public provider: ethers.providers.JsonRpcProvider;
+  public provider: ethers.JsonRpcProvider;
 
   constructor(url: string) {
-    this.provider = new ethers.providers.JsonRpcProvider(url);
+    this.provider = new ethers.JsonRpcProvider(url);
   }
 
-  get currentBlocknumber() {
-    return this.provider.blockNumber;
+  async currentBlocknumber() {
+    return await this.provider.getBlockNumber();
   }
 
-  async balanceOf(address: string): Promise<BigNumber> {
+  async balanceOf(address: string): Promise<bigint> {
     return await this.provider.getBalance(address);
-  }
-
-  async gasPrice(): Promise<BigNumber> {
-    return await this.provider.getGasPrice();
   }
 
   async feeData(
@@ -63,14 +59,14 @@ export class EthereumProvider {
   ): Promise<GasPrice> {
     const fee = await this.provider.getFeeData();
     if (!notSupport1559 && fee.maxFeePerGas && fee.maxPriorityFeePerGas) {
-      const maxFeePerGas = fee.maxFeePerGas.gt(fee.maxFeePerGas)
+      const maxFeePerGas = fee.maxFeePerGas > fee.maxFeePerGas
         ? fee.maxFeePerGas
         : fee.maxFeePerGas;
       const feeInfo: EIP1559Fee = {
         // maxFeePerGas is not accurate
         //maxFeePerGas: fee.maxFeePerGas,
-        maxFeePerGas: maxFeePerGas.mul(scale),
-        maxPriorityFeePerGas: fee.maxPriorityFeePerGas.mul(scale),
+        maxFeePerGas: maxFeePerGas * BigInt(scale),
+        maxPriorityFeePerGas: fee.maxPriorityFeePerGas * BigInt(scale),
       };
       return {
         eip1559fee: feeInfo,
@@ -81,7 +77,7 @@ export class EthereumProvider {
       return {
         isEip1559: false,
         fee: {
-          gasPrice: fee.gasPrice.mul(scale),
+          gasPrice: fee.gasPrice * BigInt(scale),
         },
         eip1559fee: null,
       };
@@ -123,7 +119,7 @@ export class EthereumProvider {
     }
     return {
       gasPrice: null,
-      confirmedBlock: transaction.confirmations,
+      confirmedBlock: await transaction.confirmations(),
       nonce: null,
     };
   }

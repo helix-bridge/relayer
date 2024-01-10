@@ -20,7 +20,6 @@ import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
 import { ConfigureService } from "../configure/configure.service";
 import { Encrypto } from "../base/encrypto";
-import { BigNumber } from "ethers";
 import { last } from "lodash";
 
 import { ethers } from "ethers";
@@ -55,6 +54,8 @@ export class LnBridge {
   fromBridge: BridgeConnectInfo;
   toBridge: BridgeConnectInfo;
   safeWalletRole: string;
+  minProfit: number;
+  maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
   direction: string;
@@ -207,6 +208,8 @@ export class RelayerService implements OnModuleInit {
         return {
           isProcessing: false,
           safeWalletRole: config.safeWalletRole,
+          minProfit: config.minProfit,
+          maxProfit: config.maxProfit,
           feeLimit: config.feeLimit,
           reorgThreshold: config.reorgThreshold,
           direction: config.direction,
@@ -217,6 +220,70 @@ export class RelayerService implements OnModuleInit {
         };
       })
       .filter((item) => item !== null);
+  }
+
+  async adjustFee(
+      lnBridge: LnBridge,
+      feeUsed: bigint,
+      sourceContract: LnBridgeContract | Lnv3BridgeContract,
+      fromChainInfo: ChainInfo,
+      toChainInfo: ChainInfo,
+      lnProviderInfo: LnProviderInfo,
+  ) {
+      let srcDecimals = 18;
+      if (lnProviderInfo.fromAddress !== zeroAddress) {
+          srcDecimals = await lnProviderInfo.fromToken.decimals();
+      }
+      // native fee decimals = 10**18
+      function nativeFeeToToken(fee: bigint): bigint {
+          return fee * BigInt(lnProviderInfo.swapRate) * (new Any(1, srcDecimals).Number) / (new Ether(1).Number);
+      }
+
+      const gasLimit = new EtherBigNumber(1000000).Number;
+      let lnProviderInfoOnChain = await sourceContract.getLnProviderInfo(toChainInfo.chainId, lnProviderInfo.relayer, lnProviderInfo.fromAddress, lnProviderInfo.toAddress)
+      let baseFee = lnProviderInfoOnChain.baseFee;
+      let tokenUsed = nativeFeeToToken(feeUsed);
+      let profit = baseFee - tokenUsed;
+      const minProfit = nativeFeeToToken(new Ether(lnBridge.minProfit).Number);
+      const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
+      if (profit < minProfit || profit > maxProfit) {
+          const sensibleProfit = nativeFeeToToken(new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number);
+          const sensibleBaseFee = tokenUsed + sensibleProfit;
+          let err = await sourceContract.tryUpdateFee(
+              fromChainInfo.chainId,
+              lnProviderInfo.fromAddress,
+              lnProviderInfo.toAddress,
+              sensibleBaseFee,
+              lnProviderInfoOnChain.liquidityFeeRate,
+              lnProviderInfoOnChain.transferLimit,
+              gasLimit,
+          );
+          if (err === null) {
+              this.logger.log(`[${fromChainInfo.chainName}>>${lnProviderInfo.fromAddress}]fee is not sensible, update to new: ${sensibleBaseFee}`);
+              var gasPrice;
+              if (fromChainInfo.fixedGasPrice !== undefined) {
+                  gasPrice = {
+                      isEip1559: false,
+                      fee: {
+                          gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
+                      },
+                      eip1559fee: null,
+                  };
+              } else {
+                  gasPrice = await fromChainInfo.provider.feeData(1, fromChainInfo.notSupport1559);
+              }
+              await sourceContract.updateFee(
+                  fromChainInfo.chainId,
+                  lnProviderInfo.fromAddress,
+                  lnProviderInfo.toAddress,
+                  sensibleBaseFee,
+                  lnProviderInfoOnChain.liquidityFeeRate,
+                  lnProviderInfoOnChain.transferLimit,
+                  gasPrice,
+                  gasLimit,
+              );
+          }
+      }
   }
 
   async checkPendingTransaction(bridge: LnBridge) {
@@ -349,17 +416,11 @@ export class RelayerService implements OnModuleInit {
         continue;
       }
 
-      // Special treatment for polygon chain
-      if (toChainInfo.chainName === "polygon") {
-        validInfo.gasPrice.eip1559fee.maxPriorityFeePerGas = new GWei(
-          35
-        ).Number;
-      }
-      if (validInfo.feeUsed.gt(new Ether(bridge.feeLimit).Number)) {
-        this.logger.log(
-          `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
-        );
-        continue;
+      if (validInfo.feeUsed > new Ether(bridge.feeLimit).Number) {
+          this.logger.log(
+              `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
+          );
+          continue;
       }
       let nonce: number | null = null;
       // try relay: check balance and fee enough
@@ -400,11 +461,7 @@ export class RelayerService implements OnModuleInit {
       const isExecutor = bridge.safeWalletRole === "executor";
       if (bridge.safeWalletRole === "signer" || isExecutor) {
         const relayData = toBridgeContract.relayRawData(args);
-        const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
-          toBridgeContract.address,
-          relayData,
-          isExecutor
-        );
+        const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(toBridgeContract.address, relayData, isExecutor, BigInt(toChainInfo.chainId));
         if (txInfo !== null && txInfo.readyExecute && isExecutor) {
           const safeContract = new SafeContract(
             bridge.toBridge.safeWallet.address,

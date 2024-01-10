@@ -29,6 +29,8 @@ export interface BridgeConfigInfo {
   safeWalletAddress: string | undefined;
   safeWalletUrl: string | undefined;
   safeWalletRole: string | undefined;
+  minProfit: number;
+  maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
   direction: string;
