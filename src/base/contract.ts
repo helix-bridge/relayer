@@ -1,10 +1,9 @@
 import {
   Wallet,
-  providers,
+  HDNodeWallet,
+  ethers,
   Contract,
-  ContractInterface,
-  BigNumber,
-  utils,
+  InterfaceAbi,
 } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
@@ -21,8 +20,8 @@ export class EthereumContract {
   public address: string;
   constructor(
     address: string,
-    abi: ContractInterface,
-    signer: Wallet | providers.Provider
+    abi: InterfaceAbi,
+    signer: Wallet | HDNodeWallet | ethers.Provider
   ) {
     this.contract = new Contract(address, abi, signer);
     this.address = address;
@@ -36,9 +35,9 @@ export class EthereumContract {
     method: string,
     args: any,
     gas: GasPrice,
-    value: BigNumber | null = null,
+    value: bigint | null = null,
     nonce: number | null = null,
-    gasLimit: BigNumber | null = null
+    gasLimit: bigint | null = null
   ): Promise<TransactionResponse> {
     const gasArgs = gas.isEip1559 ? gas.eip1559fee : gas.fee;
     const txConfig = Object.entries({
@@ -53,8 +52,8 @@ export class EthereumContract {
   async staticCall(
     method: string,
     args: any,
-    value: BigNumber | null = null,
-    gasLimit: BigNumber | null = null,
+    value: bigint | null = null,
+    gasLimit: bigint | null = null,
     from: string | null = null
   ): Promise<string> | null {
     try {
@@ -68,7 +67,7 @@ export class EthereumContract {
       if (value != null) {
         args = [...args, options];
       }
-      await this.contract.callStatic[method](...args);
+      await this.contract[method].staticCall(...args);
       return null;
     } catch (error) {
       return error.message;
@@ -77,7 +76,7 @@ export class EthereumContract {
 }
 
 export class Erc20Contract extends EthereumContract {
-  constructor(address: string, signer: Wallet | providers.Provider) {
+  constructor(address: string, signer: Wallet | HDNodeWallet | ethers.Provider) {
     super(address, erc20, signer);
   }
 
@@ -94,14 +93,14 @@ export class Erc20Contract extends EthereumContract {
     return await this.contract.decimals();
   }
 
-  async balanceOf(address: string): Promise<BigNumber> {
+  async balanceOf(address: string): Promise<bigint> {
     return await this.contract.balanceOf(address);
   }
 
   // call
   async approve(
     address: string,
-    amount: BigNumber,
+    amount: bigint,
     gas: GasPrice
   ): Promise<TransactionResponse> {
     return this.call("approve", [address, amount], gas, null, null, null);
@@ -113,8 +112,8 @@ export interface TransferParameter {
   relayer: string;
   sourceToken: string;
   targetToken: string;
-  amount: BigNumber;
-  timestamp: BigNumber;
+  amount: bigint;
+  timestamp: bigint;
   receiver: string;
 }
 
@@ -125,12 +124,12 @@ export interface RelayArgs {
 }
 
 export interface LnProviderFeeInfo {
-    baseFee: BigNumber;
+    baseFee: bigint;
     liquidityFeeRate: number;
 }
 
 export class SafeContract extends EthereumContract {
-    constructor(address: string, signer: Wallet | providers.Provider) {
+    constructor(address: string, signer: Wallet | HDNodeWallet | ethers.Provider) {
         super(address, abiSafe, signer);
     }
 
@@ -138,7 +137,7 @@ export class SafeContract extends EthereumContract {
         to: string, 
         data: string,
         signatures: string,
-        value: BigNumber | null = null
+        value: bigint | null = null
     ): Promise<string> | null {
         return await this.staticCall(
             "execTransaction",
@@ -164,8 +163,8 @@ export class SafeContract extends EthereumContract {
         signatures: string,
         gas: GasPrice,
         nonce: number | null = null,
-        gasLimit: BigNumber | null = null,
-        value: BigNumber | null = null
+        gasLimit: bigint | null = null,
+        value: bigint | null = null
     ): Promise<TransactionResponse> {
         return await this.call(
             "execTransaction",
@@ -191,7 +190,7 @@ export class SafeContract extends EthereumContract {
 
 export class LnBridgeContract extends EthereumContract {
     private bridgeType: string;
-    constructor(address: string, signer: Wallet | providers.Provider, bridgeType: string) {
+    constructor(address: string, signer: Wallet | HDNodeWallet | ethers.Provider, bridgeType: string) {
       if (bridgeType === 'default') {
         super(address, lnDefaultBridge, signer);
       } else {
@@ -206,13 +205,13 @@ export class LnBridgeContract extends EthereumContract {
         sourceToken,
         targetToken
     ) {
-        const encode = utils.solidityPack([
+        const encode = ethers.solidityPacked([
             "uint256",
             "address",
             "address",
             "address",
         ], [remoteChainId, provider, sourceToken, targetToken]);
-        return utils.keccak256(encode);
+        return ethers.keccak256(encode);
     }
 
 
@@ -234,9 +233,9 @@ export class LnBridgeContract extends EthereumContract {
         remoteChainId: number,
         sourceToken: string,
         targetToken: string,
-        baseFee: BigNumber,
+        baseFee: bigint,
         liquidityFeeRate: number,
-        gasLimit: BigNumber | null = null
+        gasLimit: bigint | null = null
     ) {
         if (this.bridgeType === 'default') {
             return await this.staticCall(
@@ -270,10 +269,10 @@ export class LnBridgeContract extends EthereumContract {
         remoteChainId: number,
         sourceToken: string,
         targetToken: string,
-        baseFee: BigNumber,
+        baseFee: bigint,
         liquidityFeeRate: number,
         gas: GasPrice,
-        gasLimit: BigNumber | null = null
+        gasLimit: bigint | null = null
     ) {
         if (this.bridgeType === 'default') {
             return await this.call(
@@ -320,7 +319,7 @@ export class LnBridgeContract extends EthereumContract {
 
     async tryRelay(
         args: RelayArgs,
-        gasLimit: BigNumber | null = null
+        gasLimit: bigint | null = null
     ): Promise<string> | null {
         var value = null;
         const parameter = args.transferParameter;
@@ -375,7 +374,7 @@ export class LnBridgeContract extends EthereumContract {
         args: RelayArgs,
         gas: GasPrice,
         nonce: number | null = null,
-        gasLimit: BigNumber | null = null
+        gasLimit: bigint | null = null
     ): Promise<TransactionResponse> {
         var value = null;
         const parameter = args.transferParameter;
