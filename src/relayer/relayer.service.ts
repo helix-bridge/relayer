@@ -33,6 +33,7 @@ export class ChainInfo {
   provider: EthereumProvider;
   fixedGasPrice: number;
   notSupport1559: boolean;
+  adjustingFee: boolean;
 }
 
 export class BridgeConnectInfo {
@@ -68,6 +69,7 @@ export class RelayerService implements OnModuleInit {
   private readonly logger = new Logger("relayer");
   private readonly scheduleInterval = 10000;
   private readonly waitingPendingTime = 12; // 2 minute
+  private readonly scheduleAdjustFeeInterval = 30; // 1day
   private readonly maxWaitingPendingTimes = 180;
   private readonly heartBeatInterval = 6; // 1 minute
   private chainInfos = new Map();
@@ -90,6 +92,7 @@ export class RelayerService implements OnModuleInit {
         `${key}-lnbridge-relayer`,
         this.scheduleInterval,
         async () => {
+          this.adjustClock(value);
           for (let item of this.lnBridges.values()) {
             if (item.toBridge.chainInfo.chainName !== key) {
               continue;
@@ -99,7 +102,7 @@ export class RelayerService implements OnModuleInit {
             }
             item.isProcessing = true;
             try {
-              const txPending = await this.relay(item);
+              const txPending = await this.relay(item, value.lastAdjustTime === 0);
               if (txPending) {
                 item.isProcessing = false;
                 return;
@@ -132,6 +135,7 @@ export class RelayerService implements OnModuleInit {
             notSupport1559: config.notSupport1559,
             txHashCache: "",
             checkTimes: 0,
+            lastAdjustTime: this.scheduleAdjustFeeInterval
           },
         ];
       })
@@ -230,6 +234,7 @@ export class RelayerService implements OnModuleInit {
       toChainInfo: ChainInfo,
       lnProviderInfo: LnProviderInfo,
   ) {
+      if (fromChainInfo.adjustingFee) return;
       let srcDecimals = 18;
       if (lnProviderInfo.fromAddress !== zeroAddress) {
           srcDecimals = await lnProviderInfo.fromToken.decimals();
@@ -244,45 +249,57 @@ export class RelayerService implements OnModuleInit {
       let baseFee = lnProviderInfoOnChain.baseFee;
       let tokenUsed = nativeFeeToToken(feeUsed);
       let profit = baseFee - tokenUsed;
+      // it's the native token
       const minProfit = nativeFeeToToken(new Ether(lnBridge.minProfit).Number);
       const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
-      if (profit < minProfit || profit > maxProfit) {
-          const sensibleProfit = nativeFeeToToken(new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number);
-          const sensibleBaseFee = tokenUsed + sensibleProfit;
-          let err = await sourceContract.tryUpdateFee(
-              fromChainInfo.chainId,
-              lnProviderInfo.fromAddress,
-              lnProviderInfo.toAddress,
-              sensibleBaseFee,
-              lnProviderInfoOnChain.liquidityFeeRate,
-              lnProviderInfoOnChain.transferLimit,
-              gasLimit,
+      const tokenBridgeInfo = `${fromChainInfo.chainName}->${toChainInfo.chainName}>>${lnProviderInfo.fromAddress}`;
+      if (profit >= minProfit && profit <= maxProfit) {
+          this.logger.log(`[${tokenBridgeInfo}]fee is sensible, no need to update, profit: ${profit}`); 
+          return;
+      }
+      const sensibleProfit = nativeFeeToToken(new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number);
+      const sensibleBaseFee = tokenUsed + sensibleProfit;
+      let err = await sourceContract.tryUpdateFee(
+        toChainInfo.chainId,
+        lnProviderInfo.fromAddress,
+        lnProviderInfo.toAddress,
+        sensibleBaseFee,
+        lnProviderInfoOnChain.liquidityFeeRate,
+        lnProviderInfoOnChain.transferLimit,
+        null,
+      );
+      if (err === null) {
+        this.logger.log(`[${tokenBridgeInfo}]fee is not sensible, try to update, profit: ${profit}, should in [${minProfit}, ${maxProfit}], new:${sensibleBaseFee}`); 
+        var gasPrice;
+        if (fromChainInfo.fixedGasPrice !== undefined) {
+          gasPrice = {
+            isEip1559: false,
+            fee: {
+                gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
+            },
+            eip1559fee: null,
+          };
+        } else {
+            gasPrice = await fromChainInfo.provider.feeData(1, fromChainInfo.notSupport1559);
+        }
+        if (fromChainInfo.adjustingFee) return;
+        // each adjust time, only send one tx
+        fromChainInfo.adjustingFee = true;
+        try {
+          await sourceContract.updateFee(
+            toChainInfo.chainId,
+            lnProviderInfo.fromAddress,
+            lnProviderInfo.toAddress,
+            sensibleBaseFee,
+            lnProviderInfoOnChain.liquidityFeeRate,
+            lnProviderInfoOnChain.transferLimit,
+            gasPrice,
+            null,
           );
-          if (err === null) {
-              this.logger.log(`[${fromChainInfo.chainName}>>${lnProviderInfo.fromAddress}]fee is not sensible, update to new: ${sensibleBaseFee}`);
-              var gasPrice;
-              if (fromChainInfo.fixedGasPrice !== undefined) {
-                  gasPrice = {
-                      isEip1559: false,
-                      fee: {
-                          gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
-                      },
-                      eip1559fee: null,
-                  };
-              } else {
-                  gasPrice = await fromChainInfo.provider.feeData(1, fromChainInfo.notSupport1559);
-              }
-              await sourceContract.updateFee(
-                  fromChainInfo.chainId,
-                  lnProviderInfo.fromAddress,
-                  lnProviderInfo.toAddress,
-                  sensibleBaseFee,
-                  lnProviderInfoOnChain.liquidityFeeRate,
-                  lnProviderInfoOnChain.transferLimit,
-                  gasPrice,
-                  gasLimit,
-              );
-          }
+        } catch(err) {
+          this.logger.warn(`update fee failed on chain ${fromChainInfo.chainName}, err ${err}`);
+        }
+        fromChainInfo.adjustingFee = true;
       }
   }
 
@@ -342,7 +359,15 @@ export class RelayerService implements OnModuleInit {
     return false;
   }
 
-  async relay(bridge: LnBridge) {
+  private adjustClock(chainInfo) {
+    chainInfo.lastAdjustTime += 1;
+    if (chainInfo.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
+      chainInfo.lastAdjustTime = 0;
+      this.logger.log(`[${chainInfo.chainName}] schedule adjust fee`);
+    }
+  }
+
+  async relay(bridge: LnBridge, needAdjustFee: boolean) {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
     const fromChainInfo = bridge.fromBridge.chainInfo;
@@ -382,6 +407,18 @@ export class RelayerService implements OnModuleInit {
 
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
+      if (needAdjustFee) {
+        let gasPrice = await toChainInfo.provider.feeData(1, toChainInfo.notSupport1559);
+        const feeUsed = this.dataworkerService.relayFee(gasPrice);
+        await this.adjustFee(
+          bridge,
+          feeUsed,
+          fromBridgeContract,
+          fromChainInfo,
+          toChainInfo,
+          lnProvider,
+        );
+      }
       // checkProfit
       const needRelayRecord = await this.dataworkerService.queryRecordNeedRelay(
         this.configureService.config.indexer,
@@ -520,6 +557,14 @@ export class RelayerService implements OnModuleInit {
         chainInfo.txHashCache = tx.hash;
         this.logger.log(
           `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] success relay message, txhash: ${tx.hash}`
+        );
+        await this.adjustFee(
+          bridge,
+          validInfo.feeUsed,
+          fromBridgeContract,
+          fromChainInfo,
+          toChainInfo,
+          lnProvider,
         );
       }
       return true;
