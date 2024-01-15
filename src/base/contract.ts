@@ -194,7 +194,7 @@ export class LnBridgeContract extends EthereumContract {
     signer: Wallet | HDNodeWallet | ethers.Provider,
     bridgeType: string
   ) {
-    if (bridgeType === "default") {
+    if (bridgeType === "lnv2-default") {
       super(address, lnDefaultBridge, signer);
     } else {
       super(address, lnOppositeBridge, signer);
@@ -236,7 +236,7 @@ export class LnBridgeContract extends EthereumContract {
       transferLimit: bigint,
       gasLimit: bigint | null = null
   ) {
-      if (this.bridgeType === 'default') {
+      if (this.bridgeType === 'lnv2-default') {
           return await this.staticCall(
               "setProviderFee",
               [
@@ -274,7 +274,7 @@ export class LnBridgeContract extends EthereumContract {
       gas: GasPrice,
       gasLimit: bigint | null = null
   ) {
-      if (this.bridgeType === 'default') {
+      if (this.bridgeType === 'lnv2-default') {
           return await this.call(
               "setProviderFee",
               [
@@ -311,7 +311,7 @@ export class LnBridgeContract extends EthereumContract {
 
   async transferHasFilled(transferId: string): Promise<boolean> {
     const fillInfo = await this.contract.fillTransfers(transferId);
-    if (this.bridgeType === "default") {
+    if (this.bridgeType === "lnv2-default") {
       return fillInfo.timestamp > 0;
     } else {
       return fillInfo != zeroTransferId;
@@ -433,9 +433,9 @@ export class Lnv3BridgeContract extends EthereumContract {
     const providerKey = await this.getProviderKey(remoteChainId, relayer, sourceToken, targetToken);
     const lnProviderInfo = await this.contract.srcProviders(providerKey);
     return {
-      baseFee: lnProviderInfo.config.baseFee,
-      liquidityFeeRate: lnProviderInfo.config.liquidityFeeRate,
-      transferLimit: lnProviderInfo.config.transferLimit,
+      baseFee: lnProviderInfo.baseFee,
+      liquidityFeeRate: lnProviderInfo.liquidityFeeRate,
+      transferLimit: lnProviderInfo.transferLimit,
     };
   }
 

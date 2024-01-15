@@ -68,17 +68,16 @@ export class DataworkerService implements OnModuleInit {
     toChain: string,
     relayer: string,
     token: string,
-    direction: string
+    bridgeType: string
   ): Promise<TransferRecord | null> {
-    let bridge = direction === "lnv3" ? direction : `lnv2-${direction}`;
-    let firstPendingOrderBy = direction === "lnv3" ? "nonce_asc" : "messageNonce_asc";
-    let lastSuccessOrderBy = direction === "lnv3" ? "nonce_desc" : "messageNonce_desc";
+    let firstPendingOrderBy = bridgeType === "lnv3" ? "nonce_asc" : "messageNonce_asc";
+    let lastSuccessOrderBy = bridgeType === "lnv3" ? "nonce_desc" : "messageNonce_desc";
     // query first pending tx
     let query = `{
             firstHistoryRecord(
                 fromChain: \"${fromChain}\",
                 toChain: \"${toChain}\",
-                bridge: \"${bridge}\",
+                bridge: \"${bridgeType}\",
                 results: [${this.statusPending}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
@@ -95,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
       return null;
     }
 
-    if (direction === "lnv3") {
+    if (bridgeType === "lnv3") {
       return {
         lastTransferId: null,
         record: pendingRecord,
@@ -107,7 +106,7 @@ export class DataworkerService implements OnModuleInit {
             firstHistoryRecord(
                 fromChain: \"${fromChain}\",
                 toChain: \"${toChain}\",
-                bridge: \"${bridge}\",
+                bridge: \"${bridgeType}\",
                 results: [${this.statusSuccess}, ${this.statusRefund}, ${
       this.pendingToConfirmRefund
     }],

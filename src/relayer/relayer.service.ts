@@ -59,7 +59,7 @@ export class LnBridge {
   maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
-  direction: string;
+  bridgeType: string;
   lnProviders: LnProviderInfo[];
   heartBeatTime: number;
 }
@@ -157,13 +157,13 @@ export class RelayerService implements OnModuleInit {
           privateKey,
           toChainInfo.provider
         );
-        let toBridge = config.direction == 'lnv3' ? new Lnv3BridgeContract(
+        let toBridge = config.bridgeType == 'lnv3' ? new Lnv3BridgeContract(
           config.targetBridgeAddress,
           toWallet.wallet
         ) : new LnBridgeContract(
           config.targetBridgeAddress,
           toWallet.wallet,
-          config.direction
+          config.bridgeType
         );
         var toSafeWallet: SafeWallet;
         if (config.safeWalletRole !== undefined) {
@@ -183,13 +183,13 @@ export class RelayerService implements OnModuleInit {
           privateKey,
           fromChainInfo.provider
         );
-        let fromBridge = config.direction == 'lnv3' ? new Lnv3BridgeContract(
+        let fromBridge = config.bridgeType == 'lnv3' ? new Lnv3BridgeContract(
           config.sourceBridgeAddress,
           fromWallet.wallet,
         ) : new LnBridgeContract(
           config.sourceBridgeAddress,
           fromWallet.wallet,
-          config.direction
+          config.bridgeType
         );
         let fromConnectInfo = {
           chainInfo: fromChainInfo,
@@ -216,7 +216,7 @@ export class RelayerService implements OnModuleInit {
           maxProfit: config.maxProfit,
           feeLimit: config.feeLimit,
           reorgThreshold: config.reorgThreshold,
-          direction: config.direction,
+          bridgeType: config.bridgeType,
           fromBridge: fromConnectInfo,
           toBridge: toConnectInfo,
           lnProviders: lnProviders,
@@ -394,7 +394,7 @@ export class RelayerService implements OnModuleInit {
             toChainInfo.chainId,
             lnProvider.relayer,
             lnProvider.fromAddress,
-            bridge.direction
+            bridge.bridgeType
           );
         }
       }
@@ -434,7 +434,7 @@ export class RelayerService implements OnModuleInit {
         toChainInfo.chainName,
         lnProvider.relayer,
         lnProvider.fromAddress,
-        bridge.direction
+        bridge.bridgeType
       );
       if (!needRelayRecord) {
         continue;
@@ -470,7 +470,7 @@ export class RelayerService implements OnModuleInit {
       let nonce: number | null = null;
       // try relay: check balance and fee enough
       const args: RelayArgs | RelayArgsV3 =
-        bridge.direction != "lnv3"
+        bridge.bridgeType != "lnv3"
           ? {
               transferParameter: {
                 previousTransferId: needRelayRecord.lastTransferId,

@@ -32,7 +32,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "default",
+            "bridgeType": "lnv2-default",
             "providers": [
                 {
                     "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
@@ -61,7 +61,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "default",
+            "bridgeType": "lnv2-default",
             "providers": [
                 {
                     "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
@@ -90,7 +90,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "lnv3",
+            "bridgeType": "lnv3",
             "providers": [
                 {
                     "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
@@ -119,7 +119,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "lnv3",
+            "bridgeType": "lnv3",
             "providers": [
                 {
                     "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
@@ -148,7 +148,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "opposite",
+            "bridgeType": "lnv2-opposite",
             "providers": [
                 {
                     "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
@@ -177,7 +177,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "opposite",
+            "bridgeType": "lnv2-opposite",
             "providers": [
                 {
                     "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
@@ -206,7 +206,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "lnv3",
+            "bridgeType": "lnv3",
             "providers": [
                 {
                     "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
@@ -235,7 +235,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "lnv3",
+            "bridgeType": "lnv3",
             "providers": [
                 {
                     "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
@@ -264,7 +264,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "default",
+            "bridgeType": "lnv2-default",
             "providers": [
                 {
                     "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
@@ -293,7 +293,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "default",
+            "bridgeType": "lnv2-default",
             "providers": [
                 {
                     "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
@@ -322,7 +322,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "lnv3",
+            "bridgeType": "lnv3",
             "providers": [
                 {
                     "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
@@ -351,7 +351,7 @@
             "maxProfit": 0.001,
             "feeLimit": 0.01,
             "reorgThreshold": 20,
-            "direction": "lnv3",
+            "bridgeType": "lnv3",
             "providers": [
                 {
                     "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",

@@ -33,7 +33,7 @@ export interface BridgeConfigInfo {
   maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
-  direction: string;
+  bridgeType: string;
   providers: ProviderInfo[];
 }
 
