@@ -135,7 +135,7 @@ export interface TransferParameterV3 {
   sourceAmount: bigint;
   targetAmount: bigint;
   receiver: string;
-  nonce: bigint;
+  timestamp: bigint;
 }
 
 export interface RelayArgsV3 {
@@ -522,7 +522,7 @@ export class Lnv3BridgeContract extends EthereumContract {
           parameter.sourceAmount,
           parameter.targetAmount,
           parameter.receiver,
-          parameter.nonce,
+          parameter.timestamp,
         ],
         argsV3.expectedTransferId,
         true,
@@ -548,7 +548,7 @@ export class Lnv3BridgeContract extends EthereumContract {
         parameter.sourceAmount,
         parameter.targetAmount,
         parameter.receiver,
-        parameter.nonce,
+        parameter.timestamp,
       ],
       argsV3.expectedTransferId,
       true,
@@ -578,7 +578,7 @@ export class Lnv3BridgeContract extends EthereumContract {
           parameter.sourceAmount,
           parameter.targetAmount,
           parameter.receiver,
-          parameter.nonce,
+          parameter.timestamp,
         ],
         argsV3.expectedTransferId,
         true,

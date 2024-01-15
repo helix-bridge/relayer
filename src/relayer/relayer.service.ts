@@ -244,6 +244,10 @@ export class RelayerService implements OnModuleInit {
           return fee * BigInt(lnProviderInfo.swapRate) * (new Any(1, srcDecimals).Number) / (new Ether(1).Number);
       }
 
+      function removeDecimals(fee: bigint, decimals: number): string {
+          return ethers.formatUnits(fee, decimals);
+      }
+
       const gasLimit = new EtherBigNumber(1000000).Number;
       let lnProviderInfoOnChain = await sourceContract.getLnProviderInfo(toChainInfo.chainId, lnProviderInfo.relayer, lnProviderInfo.fromAddress, lnProviderInfo.toAddress)
       let baseFee = lnProviderInfoOnChain.baseFee;
@@ -254,7 +258,7 @@ export class RelayerService implements OnModuleInit {
       const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
       const tokenBridgeInfo = `${fromChainInfo.chainName}->${toChainInfo.chainName}>>${lnProviderInfo.fromAddress}`;
       if (profit >= minProfit && profit <= maxProfit) {
-          this.logger.log(`[${tokenBridgeInfo}]fee is sensible, no need to update, profit: ${profit}`); 
+          this.logger.log(`[${tokenBridgeInfo}]fee is sensible, no need to update, profit: ${removeDecimals(profit, srcDecimals)}`); 
           return;
       }
       const sensibleProfit = nativeFeeToToken(new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number);
@@ -269,7 +273,11 @@ export class RelayerService implements OnModuleInit {
         null,
       );
       if (err === null) {
-        this.logger.log(`[${tokenBridgeInfo}]fee is not sensible, try to update, profit: ${profit}, should in [${minProfit}, ${maxProfit}], new:${sensibleBaseFee}`); 
+        const profitFmt = removeDecimals(profit, srcDecimals);
+        const sensibleBaseFeeFmt = removeDecimals(sensibleBaseFee, srcDecimals);
+        this.logger.log(
+            `[${tokenBridgeInfo}]fee is not sensible, try to update, profit: ${profitFmt}, should in [${lnBridge.minProfit}, ${lnBridge.maxProfit}], new:${sensibleBaseFeeFmt}`
+        ); 
         var gasPrice;
         if (fromChainInfo.fixedGasPrice !== undefined) {
           gasPrice = {
@@ -485,7 +493,7 @@ export class RelayerService implements OnModuleInit {
                 sourceAmount: new EtherBigNumber(record.sendAmount).Number,
                 targetAmount: new EtherBigNumber(record.recvAmount).Number,
                 receiver: record.recipient,
-                nonce: new EtherBigNumber(record.messageNonce).Number,
+                timestamp: new EtherBigNumber(record.messageNonce).Number,
               },
               expectedTransferId: last(record.id.split("-")),
             };
