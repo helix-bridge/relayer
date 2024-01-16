@@ -2,9 +2,10 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import axios from "axios";
 import { last } from "lodash";
 import {
-    Erc20Contract,
-    LnBridgeContract,
-    zeroTransferId,
+  Erc20Contract,
+  LnBridgeContract,
+  Lnv3BridgeContract,
+  zeroTransferId,
 } from "../base/contract";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { EthereumProvider, GasPrice } from "../base/provider";
@@ -17,6 +18,7 @@ export interface HistoryRecord {
   recvToken: string;
   sender: string;
   recipient: string;
+  sendAmount: string;
   recvAmount: string;
   fromChain: string;
   toChain: string;
@@ -24,6 +26,7 @@ export interface HistoryRecord {
   fee: string;
   requestTxHash: string;
   confirmedBlocks: string;
+  messageNonce: number;
 }
 
 export interface ValidInfo {
@@ -65,19 +68,21 @@ export class DataworkerService implements OnModuleInit {
     toChain: string,
     relayer: string,
     token: string,
-    direction: string,
+    bridgeType: string
   ): Promise<TransferRecord | null> {
+    let firstPendingOrderBy = bridgeType === "lnv3" ? "nonce_asc" : "messageNonce_asc";
+    let lastSuccessOrderBy = bridgeType === "lnv3" ? "nonce_desc" : "messageNonce_desc";
     // query first pending tx
     let query = `{
             firstHistoryRecord(
                 fromChain: \"${fromChain}\",
                 toChain: \"${toChain}\",
-                bridge: \"lnbridgev20-${direction}\",
+                bridge: \"${bridgeType}\",
                 results: [${this.statusPending}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "messageNonce_asc"
-            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks}}`;
+                order: "${firstPendingOrderBy}"
+            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -86,7 +91,14 @@ export class DataworkerService implements OnModuleInit {
       })
       .then((res) => res.data.data.firstHistoryRecord);
     if (pendingRecord === null) {
-      return null
+      return null;
+    }
+
+    if (bridgeType === "lnv3") {
+      return {
+        lastTransferId: null,
+        record: pendingRecord,
+      };
     }
 
     // query the first successed record
@@ -94,11 +106,13 @@ export class DataworkerService implements OnModuleInit {
             firstHistoryRecord(
                 fromChain: \"${fromChain}\",
                 toChain: \"${toChain}\",
-                bridge: \"lnbridgev20-${direction}\",
-                results: [${this.statusSuccess}, ${this.statusRefund}, ${this.pendingToConfirmRefund}],
+                bridge: \"${bridgeType}\",
+                results: [${this.statusSuccess}, ${this.statusRefund}, ${
+      this.pendingToConfirmRefund
+    }],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "messageNonce_desc"
+                order: "${lastSuccessOrderBy}"
             ) {id}}`;
     const lastRecord = await axios
       .post(url, {
@@ -107,17 +121,20 @@ export class DataworkerService implements OnModuleInit {
       })
       .then((res) => res.data.data.firstHistoryRecord);
 
-    const lastTransferId = lastRecord === null ? zeroTransferId : last(lastRecord.id.split('-'));
+    const lastTransferId =
+      lastRecord === null ? zeroTransferId : last(lastRecord.id.split("-"));
     return {
       lastTransferId: lastTransferId,
       record: pendingRecord,
-    }
+    };
   }
 
   relayFee(gasPrice: GasPrice): bigint {
     let feeUsed: bigint;
     if (gasPrice.isEip1559) {
-      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(1.05).Number;
+      let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(
+        1.05
+      ).Number;
       const maxPriorityFeePerGas = new GWei(
           gasPrice.eip1559fee.maxPriorityFeePerGas
       ).mul(1.1).Number
@@ -144,8 +161,8 @@ export class DataworkerService implements OnModuleInit {
   ) {
     const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${block}/${reorgThreshold}\")}`;
     await axios.post(url, {
-        query: mutation,
-        variables: null,
+      query: mutation,
+      variables: null,
     });
   }
 
@@ -154,40 +171,49 @@ export class DataworkerService implements OnModuleInit {
     fromChainId: number,
     toChainId: number,
     relayer: string,
-    tokenAddress: string
+    tokenAddress: string,
+    version: string
   ) {
-    const mutation = `mutation {lnBridgeHeartBeat( fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
+    if (version !== 'lnv3') {
+      version = 'lnv2';
+    }
+    const mutation = `mutation {lnBridgeHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
     await axios.post(url, {
-        query: mutation,
-        variables: null,
+      query: mutation,
+      variables: null,
     });
   }
 
   async checkValid(
     url: string,
     record: HistoryRecord,
-    fromBridge: LnBridgeContract,
-    toBridge: LnBridgeContract,
+    fromBridge: LnBridgeContract | Lnv3BridgeContract,
+    toBridge: LnBridgeContract | Lnv3BridgeContract,
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
     reorgThreshold: number,
-    notSupport1559: boolean,
+    notSupport1559: boolean
   ): Promise<ValidInfo> {
     // 1. tx must be finalized
     const transactionInfo = await fromProvider.checkPendingTransaction(
       record.requestTxHash
     );
-    if (
-      !transactionInfo ||
-      transactionInfo.confirmedBlock < reorgThreshold
-    ) {
+    if (!transactionInfo || transactionInfo.confirmedBlock < reorgThreshold) {
       this.logger.log(
         `request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`
       );
       // update confirmed block
-      const confirmedBlock = record.confirmedBlocks === '' ? 0 : Number(record.confirmedBlocks.split('/')[0]);
+      const confirmedBlock =
+        record.confirmedBlocks === ""
+          ? 0
+          : Number(record.confirmedBlocks.split("/")[0]);
       if (transactionInfo.confirmedBlock > confirmedBlock) {
-          await this.updateConfirmedBlock(url, record.id, transactionInfo.confirmedBlock, reorgThreshold);
+        await this.updateConfirmedBlock(
+          url,
+          record.id,
+          transactionInfo.confirmedBlock,
+          reorgThreshold
+        );
       }
       return {
         gasPrice: null,
@@ -211,18 +237,14 @@ export class DataworkerService implements OnModuleInit {
     // 3. the lock info verify
     const existInfo = await fromBridge.transferIdExist(transferId);
     if (!existInfo[0]) {
-        this.logger.log(
-            `lock info not exist, maybe reorged, id ${transferId}`
-        );
-        return {
-            gasPrice: null,
-            feeUsed: null,
-            isValid: false,
-        };
+      this.logger.log(`lock info not exist, maybe reorged, id ${transferId}`);
+      return {
+        gasPrice: null,
+        feeUsed: null,
+        isValid: false,
+      };
     } else {
-        this.logger.log(
-            `transfer locked success, info ${existInfo[1]}`
-        );
+      this.logger.log(`transfer locked success, info ${existInfo[1]}`);
     }
     // 4. get current fee
     let gasPrice = await toProvider.feeData(1, notSupport1559);
