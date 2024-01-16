@@ -234,6 +234,7 @@ export class RelayerService implements OnModuleInit {
       toChainInfo: ChainInfo,
       lnProviderInfo: LnProviderInfo,
   ) {
+      if (!lnBridge.minProfit || !lnBridge.maxProfit) return;
       if (fromChainInfo.adjustingFee) return;
       let srcDecimals = 18;
       if (lnProviderInfo.fromAddress !== zeroAddress) {
@@ -371,7 +372,7 @@ export class RelayerService implements OnModuleInit {
     chainInfo.lastAdjustTime += 1;
     if (chainInfo.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
       chainInfo.lastAdjustTime = 0;
-      this.logger.log(`[${chainInfo.chainName}] schedule adjust fee`);
+      //this.logger.log(`[${chainInfo.chainName}] schedule adjust fee`);
     }
   }
 
