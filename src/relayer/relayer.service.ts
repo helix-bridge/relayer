@@ -69,7 +69,7 @@ export class RelayerService implements OnModuleInit {
   private readonly logger = new Logger("relayer");
   private readonly scheduleInterval = 10000;
   private readonly waitingPendingTime = 12; // 2 minute
-  private readonly scheduleAdjustFeeInterval = 30; // 1day
+  private readonly scheduleAdjustFeeInterval = 8640; // 1day
   private readonly maxWaitingPendingTimes = 180;
   private readonly heartBeatInterval = 6; // 1 minute
   private chainInfos = new Map();
@@ -236,13 +236,14 @@ export class RelayerService implements OnModuleInit {
   ) {
       if (!lnBridge.minProfit || !lnBridge.maxProfit) return;
       if (fromChainInfo.adjustingFee) return;
+      if (lnProviderInfo.swapRate < 0.01) return;
       let srcDecimals = 18;
       if (lnProviderInfo.fromAddress !== zeroAddress) {
           srcDecimals = await lnProviderInfo.fromToken.decimals();
       }
       // native fee decimals = 10**18
       function nativeFeeToToken(fee: bigint): bigint {
-          return fee * BigInt(lnProviderInfo.swapRate) * (new Any(1, srcDecimals).Number) / (new Ether(1).Number);
+          return fee * BigInt((lnProviderInfo.swapRate * 100).toFixed()) * (new Any(1, srcDecimals).Number) / (new Ether(100).Number);
       }
 
       function removeDecimals(fee: bigint, decimals: number): string {
@@ -308,7 +309,7 @@ export class RelayerService implements OnModuleInit {
         } catch(err) {
           this.logger.warn(`update fee failed on chain ${fromChainInfo.chainName}, err ${err}`);
         }
-        fromChainInfo.adjustingFee = true;
+        fromChainInfo.adjustingFee = false;
       }
   }
 
