@@ -30,7 +30,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -53,7 +53,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -76,7 +76,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -99,7 +99,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -122,7 +122,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -145,7 +145,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -168,7 +168,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -191,7 +191,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -210,7 +210,7 @@
             "bridgeType": "lnv2-default",
             "tokens": [
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -237,7 +237,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -260,7 +260,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
@@ -283,7 +283,7 @@
                     "swapRate": 2000
                 },
                 {
-                    "symbol": "usdt->usdt",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
