@@ -14,9 +14,9 @@ export interface TokenInfo {
 export interface Chain {
     name: string;
     id: number;
-    lnv2DefaultAddress: string | undefined;
-    lnv2OppositeAddress: string | undefined;
-    lnv3Address: string | undefined;
+    lnv2DefaultAddress: string | undefined | null;
+    lnv2OppositeAddress: string | undefined | null;
+    lnv3Address: string | undefined | null;
     tokens: TokenInfo[];
 }
 
@@ -68,6 +68,7 @@ export class BaseConfigService {
               name: 'polygon',
               id: 137,
               lnv2DefaultAddress: '0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -84,6 +85,7 @@ export class BaseConfigService {
               name: 'darwinia-dvm',
               id: 46,
               lnv2DefaultAddress: '0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -100,6 +102,7 @@ export class BaseConfigService {
               name: 'crab-dvm',
               id: 44,
               lnv2DefaultAddress: '0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -116,6 +119,7 @@ export class BaseConfigService {
               name: 'mantle',
               id: 5000,
               lnv2DefaultAddress: '0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -132,6 +136,8 @@ export class BaseConfigService {
               name: 'zksync',
               id: 324,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
+              lnv2OppositeAddress: null,
+              lnv3Address: null,
               tokens: [
                   {
                       symbol: 'usdt',
@@ -147,6 +153,7 @@ export class BaseConfigService {
               name: 'scroll',
               id: 534352,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -163,6 +170,7 @@ export class BaseConfigService {
               name: 'bsc',
               id: 56,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -179,6 +187,7 @@ export class BaseConfigService {
               name: 'linea',
               id: 59144,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -191,6 +200,7 @@ export class BaseConfigService {
               name: 'op',
               id: 10,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
@@ -203,6 +213,7 @@ export class BaseConfigService {
               name: 'gnosis',
               id: 10,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
+              lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
               tokens: [
                   {
