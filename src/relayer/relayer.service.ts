@@ -571,7 +571,7 @@ export class RelayerService implements OnModuleInit {
         await this.dataworkerService.updateConfirmedBlock(
             this.configureService.config.indexer,
             record.id,
-            "${tx.hash}"
+            `${tx.hash}`
         );
         await this.adjustFee(
           bridge,
