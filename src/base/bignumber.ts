@@ -20,7 +20,7 @@ export class Any extends EtherBigNumber {
 
 export class Ether extends EtherBigNumber {
   constructor(value: string | number | bigint) {
-    const bignumber = ethers.parseEther(value.toString());
+    const bignumber = ethers.parseEther(value.toString().substr(0, 20));
     super(bignumber);
   }
 }
