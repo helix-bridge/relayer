@@ -211,7 +211,7 @@ export class BaseConfigService {
           },
           {
               name: 'gnosis',
-              id: 10,
+              id: 100,
               lnv2DefaultAddress: '0x767Bc046c989f5e63683fB530f939DD34b91ceAC',
               lnv2OppositeAddress: null,
               lnv3Address: '0xbA5D580B18b6436411562981e02c8A9aA1776D10',
