@@ -568,6 +568,11 @@ export class RelayerService implements OnModuleInit {
         this.logger.log(
           `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] success relay message, txhash: ${tx.hash}`
         );
+        await this.dataworkerService.updateConfirmedBlock(
+            this.configureService.config.indexer,
+            record.id,
+            "${tx.hash}"
+        );
         await this.adjustFee(
           bridge,
           validInfo.feeUsed,

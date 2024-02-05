@@ -156,10 +156,9 @@ export class DataworkerService implements OnModuleInit {
   async updateConfirmedBlock(
     url: string,
     id: string,
-    block: number,
-    reorgThreshold: number
+    confirmInfo: string
   ) {
-    const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${block}/${reorgThreshold}\")}`;
+    const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${confirmInfo}\")}`;
     await axios.post(url, {
       query: mutation,
       variables: null,
@@ -211,8 +210,7 @@ export class DataworkerService implements OnModuleInit {
         await this.updateConfirmedBlock(
           url,
           record.id,
-          transactionInfo.confirmedBlock,
-          reorgThreshold
+          "${transactionInfo.confirmedBlock}/${reorgThreshold}"
         );
       }
       return {
