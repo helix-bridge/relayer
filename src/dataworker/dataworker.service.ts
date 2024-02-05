@@ -210,7 +210,7 @@ export class DataworkerService implements OnModuleInit {
         await this.updateConfirmedBlock(
           url,
           record.id,
-          "${transactionInfo.confirmedBlock}/${reorgThreshold}"
+          `${transactionInfo.confirmedBlock}/${reorgThreshold}`
         );
       }
       return {
