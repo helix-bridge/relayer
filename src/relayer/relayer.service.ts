@@ -443,7 +443,7 @@ export class RelayerService implements OnModuleInit {
         }
       } else {
         this.logger.log(
-          `the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${transactionInfo.confirmedBlock}`
+          `the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${transactionInfo.confirmedBlock},  ${transactionInfo.nonce}`
         );
         return true;
       }
