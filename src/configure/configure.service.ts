@@ -90,4 +90,8 @@ export class ConfigureService {
   get indexer(): string {
       return this.config.indexer ?? this.baseConfig.indexer;
   }
+
+  get supportedChains(): string[] {
+      return this.baseConfig.chains.map((item) => item.name);
+  }
 }

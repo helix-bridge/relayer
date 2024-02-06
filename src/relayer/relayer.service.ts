@@ -124,7 +124,8 @@ export class RelayerService implements OnModuleInit {
       this.configureService.config.rpcnodes.map((rpcnode) => {
         const chainInfo = this.configureService.getChainInfo(rpcnode.name);
         if (!chainInfo) {
-            this.logger.warn(`the chain ${rpcnode.name} not support`);
+            this.logger.error(`the chain ${rpcnode.name} not support, only support ${this.configureService.supportedChains}`);
+            return null;
         }
         return [
           rpcnode.name,
@@ -218,12 +219,12 @@ export class RelayerService implements OnModuleInit {
           }
           const fromToken = fromChainInfo.tokens.find((item) => item.symbol === symbols[0]);
           if (!fromToken) {
-              this.logger.error(`token not support ${symbols[0]}`);
+              this.logger.error(`[${fromChainInfo.chainName}]token not support ${symbols[0]}, only support ${fromChainInfo.tokens.map((item)=>item.symbol)}`);
               return null;
           }
           const toToken = toChainInfo.tokens.find((item) => item.symbol === symbols[1]);
           if (!toToken) {
-              this.logger.error(`token not support ${symbols[1]}`);
+              this.logger.error(`[${toChainInfo.chainName}]token not support ${symbols[1]}, only support ${toChainInfo.tokens.map((item)=>item.symbol)}`);
               return null;
           }
           return {
