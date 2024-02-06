@@ -1,13 +1,13 @@
 import {
-    SafeTransactionDataPartial,
-    SafeMultisigTransactionResponse,
-    SafeMultisigConfirmationResponse,
-    MetaTransactionData
-} from '@safe-global/safe-core-sdk-types';
-import Safe, {EthersAdapter} from '@safe-global/protocol-kit';
-import SafeApiKit from '@safe-global/api-kit'
+  SafeTransactionDataPartial,
+  SafeMultisigTransactionResponse,
+  SafeMultisigConfirmationResponse,
+  MetaTransactionData,
+} from "@safe-global/safe-core-sdk-types";
+import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
+import SafeApiKit from "@safe-global/api-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
-const ApiKit = require('@safe-global/api-kit');
+const ApiKit = require("@safe-global/api-kit");
 
 type Opts = {
   allowedDomains?: RegExp[];
@@ -28,7 +28,11 @@ export class SafeWallet {
   public signer: Wallet | HDNodeWallet;
   private safeSdk: Safe;
   private safeService: SafeApiKit;
-  constructor(address: string, apiService: string, signer: Wallet | HDNodeWallet ) {
+  constructor(
+    address: string,
+    apiService: string,
+    signer: Wallet | HDNodeWallet
+  ) {
     this.address = address;
     this.signer = signer;
     this.apiService = apiService;
@@ -40,8 +44,14 @@ export class SafeWallet {
       signerOrProvider: this.signer,
     });
 
-    this.safeSdk = await Safe.create({ ethAdapter: ethAdapter, safeAddress: this.address })
-    this.safeService = new SafeApiKit({ txServiceUrl: this.apiService, chainId })
+    this.safeSdk = await Safe.create({
+      ethAdapter: ethAdapter,
+      safeAddress: this.address,
+    });
+    this.safeService = new SafeApiKit({
+      txServiceUrl: this.apiService,
+      chainId,
+    });
   }
 
   private isTransactionSignedByAddress(
@@ -92,7 +102,7 @@ export class SafeWallet {
         to: address,
         value,
         data,
-      }
+      },
     ];
     const tx = await this.safeSdk.createTransaction({ transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);

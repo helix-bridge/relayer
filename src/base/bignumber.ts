@@ -27,7 +27,7 @@ export class Ether extends EtherBigNumber {
 
 export class GWei extends EtherBigNumber {
   constructor(value: string | number | bigint) {
-    if (typeof value === 'bigint') {
+    if (typeof value === "bigint") {
       super(value);
     } else {
       const bignumber = ethers.parseUnits(value.toString(), 9);
@@ -38,6 +38,6 @@ export class GWei extends EtherBigNumber {
   mul(scaleValue: number) {
     const scale = new GWei(scaleValue);
     const unit = new GWei(1);
-    return new GWei(this.Data * scale.Number / unit.Number);
+    return new GWei((this.Data * scale.Number) / unit.Number);
   }
 }

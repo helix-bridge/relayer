@@ -32,37 +32,37 @@ import * as fs from "fs";
 */
 
 export interface RpcNode {
-    name: string;
-    rpc: string;
-    fixedGasPrice: number;
-    notSupport1559: boolean;
+  name: string;
+  rpc: string;
+  fixedGasPrice: number;
+  notSupport1559: boolean;
 }
 
 export interface TokenInfo {
-    symbol: string;
-    swapRate: number;
+  symbol: string;
+  swapRate: number;
 }
 
 export interface BridgeInfo {
-    direction: string;
-    encryptedPrivateKey: string;
-    feeLimit: number;
-    bridgeType: string;
-    reorgThreshold: number;
-    safeWalletAddress: string | undefined;
-    safeWalletUrl: string | undefined;
-    safeWalletRole: string | undefined;
-    minProfit: number;
-    maxProfit: number;
-    tokens: TokenInfo[];
+  direction: string;
+  encryptedPrivateKey: string;
+  feeLimit: number;
+  bridgeType: string;
+  reorgThreshold: number;
+  safeWalletAddress: string | undefined;
+  safeWalletUrl: string | undefined;
+  safeWalletRole: string | undefined;
+  minProfit: number;
+  maxProfit: number;
+  tokens: TokenInfo[];
 }
 
 export interface ConfigInfo {
-    env: string;
-    indexer: string;
-    relayGasLimit: number;
-    rpcnodes: RpcNode[];
-    bridges: BridgeInfo[];
+  env: string;
+  indexer: string;
+  relayGasLimit: number;
+  rpcnodes: RpcNode[];
+  bridges: BridgeInfo[];
 }
 
 @Injectable()
@@ -77,21 +77,23 @@ export class ConfigureService {
   );
   public baseConfig: BaseConfigure;
   constructor(
-      private configService: ConfigService,
-      private baseService: BaseConfigService
+    private configService: ConfigService,
+    private baseService: BaseConfigService
   ) {
-      this.baseConfig = this.baseService.baseConfigure(this.config.env === 'test');
+    this.baseConfig = this.baseService.baseConfigure(
+      this.config.env === "test"
+    );
   }
 
   public getChainInfo(name: string): Chain | null {
-      return this.baseConfig.chains.find((chain) => chain.name === name);
+    return this.baseConfig.chains.find((chain) => chain.name === name);
   }
 
   get indexer(): string {
-      return this.config.indexer ?? this.baseConfig.indexer;
+    return this.config.indexer ?? this.baseConfig.indexer;
   }
 
   get supportedChains(): string[] {
-      return this.baseConfig.chains.map((item) => item.name);
+    return this.baseConfig.chains.map((item) => item.name);
   }
 }

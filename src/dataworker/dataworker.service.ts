@@ -70,8 +70,10 @@ export class DataworkerService implements OnModuleInit {
     token: string,
     bridgeType: string
   ): Promise<TransferRecord | null> {
-    let firstPendingOrderBy = bridgeType === "lnv3" ? "nonce_asc" : "messageNonce_asc";
-    let lastSuccessOrderBy = bridgeType === "lnv3" ? "nonce_desc" : "messageNonce_desc";
+    let firstPendingOrderBy =
+      bridgeType === "lnv3" ? "nonce_asc" : "messageNonce_asc";
+    let lastSuccessOrderBy =
+      bridgeType === "lnv3" ? "nonce_desc" : "messageNonce_desc";
     // query first pending tx
     let query = `{
             firstHistoryRecord(
@@ -136,10 +138,10 @@ export class DataworkerService implements OnModuleInit {
         1.05
       ).Number;
       const maxPriorityFeePerGas = new GWei(
-          gasPrice.eip1559fee.maxPriorityFeePerGas
-      ).mul(1.1).Number
+        gasPrice.eip1559fee.maxPriorityFeePerGas
+      ).mul(1.1).Number;
       if (maxFeePerGas < maxPriorityFeePerGas) {
-          maxFeePerGas = maxPriorityFeePerGas;
+        maxFeePerGas = maxPriorityFeePerGas;
       }
       gasPrice.eip1559fee = {
         maxFeePerGas,
@@ -153,11 +155,7 @@ export class DataworkerService implements OnModuleInit {
     return feeUsed;
   }
 
-  async updateConfirmedBlock(
-    url: string,
-    id: string,
-    confirmInfo: string
-  ) {
+  async updateConfirmedBlock(url: string, id: string, confirmInfo: string) {
     const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${confirmInfo}\")}`;
     await axios.post(url, {
       query: mutation,
@@ -173,8 +171,8 @@ export class DataworkerService implements OnModuleInit {
     tokenAddress: string,
     version: string
   ) {
-    if (version !== 'lnv3') {
-      version = 'lnv2';
+    if (version !== "lnv3") {
+      version = "lnv2";
     }
     const mutation = `mutation {lnBridgeHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
     await axios.post(url, {

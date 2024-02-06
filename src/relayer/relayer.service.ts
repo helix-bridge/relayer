@@ -101,7 +101,10 @@ export class RelayerService implements OnModuleInit {
             }
             item.isProcessing = true;
             try {
-              const txPending = await this.relay(item, value.lastAdjustTime === 0);
+              const txPending = await this.relay(
+                item,
+                value.lastAdjustTime === 0
+              );
               if (txPending) {
                 item.isProcessing = false;
                 return;
@@ -124,8 +127,10 @@ export class RelayerService implements OnModuleInit {
       this.configureService.config.rpcnodes.map((rpcnode) => {
         const chainInfo = this.configureService.getChainInfo(rpcnode.name);
         if (!chainInfo) {
-            this.logger.error(`the chain ${rpcnode.name} not support, only support ${this.configureService.supportedChains}`);
-            return null;
+          this.logger.error(
+            `the chain ${rpcnode.name} not support, only support ${this.configureService.supportedChains}`
+          );
+          return null;
         }
         return [
           rpcnode.name,
@@ -142,17 +147,17 @@ export class RelayerService implements OnModuleInit {
             tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
-            lastAdjustTime: this.scheduleAdjustFeeInterval
+            lastAdjustTime: this.scheduleAdjustFeeInterval,
           },
         ];
       })
     );
     this.lnBridges = this.configureService.config.bridges
       .map((config) => {
-        const direction = config.direction?.split('->');
+        const direction = config.direction?.split("->");
         if (direction?.length !== 2) {
-            this.logger.error(`bridge direction invalid ${config.direction}`);
-            return;
+          this.logger.error(`bridge direction invalid ${config.direction}`);
+          return;
         }
         var [fromChain, toChain] = direction;
         let fromChainInfo = this.chainInfos.get(direction[0]);
@@ -165,21 +170,23 @@ export class RelayerService implements OnModuleInit {
           this.logger.error(`to chain is not invalid ${direction[1]}`);
           return null;
         }
-        
+
         const privateKey = e.decrypt(config.encryptedPrivateKey);
         let toWallet = new EthereumConnectedWallet(
           privateKey,
           toChainInfo.provider
         );
-        
-        let toBridge = config.bridgeType == 'lnv3' ? new Lnv3BridgeContract(
-          toChainInfo.lnv3Address,
-          toWallet.wallet
-        ) : new LnBridgeContract(
-          config.bridgeType === 'lnv2-default' ? toChainInfo.lnv2DefaultAddress : toChainInfo.lnv2OppositeAddress,
-          toWallet.wallet,
-          config.bridgeType
-        );
+
+        let toBridge =
+          config.bridgeType == "lnv3"
+            ? new Lnv3BridgeContract(toChainInfo.lnv3Address, toWallet.wallet)
+            : new LnBridgeContract(
+                config.bridgeType === "lnv2-default"
+                  ? toChainInfo.lnv2DefaultAddress
+                  : toChainInfo.lnv2OppositeAddress,
+                toWallet.wallet,
+                config.bridgeType
+              );
         var toSafeWallet: SafeWallet;
         if (config.safeWalletRole !== undefined) {
           toSafeWallet = new SafeWallet(
@@ -198,46 +205,69 @@ export class RelayerService implements OnModuleInit {
           privateKey,
           fromChainInfo.provider
         );
-        let fromBridge = config.bridgeType == 'lnv3' ? new Lnv3BridgeContract(
-          fromChainInfo.lnv3Address,
-          fromWallet.wallet,
-        ) : new LnBridgeContract(
-          config.bridgeType === 'lnv2-default' ? fromChainInfo.lnv2DefaultAddress : fromChainInfo.lnv2OppositeAddress,
-          fromWallet.wallet,
-          config.bridgeType
-        );
+        let fromBridge =
+          config.bridgeType == "lnv3"
+            ? new Lnv3BridgeContract(
+                fromChainInfo.lnv3Address,
+                fromWallet.wallet
+              )
+            : new LnBridgeContract(
+                config.bridgeType === "lnv2-default"
+                  ? fromChainInfo.lnv2DefaultAddress
+                  : fromChainInfo.lnv2OppositeAddress,
+                fromWallet.wallet,
+                config.bridgeType
+              );
         let fromConnectInfo = {
           chainInfo: fromChainInfo,
           bridge: fromBridge,
           safeWallet: undefined,
         };
-        let lnProviders = config.tokens.map((token) => {
-          const symbols = token.symbol.split('->');
-          if (symbols.length !== 2) {
+        let lnProviders = config.tokens
+          .map((token) => {
+            const symbols = token.symbol.split("->");
+            if (symbols.length !== 2) {
               this.logger.error(`invalid token symbols ${token.symbol}`);
               return null;
-          }
-          const fromToken = fromChainInfo.tokens.find((item) => item.symbol === symbols[0]);
-          if (!fromToken) {
-              this.logger.error(`[${fromChainInfo.chainName}]token not support ${symbols[0]}, only support ${fromChainInfo.tokens.map((item)=>item.symbol)}`);
+            }
+            const fromToken = fromChainInfo.tokens.find(
+              (item) => item.symbol === symbols[0]
+            );
+            if (!fromToken) {
+              this.logger.error(
+                `[${fromChainInfo.chainName}]token not support ${
+                  symbols[0]
+                }, only support ${fromChainInfo.tokens.map(
+                  (item) => item.symbol
+                )}`
+              );
               return null;
-          }
-          const toToken = toChainInfo.tokens.find((item) => item.symbol === symbols[1]);
-          if (!toToken) {
-              this.logger.error(`[${toChainInfo.chainName}]token not support ${symbols[1]}, only support ${toChainInfo.tokens.map((item)=>item.symbol)}`);
+            }
+            const toToken = toChainInfo.tokens.find(
+              (item) => item.symbol === symbols[1]
+            );
+            if (!toToken) {
+              this.logger.error(
+                `[${toChainInfo.chainName}]token not support ${
+                  symbols[1]
+                }, only support ${toChainInfo.tokens.map(
+                  (item) => item.symbol
+                )}`
+              );
               return null;
-          }
-          return {
-            fromAddress: fromToken.address,
-            toAddress: toToken.address,
-            fromToken: new Erc20Contract(
-              fromToken.address,
-              fromWallet.wallet
-            ),
-            relayer: toSafeWallet?.address ?? toWallet.address,
-            swapRate: token.swapRate,
-          };
-        }).filter((item) => item !== null);
+            }
+            return {
+              fromAddress: fromToken.address,
+              toAddress: toToken.address,
+              fromToken: new Erc20Contract(
+                fromToken.address,
+                fromWallet.wallet
+              ),
+              relayer: toSafeWallet?.address ?? toWallet.address,
+              swapRate: token.swapRate,
+            };
+          })
+          .filter((item) => item !== null);
 
         return {
           isProcessing: false,
@@ -257,90 +287,112 @@ export class RelayerService implements OnModuleInit {
   }
 
   async adjustFee(
-      lnBridge: LnBridge,
-      feeUsed: bigint,
-      sourceContract: LnBridgeContract | Lnv3BridgeContract,
-      fromChainInfo: ChainInfo,
-      toChainInfo: ChainInfo,
-      lnProviderInfo: LnProviderInfo,
+    lnBridge: LnBridge,
+    feeUsed: bigint,
+    sourceContract: LnBridgeContract | Lnv3BridgeContract,
+    fromChainInfo: ChainInfo,
+    toChainInfo: ChainInfo,
+    lnProviderInfo: LnProviderInfo
   ) {
-      if (!lnBridge.minProfit || !lnBridge.maxProfit) return;
-      if (fromChainInfo.adjustingFee) return;
-      if (lnProviderInfo.swapRate < 0.01) return;
-      let srcDecimals = 18;
-      if (lnProviderInfo.fromAddress !== zeroAddress) {
-          srcDecimals = await lnProviderInfo.fromToken.decimals();
-      }
-      // native fee decimals = 10**18
-      function nativeFeeToToken(fee: bigint): bigint {
-          return fee * BigInt((lnProviderInfo.swapRate * 100).toFixed()) * (new Any(1, srcDecimals).Number) / (new Ether(100).Number);
-      }
-
-      function removeDecimals(fee: bigint, decimals: number): string {
-          return ethers.formatUnits(fee, decimals);
-      }
-
-      const gasLimit = new EtherBigNumber(1000000).Number;
-      let lnProviderInfoOnChain = await sourceContract.getLnProviderInfo(toChainInfo.chainId, lnProviderInfo.relayer, lnProviderInfo.fromAddress, lnProviderInfo.toAddress)
-      let baseFee = lnProviderInfoOnChain.baseFee;
-      let tokenUsed = nativeFeeToToken(feeUsed);
-      let profit = baseFee - tokenUsed;
-      // it's the native token
-      const minProfit = nativeFeeToToken(new Ether(lnBridge.minProfit).Number);
-      const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
-      const tokenBridgeInfo = `${fromChainInfo.chainName}->${toChainInfo.chainName}>>${lnProviderInfo.fromAddress}`;
-      if (profit >= minProfit && profit <= maxProfit) {
-          this.logger.log(`[${tokenBridgeInfo}]fee is sensible, no need to update, profit: ${removeDecimals(profit, srcDecimals)}`); 
-          return;
-      }
-      const sensibleProfit = nativeFeeToToken(new Ether((lnBridge.minProfit + lnBridge.maxProfit)/2).Number);
-      const sensibleBaseFee = tokenUsed + sensibleProfit;
-      let err = await sourceContract.tryUpdateFee(
-        toChainInfo.chainId,
-        lnProviderInfo.fromAddress,
-        lnProviderInfo.toAddress,
-        sensibleBaseFee,
-        lnProviderInfoOnChain.liquidityFeeRate,
-        lnProviderInfoOnChain.transferLimit,
-        null,
+    if (!lnBridge.minProfit || !lnBridge.maxProfit) return;
+    if (fromChainInfo.adjustingFee) return;
+    if (lnProviderInfo.swapRate < 0.01) return;
+    let srcDecimals = 18;
+    if (lnProviderInfo.fromAddress !== zeroAddress) {
+      srcDecimals = await lnProviderInfo.fromToken.decimals();
+    }
+    // native fee decimals = 10**18
+    function nativeFeeToToken(fee: bigint): bigint {
+      return (
+        (fee *
+          BigInt((lnProviderInfo.swapRate * 100).toFixed()) *
+          new Any(1, srcDecimals).Number) /
+        new Ether(100).Number
       );
-      if (err === null) {
-        const profitFmt = removeDecimals(profit, srcDecimals);
-        const sensibleBaseFeeFmt = removeDecimals(sensibleBaseFee, srcDecimals);
-        this.logger.log(
-            `[${tokenBridgeInfo}]fee is not sensible, try to update, profit: ${profitFmt}, should in [${lnBridge.minProfit}, ${lnBridge.maxProfit}], new:${sensibleBaseFeeFmt}`
-        ); 
-        var gasPrice;
-        if (fromChainInfo.fixedGasPrice !== undefined) {
-          gasPrice = {
-            isEip1559: false,
-            fee: {
-                gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
-            },
-            eip1559fee: null,
-          };
-        } else {
-            gasPrice = await fromChainInfo.provider.feeData(1, fromChainInfo.notSupport1559);
-        }
-        if (fromChainInfo.adjustingFee) return;
-        // each adjust time, only send one tx
-        fromChainInfo.adjustingFee = true;
-        try {
-          await sourceContract.updateFee(
-            toChainInfo.chainId,
-            lnProviderInfo.fromAddress,
-            lnProviderInfo.toAddress,
-            sensibleBaseFee,
-            lnProviderInfoOnChain.liquidityFeeRate,
-            lnProviderInfoOnChain.transferLimit,
-            gasPrice,
-            null,
-          );
-        } catch(err) {
-          this.logger.warn(`update fee failed on chain ${fromChainInfo.chainName}, err ${err}`);
-        }
-        fromChainInfo.adjustingFee = false;
+    }
+
+    function removeDecimals(fee: bigint, decimals: number): string {
+      return ethers.formatUnits(fee, decimals);
+    }
+
+    const gasLimit = new EtherBigNumber(1000000).Number;
+    let lnProviderInfoOnChain = await sourceContract.getLnProviderInfo(
+      toChainInfo.chainId,
+      lnProviderInfo.relayer,
+      lnProviderInfo.fromAddress,
+      lnProviderInfo.toAddress
+    );
+    let baseFee = lnProviderInfoOnChain.baseFee;
+    let tokenUsed = nativeFeeToToken(feeUsed);
+    let profit = baseFee - tokenUsed;
+    // it's the native token
+    const minProfit = nativeFeeToToken(new Ether(lnBridge.minProfit).Number);
+    const maxProfit = nativeFeeToToken(new Ether(lnBridge.maxProfit).Number);
+    const tokenBridgeInfo = `${fromChainInfo.chainName}->${toChainInfo.chainName}>>${lnProviderInfo.fromAddress}`;
+    if (profit >= minProfit && profit <= maxProfit) {
+      this.logger.log(
+        `[${tokenBridgeInfo}]fee is sensible, no need to update, profit: ${removeDecimals(
+          profit,
+          srcDecimals
+        )}`
+      );
+      return;
+    }
+    const sensibleProfit = nativeFeeToToken(
+      new Ether((lnBridge.minProfit + lnBridge.maxProfit) / 2).Number
+    );
+    const sensibleBaseFee = tokenUsed + sensibleProfit;
+    let err = await sourceContract.tryUpdateFee(
+      toChainInfo.chainId,
+      lnProviderInfo.fromAddress,
+      lnProviderInfo.toAddress,
+      sensibleBaseFee,
+      lnProviderInfoOnChain.liquidityFeeRate,
+      lnProviderInfoOnChain.transferLimit,
+      null
+    );
+    if (err === null) {
+      const profitFmt = removeDecimals(profit, srcDecimals);
+      const sensibleBaseFeeFmt = removeDecimals(sensibleBaseFee, srcDecimals);
+      this.logger.log(
+        `[${tokenBridgeInfo}]fee is not sensible, try to update, profit: ${profitFmt}, should in [${lnBridge.minProfit}, ${lnBridge.maxProfit}], new:${sensibleBaseFeeFmt}`
+      );
+      var gasPrice;
+      if (fromChainInfo.fixedGasPrice !== undefined) {
+        gasPrice = {
+          isEip1559: false,
+          fee: {
+            gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
+          },
+          eip1559fee: null,
+        };
+      } else {
+        gasPrice = await fromChainInfo.provider.feeData(
+          1,
+          fromChainInfo.notSupport1559
+        );
       }
+      if (fromChainInfo.adjustingFee) return;
+      // each adjust time, only send one tx
+      fromChainInfo.adjustingFee = true;
+      try {
+        await sourceContract.updateFee(
+          toChainInfo.chainId,
+          lnProviderInfo.fromAddress,
+          lnProviderInfo.toAddress,
+          sensibleBaseFee,
+          lnProviderInfoOnChain.liquidityFeeRate,
+          lnProviderInfoOnChain.transferLimit,
+          gasPrice,
+          null
+        );
+      } catch (err) {
+        this.logger.warn(
+          `update fee failed on chain ${fromChainInfo.chainName}, err ${err}`
+        );
+      }
+      fromChainInfo.adjustingFee = false;
+    }
   }
 
   async checkPendingTransaction(bridge: LnBridge) {
@@ -431,7 +483,9 @@ export class RelayerService implements OnModuleInit {
         }
       }
     } catch (err) {
-      this.logger.warn(`heartbeat failed, url: ${this.configureService.indexer}, err: ${err}`);
+      this.logger.warn(
+        `heartbeat failed, url: ${this.configureService.indexer}, err: ${err}`
+      );
     }
 
     if (bridge.safeWalletRole !== "signer") {
@@ -440,7 +494,9 @@ export class RelayerService implements OnModuleInit {
           return true;
         }
       } catch (err) {
-        this.logger.warn(`check pendingtx failed: err: ${err}, bridge: ${bridge}`);
+        this.logger.warn(
+          `check pendingtx failed: err: ${err}, bridge: ${bridge}`
+        );
         return true;
       }
     }
@@ -448,7 +504,10 @@ export class RelayerService implements OnModuleInit {
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
       if (needAdjustFee) {
-        let gasPrice = await toChainInfo.provider.feeData(1, toChainInfo.notSupport1559);
+        let gasPrice = await toChainInfo.provider.feeData(
+          1,
+          toChainInfo.notSupport1559
+        );
         const feeUsed = this.dataworkerService.relayFee(gasPrice);
         await this.adjustFee(
           bridge,
@@ -456,7 +515,7 @@ export class RelayerService implements OnModuleInit {
           fromBridgeContract,
           fromChainInfo,
           toChainInfo,
-          lnProvider,
+          lnProvider
         );
       }
       // checkProfit
@@ -494,10 +553,10 @@ export class RelayerService implements OnModuleInit {
       }
 
       if (validInfo.feeUsed > new Ether(bridge.feeLimit).Number) {
-          this.logger.log(
-              `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
-          );
-          continue;
+        this.logger.log(
+          `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
+        );
+        continue;
       }
       let nonce: number | null = null;
       // try relay: check balance and fee enough
@@ -538,7 +597,12 @@ export class RelayerService implements OnModuleInit {
       const isExecutor = bridge.safeWalletRole === "executor";
       if (bridge.safeWalletRole === "signer" || isExecutor) {
         const relayData = toBridgeContract.relayRawData(args);
-        const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(toBridgeContract.address, relayData, isExecutor, BigInt(toChainInfo.chainId));
+        const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
+          toBridgeContract.address,
+          relayData,
+          isExecutor,
+          BigInt(toChainInfo.chainId)
+        );
         if (txInfo !== null && txInfo.readyExecute && isExecutor) {
           const safeContract = new SafeContract(
             bridge.toBridge.safeWallet.address,
@@ -599,9 +663,9 @@ export class RelayerService implements OnModuleInit {
           `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] success relay message, txhash: ${tx.hash}`
         );
         await this.dataworkerService.updateConfirmedBlock(
-            this.configureService.indexer,
-            record.id,
-            `${tx.hash}`
+          this.configureService.indexer,
+          record.id,
+          `${tx.hash}`
         );
         await this.adjustFee(
           bridge,
@@ -609,7 +673,7 @@ export class RelayerService implements OnModuleInit {
           fromBridgeContract,
           fromChainInfo,
           toChainInfo,
-          lnProvider,
+          lnProvider
         );
       }
       return true;

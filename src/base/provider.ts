@@ -59,9 +59,10 @@ export class EthereumProvider {
   ): Promise<GasPrice> {
     const fee = await this.provider.getFeeData();
     if (!notSupport1559 && fee.maxFeePerGas && fee.maxPriorityFeePerGas) {
-      const maxFeePerGas = fee.maxFeePerGas > fee.maxFeePerGas
-        ? fee.maxFeePerGas
-        : fee.maxFeePerGas;
+      const maxFeePerGas =
+        fee.maxFeePerGas > fee.maxFeePerGas
+          ? fee.maxFeePerGas
+          : fee.maxFeePerGas;
       const feeInfo: EIP1559Fee = {
         // maxFeePerGas is not accurate
         //maxFeePerGas: fee.maxFeePerGas,

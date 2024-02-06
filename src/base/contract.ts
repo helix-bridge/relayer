@@ -1,10 +1,4 @@
-import {
-  Wallet,
-  HDNodeWallet,
-  ethers,
-  Contract,
-  InterfaceAbi,
-} from "ethers";
+import { Wallet, HDNodeWallet, ethers, Contract, InterfaceAbi } from "ethers";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import { erc20 } from "../abi/erc20";
 import { lnDefaultBridge } from "../abi/lnDefaultBridge";
@@ -80,7 +74,10 @@ export class EthereumContract {
 }
 
 export class Erc20Contract extends EthereumContract {
-  constructor(address: string, signer: Wallet | HDNodeWallet | ethers.Provider) {
+  constructor(
+    address: string,
+    signer: Wallet | HDNodeWallet | ethers.Provider
+  ) {
     super(address, erc20, signer);
   }
 
@@ -150,7 +147,10 @@ export interface LnProviderFeeInfo {
 }
 
 export class SafeContract extends EthereumContract {
-  constructor(address: string, signer: Wallet | HDNodeWallet | ethers.Provider) {
+  constructor(
+    address: string,
+    signer: Wallet | HDNodeWallet | ethers.Provider
+  ) {
     super(address, abiSafe, signer);
   }
 
@@ -203,22 +203,30 @@ export class LnBridgeContract extends EthereumContract {
   }
 
   private getProviderKey(
-     remoteChainId: number,
-     provider: string,
-     sourceToken: string,
-     targetToken: string
+    remoteChainId: number,
+    provider: string,
+    sourceToken: string,
+    targetToken: string
   ) {
-    const encode = ethers.solidityPacked([
-      "uint256",
-      "address",
-      "address",
-      "address",
-    ], [remoteChainId, provider, sourceToken, targetToken]);
+    const encode = ethers.solidityPacked(
+      ["uint256", "address", "address", "address"],
+      [remoteChainId, provider, sourceToken, targetToken]
+    );
     return ethers.keccak256(encode);
   }
 
-  async getLnProviderInfo(remoteChainId: number, relayer: string, sourceToken: string, targetToken: string): Promise<LnProviderFeeInfo> {
-    const providerKey = await this.getProviderKey(remoteChainId, relayer, sourceToken, targetToken);
+  async getLnProviderInfo(
+    remoteChainId: number,
+    relayer: string,
+    sourceToken: string,
+    targetToken: string
+  ): Promise<LnProviderFeeInfo> {
+    const providerKey = await this.getProviderKey(
+      remoteChainId,
+      relayer,
+      sourceToken,
+      targetToken
+    );
     const lnProviderInfo = await this.contract.srcProviders(providerKey);
     return {
       baseFee: lnProviderInfo.config.baseFee,
@@ -228,80 +236,54 @@ export class LnBridgeContract extends EthereumContract {
   }
 
   async tryUpdateFee(
-      remoteChainId: number,
-      sourceToken: string,
-      targetToken: string,
-      baseFee: bigint,
-      liquidityFeeRate: number,
-      transferLimit: bigint,
-      gasLimit: bigint | null = null
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string,
+    baseFee: bigint,
+    liquidityFeeRate: number,
+    transferLimit: bigint,
+    gasLimit: bigint | null = null
   ) {
-      if (this.bridgeType === 'lnv2-default') {
-          return await this.staticCall(
-              "setProviderFee",
-              [
-                  remoteChainId,
-                  sourceToken,
-                  targetToken,
-                  baseFee,
-                  liquidityFeeRate,
-              ],
-              gasLimit
-          )
-      } else {
-          return await this.staticCall(
-              "updateProviderFeeAndMargin",
-              [
-                  remoteChainId,
-                  sourceToken,
-                  targetToken,
-                  0,
-                  baseFee,
-                  liquidityFeeRate,
-              ],
-              gasLimit
-          )
-      }
+    if (this.bridgeType === "lnv2-default") {
+      return await this.staticCall(
+        "setProviderFee",
+        [remoteChainId, sourceToken, targetToken, baseFee, liquidityFeeRate],
+        gasLimit
+      );
+    } else {
+      return await this.staticCall(
+        "updateProviderFeeAndMargin",
+        [remoteChainId, sourceToken, targetToken, 0, baseFee, liquidityFeeRate],
+        gasLimit
+      );
+    }
   }
 
   async updateFee(
-      remoteChainId: number,
-      sourceToken: string,
-      targetToken: string,
-      baseFee: bigint,
-      liquidityFeeRate: number,
-      transferLimit: bigint,
-      gas: GasPrice,
-      gasLimit: bigint | null = null
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string,
+    baseFee: bigint,
+    liquidityFeeRate: number,
+    transferLimit: bigint,
+    gas: GasPrice,
+    gasLimit: bigint | null = null
   ) {
-      if (this.bridgeType === 'lnv2-default') {
-          return await this.call(
-              "setProviderFee",
-              [
-                  remoteChainId,
-                  sourceToken,
-                  targetToken,
-                  baseFee,
-                  liquidityFeeRate,
-              ],
-              gas,
-              gasLimit
-          )
-      } else {
-          return await this.call(
-              "updateProviderFeeAndMargin",
-              [
-                  remoteChainId,
-                  sourceToken,
-                  targetToken,
-                  0,
-                  baseFee,
-                  liquidityFeeRate,
-              ],
-              gas,
-              gasLimit
-          );
-      }
+    if (this.bridgeType === "lnv2-default") {
+      return await this.call(
+        "setProviderFee",
+        [remoteChainId, sourceToken, targetToken, baseFee, liquidityFeeRate],
+        gas,
+        gasLimit
+      );
+    } else {
+      return await this.call(
+        "updateProviderFeeAndMargin",
+        [remoteChainId, sourceToken, targetToken, 0, baseFee, liquidityFeeRate],
+        gas,
+        gasLimit
+      );
+    }
   }
 
   async transferIdExist(transferId: string): Promise<[boolean, any]> {
@@ -410,27 +392,38 @@ export class LnBridgeContract extends EthereumContract {
 }
 
 export class Lnv3BridgeContract extends EthereumContract {
-  constructor(address: string, signer: Wallet | HDNodeWallet | ethers.Provider) {
+  constructor(
+    address: string,
+    signer: Wallet | HDNodeWallet | ethers.Provider
+  ) {
     super(address, lnv3Bridge, signer);
   }
 
   private getProviderKey(
-     remoteChainId: number,
-     provider: string,
-     sourceToken: string,
-     targetToken: string
+    remoteChainId: number,
+    provider: string,
+    sourceToken: string,
+    targetToken: string
   ) {
-    const encode = ethers.solidityPacked([
-      "uint256",
-      "address",
-      "address",
-      "address",
-    ], [remoteChainId, provider, sourceToken, targetToken]);
+    const encode = ethers.solidityPacked(
+      ["uint256", "address", "address", "address"],
+      [remoteChainId, provider, sourceToken, targetToken]
+    );
     return ethers.keccak256(encode);
   }
 
-  async getLnProviderInfo(remoteChainId: number, relayer: string, sourceToken: string, targetToken: string): Promise<LnProviderFeeInfo> {
-    const providerKey = await this.getProviderKey(remoteChainId, relayer, sourceToken, targetToken);
+  async getLnProviderInfo(
+    remoteChainId: number,
+    relayer: string,
+    sourceToken: string,
+    targetToken: string
+  ): Promise<LnProviderFeeInfo> {
+    const providerKey = await this.getProviderKey(
+      remoteChainId,
+      relayer,
+      sourceToken,
+      targetToken
+    );
     const lnProviderInfo = await this.contract.srcProviders(providerKey);
     return {
       baseFee: lnProviderInfo.baseFee,
@@ -440,13 +433,13 @@ export class Lnv3BridgeContract extends EthereumContract {
   }
 
   async tryUpdateFee(
-      remoteChainId: number,
-      sourceToken: string,
-      targetToken: string,
-      baseFee: bigint,
-      liquidityFeeRate: number,
-      transferLimit: bigint,
-      gasLimit: bigint | null = null
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string,
+    baseFee: bigint,
+    liquidityFeeRate: number,
+    transferLimit: bigint,
+    gasLimit: bigint | null = null
   ) {
     return await this.staticCall(
       "registerLnProvider",
@@ -459,18 +452,18 @@ export class Lnv3BridgeContract extends EthereumContract {
         transferLimit,
       ],
       gasLimit
-    )
+    );
   }
 
   async updateFee(
-      remoteChainId: number,
-      sourceToken: string,
-      targetToken: string,
-      baseFee: bigint,
-      liquidityFeeRate: number,
-      transferLimit: bigint,
-      gas: GasPrice,
-      gasLimit: bigint | null = null
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string,
+    baseFee: bigint,
+    liquidityFeeRate: number,
+    transferLimit: bigint,
+    gas: GasPrice,
+    gasLimit: bigint | null = null
   ) {
     return await this.call(
       "registerLnProvider",
@@ -484,7 +477,7 @@ export class Lnv3BridgeContract extends EthereumContract {
       ],
       gas,
       gasLimit
-    )
+    );
   }
 
   async transferIdExist(transferId: string): Promise<[boolean, any]> {
