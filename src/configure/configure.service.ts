@@ -1,47 +1,68 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Chain, BaseConfigure, BaseConfigService } from "./base.service";
 import * as fs from "fs";
 
-export interface ChainConfigInfo {
-  name: string;
-  rpc: string;
-  native: string;
-  chainId: number;
-  fixedGasPrice: number;
-  notSupport1559: boolean;
+/*
+{
+    indexer: "http://localhost:4002/graphql",
+    rpcnodes: [
+        {
+            name: 'arbitrum',
+            rpc: "https://arb1.arbitrum.io/rpc",
+            fixedGasPrice: 10
+        }
+    ],
+    bridges: [
+        {
+            direction: "arbitrum->polygon",
+            encryptedPrivateKey: "xxxxx",
+            feeLimit: 100,
+            bridgeType: "lnv3",
+            reorgThreshold: 10,
+            tokens: [
+                {
+                    symbol: "usdt->usdt",
+                    swapRate: 2300
+                }
+            ]
+        }
+    ]
+}
+*/
+
+export interface RpcNode {
+    name: string;
+    rpc: string;
+    fixedGasPrice: number;
+    notSupport1559: boolean;
 }
 
-export interface ProviderInfo {
-  fromAddress: string;
-  toAddress: string;
-  swapRate: number;
+export interface TokenInfo {
+    symbol: string;
+    swapRate: number;
 }
 
-export interface BridgeConfigInfo {
-  fromChain: string;
-  toChain: string;
-  sourceBridgeAddress: string;
-  targetBridgeAddress: string;
-  encryptedPrivateKey: string;
-  // signer: signer the transaction
-  // executer: signer & execute transaction
-  // undefined: not safe wallet
-  safeWalletAddress: string | undefined;
-  safeWalletUrl: string | undefined;
-  safeWalletRole: string | undefined;
-  minProfit: number;
-  maxProfit: number;
-  feeLimit: number;
-  reorgThreshold: number;
-  bridgeType: string;
-  providers: ProviderInfo[];
+export interface BridgeInfo {
+    direction: string;
+    encryptedPrivateKey: string;
+    feeLimit: number;
+    bridgeType: string;
+    reorgThreshold: number;
+    safeWalletAddress: string | undefined;
+    safeWalletUrl: string | undefined;
+    safeWalletRole: string | undefined;
+    minProfit: number;
+    maxProfit: number;
+    tokens: TokenInfo[];
 }
 
 export interface ConfigInfo {
-  indexer: string;
-  relayGasLimit: number;
-  chains: ChainConfigInfo[];
-  bridges: BridgeConfigInfo[];
+    env: string;
+    indexer: string;
+    relayGasLimit: number;
+    rpcnodes: RpcNode[];
+    bridges: BridgeInfo[];
 }
 
 @Injectable()
@@ -51,8 +72,22 @@ export class ConfigureService {
   public readonly storePath = this.configService.get<string>(
     "LP_BRIDGE_STORE_PATH"
   );
-  public readonly config: ConfigInfo = JSON.parse(
+  public config: ConfigInfo = JSON.parse(
     fs.readFileSync(this.configPath, "utf8")
   );
-  constructor(private configService: ConfigService) {}
+  public baseConfig: BaseConfigure;
+  constructor(
+      private configService: ConfigService,
+      private baseService: BaseConfigService
+  ) {
+      this.baseConfig = this.baseService.baseConfigure(this.config.env === 'test');
+  }
+
+  public getChainInfo(name: string): Chain | null {
+      return this.baseConfig.chains.find((chain) => chain.name === name);
+  }
+
+  get indexer(): string {
+      return this.config.indexer ?? this.baseConfig.indexer;
+  }
 }

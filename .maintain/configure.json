@@ -1,347 +1,293 @@
 {
     "indexer": "http://localhost:4002/graphql",
-    "relayGasLimit": 600000,
-    "chains": [
+    "env": "test",
+    "rpcnodes": [
         {
             "name": "arbitrum-sepolia",
-            "rpc": "https://sepolia-rollup.arbitrum.io/rpc",
-            "native": "ETH",
-            "chainId": 421614
+            "rpc": "https://sepolia-rollup.arbitrum.io/rpc"
         },
         {
             "name": "sepolia",
-            "rpc": "https://rpc2.sepolia.org",
-            "native": "ETH",
-            "chainId": 11155111
+            "rpc": "https://1rpc.io/sepolia"
         },
         {
             "name": "zksync-sepolia",
-            "rpc": "https://sepolia.era.zksync.dev",
-            "native": "ETH",
-            "chainId": 300
+            "rpc": "https://sepolia.era.zksync.dev"
         }
     ],
     "bridges": [
         {
-            "fromChain": "sepolia",
-            "toChain": "zksync-sepolia",
-            "sourceBridgeAddress": "0x8429D7Dfd91D6F970ba89fFC005e67D15f1E4739",
-            "targetBridgeAddress": "0xBe23e871318E49C747CB909AC65aCCFAEAac3a37",
+            "direction": "sepolia->zksync-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv2-default",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
-                    "toAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
-                    "toAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "zksync-sepolia",
-            "toChain": "sepolia",
-            "sourceBridgeAddress": "0xBe23e871318E49C747CB909AC65aCCFAEAac3a37",
-            "targetBridgeAddress": "0x8429D7Dfd91D6F970ba89fFC005e67D15f1E4739",
+            "direction": "zksync-sepolia->sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv2-default",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
-                    "toAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
-                    "toAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "sepolia",
-            "toChain": "zksync-sepolia",
-            "sourceBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
-            "targetBridgeAddress": "0xDc55fF59F82AA50D8A4A61dB8CcaDffD26Fb7dD2",
+            "direction": "sepolia->zksync-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv3",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
-                    "toAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
-                    "toAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "zksync-sepolia",
-            "toChain": "sepolia",
-            "sourceBridgeAddress": "0xDc55fF59F82AA50D8A4A61dB8CcaDffD26Fb7dD2",
-            "targetBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
+            "direction": "zksync-sepolia->sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv3",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
-                    "toAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
-                    "toAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "sepolia",
-            "toChain": "arbitrum-sepolia",
-            "sourceBridgeAddress": "0xbA96d83E2A04c4E50F2D6D7eCA03D70bA2426e5f",
-            "targetBridgeAddress": "0xbA96d83E2A04c4E50F2D6D7eCA03D70bA2426e5f",
+            "direction": "sepolia->arbitrum-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv2-opposite",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
-                    "toAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
-                    "toAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "arbitrum-sepolia",
-            "toChain": "sepolia",
-            "sourceBridgeAddress": "0xbA96d83E2A04c4E50F2D6D7eCA03D70bA2426e5f",
-            "targetBridgeAddress": "0xbA96d83E2A04c4E50F2D6D7eCA03D70bA2426e5f",
+            "direction": "arbitrum-sepolia->sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv2-opposite",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
-                    "toAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
-                    "toAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "sepolia",
-            "toChain": "arbitrum-sepolia",
-            "sourceBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
-            "targetBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
+            "direction": "sepolia->arbitrum-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv3",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
-                    "toAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
-                    "toAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "arbitrum-sepolia",
-            "toChain": "sepolia",
-            "sourceBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
-            "targetBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
+            "direction": "arbitrum-sepolia->sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv3",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
-                    "toAddress": "0x876A4f6eCF13EEb101F9E75FCeF58f19Ff383eEB",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
-                    "toAddress": "0x0ac58Df0cc3542beC4cDa71B16D06C3cCc39f405",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "arbitrum-sepolia",
-            "toChain": "zksync-sepolia",
-            "sourceBridgeAddress": "0x8429D7Dfd91D6F970ba89fFC005e67D15f1E4739",
-            "targetBridgeAddress": "0xBe23e871318E49C747CB909AC65aCCFAEAac3a37",
+            "direction": "arbitrum-sepolia->zksync-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv2-default",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
-                    "toAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
-                    "toAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "zksync-sepolia",
-            "toChain": "arbitrum-sepolia",
-            "sourceBridgeAddress": "0xBe23e871318E49C747CB909AC65aCCFAEAac3a37",
-            "targetBridgeAddress": "0x8429D7Dfd91D6F970ba89fFC005e67D15f1E4739",
+            "direction": "zksync-sepolia->arbitrum-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv2-default",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
-                    "toAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
-                    "toAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "arbitrum-sepolia",
-            "toChain": "zksync-sepolia",
-            "sourceBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
-            "targetBridgeAddress": "0xDc55fF59F82AA50D8A4A61dB8CcaDffD26Fb7dD2",
+            "direction": "arbitrum-sepolia->zksync-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv3",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
-                    "toAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
-                    "toAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]
         },
         {
-            "fromChain": "zksync-sepolia",
-            "toChain": "arbitrum-sepolia",
-            "sourceBridgeAddress": "0xDc55fF59F82AA50D8A4A61dB8CcaDffD26Fb7dD2",
-            "targetBridgeAddress": "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
+            "direction": "zksync-sepolia->arbitrum-sepolia",
             "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "feeLimit": 0.01,
+            "minProfit": 0.00005,
+            "maxProfit": 0.0001,
+            "feeLimit": 0.1,
             "reorgThreshold": 20,
             "bridgeType": "lnv3",
-            "providers": [
+            "tokens": [
                 {
-                    "fromAddress": "0x3350f1ef046e21E052dCbA60Fc575919CCaFEdeb",
-                    "toAddress": "0x3b8Bb7348D4F581e67E2498574F73e4B9Fc51855",
+                    "symbol": "usdt->usdt",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x253adBFE99Fcd096B9b5502753F96CF78D42eaD0",
-                    "toAddress": "0x8A87497488073307E1a17e8A12475a94Afcb413f",
+                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {
-                    "fromAddress": "0x0000000000000000000000000000000000000000",
-                    "toAddress": "0x0000000000000000000000000000000000000000",
+                    "symbol": "eth->eth",
                     "swapRate": 1
                 }
             ]

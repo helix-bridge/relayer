@@ -28,7 +28,6 @@ import { SafeWallet } from "../base/safewallet";
 export class ChainInfo {
   chainName: string;
   rpc: string;
-  native: string;
   chainId: number;
   provider: EthereumProvider;
   fixedGasPrice: number;
@@ -122,17 +121,24 @@ export class RelayerService implements OnModuleInit {
     e.readPasswd();
 
     this.chainInfos = new Map(
-      this.configureService.config.chains.map((config) => {
+      this.configureService.config.rpcnodes.map((rpcnode) => {
+        const chainInfo = this.configureService.getChainInfo(rpcnode.name);
+        if (!chainInfo) {
+            this.logger.warn(`the chain ${rpcnode.name} not support`);
+        }
         return [
-          config.name,
+          rpcnode.name,
           {
-            chainName: config.name,
-            rpc: config.rpc,
-            native: config.native,
-            chainId: config.chainId,
-            provider: new EthereumProvider(config.rpc),
-            fixedGasPrice: config.fixedGasPrice,
-            notSupport1559: config.notSupport1559,
+            chainName: rpcnode.name,
+            rpc: rpcnode.rpc,
+            chainId: chainInfo.id,
+            provider: new EthereumProvider(rpcnode.rpc),
+            fixedGasPrice: rpcnode.fixedGasPrice,
+            notSupport1559: rpcnode.notSupport1559,
+            lnv2DefaultAddress: chainInfo.lnv2DefaultAddress,
+            lnv2OppositeAddress: chainInfo.lnv2OppositeAddress,
+            lnv3Address: chainInfo.lnv3Address,
+            tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
             lastAdjustTime: this.scheduleAdjustFeeInterval
@@ -142,26 +148,34 @@ export class RelayerService implements OnModuleInit {
     );
     this.lnBridges = this.configureService.config.bridges
       .map((config) => {
-        let toChainInfo = this.chainInfos.get(config.toChain);
-        if (!toChainInfo) {
-          this.logger.error(`to chain is not configured ${config.toChain}`);
-          return null;
+        const direction = config.direction?.split('->');
+        if (direction?.length !== 2) {
+            this.logger.error(`bridge direction invalid ${config.direction}`);
+            return;
         }
-        let fromChainInfo = this.chainInfos.get(config.fromChain);
+        var [fromChain, toChain] = direction;
+        let fromChainInfo = this.chainInfos.get(direction[0]);
         if (!fromChainInfo) {
-          this.logger.error(`to chain is not configured ${config.fromChain}`);
+          this.logger.error(`from chain is not invalid ${direction[0]}`);
           return null;
         }
+        let toChainInfo = this.chainInfos.get(direction[1]);
+        if (!toChainInfo) {
+          this.logger.error(`to chain is not invalid ${direction[1]}`);
+          return null;
+        }
+        
         const privateKey = e.decrypt(config.encryptedPrivateKey);
         let toWallet = new EthereumConnectedWallet(
           privateKey,
           toChainInfo.provider
         );
+        
         let toBridge = config.bridgeType == 'lnv3' ? new Lnv3BridgeContract(
-          config.targetBridgeAddress,
+          toChainInfo.lnv3Address,
           toWallet.wallet
         ) : new LnBridgeContract(
-          config.targetBridgeAddress,
+          config.bridgeType === 'lnv2-default' ? toChainInfo.lnv2DefaultAddress : toChainInfo.lnv2OppositeAddress,
           toWallet.wallet,
           config.bridgeType
         );
@@ -184,10 +198,10 @@ export class RelayerService implements OnModuleInit {
           fromChainInfo.provider
         );
         let fromBridge = config.bridgeType == 'lnv3' ? new Lnv3BridgeContract(
-          config.sourceBridgeAddress,
+          fromChainInfo.lnv3Address,
           fromWallet.wallet,
         ) : new LnBridgeContract(
-          config.sourceBridgeAddress,
+          config.bridgeType === 'lnv2-default' ? fromChainInfo.lnv2DefaultAddress : fromChainInfo.lnv2OppositeAddress,
           fromWallet.wallet,
           config.bridgeType
         );
@@ -196,18 +210,33 @@ export class RelayerService implements OnModuleInit {
           bridge: fromBridge,
           safeWallet: undefined,
         };
-        let lnProviders = config.providers.map((lnProviderConfig) => {
+        let lnProviders = config.tokens.map((token) => {
+          const symbols = token.symbol.split('->');
+          if (symbols.length !== 2) {
+              this.logger.error(`invalid token symbols ${token.symbol}`);
+              return null;
+          }
+          const fromToken = fromChainInfo.tokens.find((item) => item.symbol === symbols[0]);
+          if (!fromToken) {
+              this.logger.error(`token not support ${symbols[0]}`);
+              return null;
+          }
+          const toToken = toChainInfo.tokens.find((item) => item.symbol === symbols[1]);
+          if (!toToken) {
+              this.logger.error(`token not support ${symbols[1]}`);
+              return null;
+          }
           return {
-            fromAddress: lnProviderConfig.fromAddress,
-            toAddress: lnProviderConfig.toAddress,
+            fromAddress: fromToken.address,
+            toAddress: toToken.address,
             fromToken: new Erc20Contract(
-              lnProviderConfig.fromAddress,
+              fromToken.address,
               fromWallet.wallet
             ),
             relayer: toSafeWallet?.address ?? toWallet.address,
-            swapRate: lnProviderConfig.swapRate,
+            swapRate: token.swapRate,
           };
-        });
+        }).filter((item) => item !== null);
 
         return {
           isProcessing: false,
@@ -391,7 +420,7 @@ export class RelayerService implements OnModuleInit {
         bridge.heartBeatTime = 0;
         for (const lnProvider of bridge.lnProviders) {
           await this.dataworkerService.sendHeartBeat(
-            this.configureService.config.indexer,
+            this.configureService.indexer,
             fromChainInfo.chainId,
             toChainInfo.chainId,
             lnProvider.relayer,
@@ -401,7 +430,7 @@ export class RelayerService implements OnModuleInit {
         }
       }
     } catch (err) {
-      this.logger.warn(`heartbeat failed, err: ${err}`);
+      this.logger.warn(`heartbeat failed, url: ${this.configureService.indexer}, err: ${err}`);
     }
 
     if (bridge.safeWalletRole !== "signer") {
@@ -431,7 +460,7 @@ export class RelayerService implements OnModuleInit {
       }
       // checkProfit
       const needRelayRecord = await this.dataworkerService.queryRecordNeedRelay(
-        this.configureService.config.indexer,
+        this.configureService.indexer,
         fromChainInfo.chainName,
         toChainInfo.chainName,
         lnProvider.relayer,
@@ -449,7 +478,7 @@ export class RelayerService implements OnModuleInit {
       }
       const record = needRelayRecord.record;
       const validInfo = await this.dataworkerService.checkValid(
-        this.configureService.config.indexer,
+        this.configureService.indexer,
         record,
         fromBridgeContract,
         toBridgeContract,
@@ -569,7 +598,7 @@ export class RelayerService implements OnModuleInit {
           `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] success relay message, txhash: ${tx.hash}`
         );
         await this.dataworkerService.updateConfirmedBlock(
-            this.configureService.config.indexer,
+            this.configureService.indexer,
             record.id,
             `${tx.hash}`
         );
