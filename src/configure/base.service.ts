@@ -38,6 +38,10 @@ export class BaseConfigService {
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
         tokens: [
           {
+            symbol: "eth",
+            address: "0x0000000000000000000000000000000000000000",
+          },
+          {
             symbol: "usdt",
             address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
           },
@@ -190,6 +194,10 @@ export class BaseConfigService {
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
         tokens: [
+          {
+            symbol: "eth",
+            address: "0x0000000000000000000000000000000000000000",
+          },
           {
             symbol: "usdt",
             address: "0xA219439258ca9da29E9Cc4cE5596924745e12B93",
