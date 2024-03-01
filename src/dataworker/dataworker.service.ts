@@ -196,19 +196,20 @@ export class DataworkerService implements OnModuleInit {
       record.requestTxHash
     );
     if (!transactionInfo || transactionInfo.confirmedBlock < reorgThreshold) {
+      const confirmedBlock = transactionInfo ? transactionInfo.confirmedBlock : 0;
       this.logger.log(
-        `request tx waiting finalize ${transactionInfo.confirmedBlock}, hash: ${record.requestTxHash}`
+        `request tx waiting finalize ${confirmedBlock}, hash: ${record.requestTxHash}`
       );
       // update confirmed block
-      const confirmedBlock =
+      const previousConfirmedBlock =
         record.confirmedBlocks === ""
           ? 0
           : Number(record.confirmedBlocks.split("/")[0]);
-      if (transactionInfo.confirmedBlock > confirmedBlock) {
+      if (confirmedBlock > previousConfirmedBlock) {
         await this.updateConfirmedBlock(
           url,
           record.id,
-          `${transactionInfo.confirmedBlock}/${reorgThreshold}`
+          `${confirmedBlock}/${reorgThreshold}`
         );
       }
       return {
