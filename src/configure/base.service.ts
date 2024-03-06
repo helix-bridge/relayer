@@ -230,6 +230,19 @@ export class BaseConfigService {
           },
         ],
       },
+      {
+        name: "blast",
+        id: 81457,
+        lnv2DefaultAddress: null,
+        lnv2OppositeAddress: null,
+        lnv3Address: "0xB180D7DcB5CC161C862aD60442FA37527546cAFC",
+        tokens: [
+          {
+            symbol: "eth",
+            address: "0x0000000000000000000000000000000000000000",
+          },
+        ],
+      }
     ],
   };
   testConfigure: BaseConfigure = {
