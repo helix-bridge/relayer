@@ -169,12 +169,13 @@ export class DataworkerService implements OnModuleInit {
     toChainId: number,
     relayer: string,
     tokenAddress: string,
+    softTransferLimit: bigint,
     version: string
   ) {
     if (version !== "lnv3") {
       version = "lnv2";
     }
-    const mutation = `mutation {lnBridgeHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\")}`;
+    const mutation = `mutation {lnBridgeHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\", softTransferLimit: \"${softTransferLimit}\")}`;
     await axios.post(url, {
       query: mutation,
       variables: null,

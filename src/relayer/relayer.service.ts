@@ -472,13 +472,33 @@ export class RelayerService implements OnModuleInit {
       if (bridge.heartBeatTime > this.heartBeatInterval) {
         bridge.heartBeatTime = 0;
         for (const lnProvider of bridge.lnProviders) {
+          if (bridge.bridgeType === 'lnv3') {
+              const penaltyEnough = await fromBridgeContract.isPenaltyEnough(
+                  toChainInfo.chainId,
+                  lnProvider.relayer,
+                  lnProvider.fromAddress,
+                  lnProvider.toAddress
+              );
+              if (!penaltyEnough) {
+                  this.logger.warn(
+                      `penalty not enough, from ${fromChainInfo.chainName}, to ${toChainInfo.chainName}, token ${lnProvider.fromAddress}`
+                  );
+                  continue;
+              }
+          }
+          const softTransferLimit = await toBridgeContract.getSoftTransferLimit(
+              lnProvider.relayer,
+              lnProvider.toAddress,
+              toChainInfo.provider.provider,
+          );
           await this.dataworkerService.sendHeartBeat(
             this.configureService.indexer,
             fromChainInfo.chainId,
             toChainInfo.chainId,
             lnProvider.relayer,
             lnProvider.fromAddress,
-            bridge.bridgeType
+            softTransferLimit,
+            bridge.bridgeType,
           );
         }
       }

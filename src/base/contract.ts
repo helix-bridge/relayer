@@ -29,6 +29,22 @@ export class EthereumContract {
     return this.contract.interface;
   }
 
+  async getSoftTransferLimit(
+    relayer: string,
+    targetToken: string,
+    provider: ethers.Provider
+  ): Promise<bigint> {
+    // native token
+    if (targetToken === zeroAddress) {
+        return await provider.getBalance(relayer) * BigInt(9) / BigInt(10);
+    } else {
+        const targetTokenContract = new Erc20Contract(targetToken, provider)
+        const balance = await targetTokenContract.balanceOf(relayer);
+        const allowance = await targetTokenContract.allowance(relayer, this.address);
+        return balance < allowance ? balance: allowance;
+    }
+  }
+
   async call(
     method: string,
     args: any,
@@ -96,6 +112,10 @@ export class Erc20Contract extends EthereumContract {
 
   async balanceOf(address: string): Promise<bigint> {
     return await this.contract.balanceOf(address);
+  }
+
+  async allowance(owner: string, spender: string): Promise<bigint> {
+    return await this.contract.allowance(owner, spender);
   }
 
   // call
@@ -233,6 +253,15 @@ export class LnBridgeContract extends EthereumContract {
       liquidityFeeRate: lnProviderInfo.config.liquidityFeeRate,
       transferLimit: BigInt(0),
     };
+  }
+
+  async isPenaltyEnough(
+    remoteChainId: number,
+    relayer: string,
+    sourceToken: string,
+    targetToken: string,
+  ): Promise<boolean> {
+    return true;
   }
 
   async tryUpdateFee(
@@ -412,13 +441,36 @@ export class Lnv3BridgeContract extends EthereumContract {
     return ethers.keccak256(encode);
   }
 
+  private getProviderStateKey(
+    provider: string,
+    sourceToken: string
+  ) {
+    const encode = ethers.solidityPacked(
+      ["address", "address"],
+      [provider, sourceToken]
+    );
+    return ethers.keccak256(encode);
+  }
+
+  private getTokenKey(
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string
+  ) {
+    const encode = ethers.solidityPacked(
+      ["uint256", "address", "address"],
+      [remoteChainId, sourceToken, targetToken]
+    );
+    return ethers.keccak256(encode);
+  }
+
   async getLnProviderInfo(
     remoteChainId: number,
     relayer: string,
     sourceToken: string,
     targetToken: string
   ): Promise<LnProviderFeeInfo> {
-    const providerKey = await this.getProviderKey(
+    const providerKey = this.getProviderKey(
       remoteChainId,
       relayer,
       sourceToken,
@@ -430,6 +482,42 @@ export class Lnv3BridgeContract extends EthereumContract {
       liquidityFeeRate: lnProviderInfo.liquidityFeeRate,
       transferLimit: lnProviderInfo.transferLimit,
     };
+  }
+
+  async getLnProviderPenalty(
+    relayer: string,
+    sourceToken: string,
+  ): Promise<bigint> {
+    const providerStateKey = this.getProviderStateKey(
+      sourceToken,
+      relayer
+    );
+    return await this.contract.penaltyReserves(providerStateKey);
+  }
+
+  async getTokenBasePenalty(
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string,
+  ): Promise<bigint> {
+    const tokenKey = this.getTokenKey(
+      remoteChainId,
+      sourceToken,
+      targetToken
+    );
+    return (await this.contract.tokenInfos(tokenKey)).config.penalty;
+  }
+
+  async isPenaltyEnough(
+    remoteChainId: number,
+    relayer: string,
+    sourceToken: string,
+    targetToken: string,
+  ): Promise<boolean> {
+      // get token base penalty
+      const basePenalty = await this.getTokenBasePenalty(remoteChainId, sourceToken, targetToken);
+      const providerPenalty = await this.getLnProviderPenalty(relayer, sourceToken);
+      return providerPenalty > basePenalty;
   }
 
   async tryUpdateFee(
