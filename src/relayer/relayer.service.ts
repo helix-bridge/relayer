@@ -494,10 +494,7 @@ export class RelayerService implements OnModuleInit {
                 toChainInfo.provider.provider,
             );
           } catch(e) {
-              this.logger.warn(
-                  `Get relayer info from chain failed, fromChain ${fromChainInfo.chainName}, toChain ${toChainInfo.chainName}, exception ${e}`
-              );
-              continue;
+              // ignore error
           }
           await this.dataworkerService.sendHeartBeat(
             this.configureService.indexer,
