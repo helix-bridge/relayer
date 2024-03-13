@@ -311,6 +311,40 @@ export class BaseConfigService {
           },
         ],
       },
+      {
+        name: "taiko",
+        id: 167008,
+        lnv2DefaultAddress: undefined,
+        lnv2OppositeAddress: undefined,
+        lnv3Address: "0x00e7EFf0826dfCDf2AA5945dFF710B48f4AA7E64",
+        tokens: [
+          {
+            symbol: "usdt",
+            address: "0x89AF830781A2C1d3580Db930bea11094F55AfEae",
+          },
+          {
+            symbol: "usdc",
+            address: "0x3F7DF5866591e7E48D18C8EbeAE61Bc343a63283",
+          },
+        ],
+      },
+      {
+        name: "bera",
+        id: 80085,
+        lnv2DefaultAddress: undefined,
+        lnv2OppositeAddress: undefined,
+        lnv3Address: "0x00e7EFf0826dfCDf2AA5945dFF710B48f4AA7E64",
+        tokens: [
+          {
+            symbol: "usdt",
+            address: "0x463D1730a8527CA58d48EF70C7460B9920346567",
+          },
+          {
+            symbol: "usdc",
+            address: "0x89AF830781A2C1d3580Db930bea11094F55AfEae",
+          },
+        ],
+      }
     ],
   };
 
