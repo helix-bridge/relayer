@@ -89,7 +89,7 @@ export class BaseConfigService {
         name: "darwinia-dvm",
         id: 46,
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
-        lnv2OppositeAddress: null,
+        lnv2OppositeAddress: "0x48d769d5C7ff75703cDd1543A1a2ed9bC9044A23",
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
         tokens: [
           {
