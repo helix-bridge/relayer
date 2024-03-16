@@ -17,7 +17,13 @@ export interface Chain {
   lnv2DefaultAddress: string | undefined | null;
   lnv2OppositeAddress: string | undefined | null;
   lnv3Address: string | undefined | null;
+  messagers: MessagerInfo[];
   tokens: TokenInfo[];
+}
+
+export interface MessagerInfo {
+  name: string;
+  address: string;
 }
 
 export interface BaseConfigure {
@@ -36,6 +42,16 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
         lnv2OppositeAddress: "0x48d769d5C7ff75703cDd1543A1a2ed9bC9044A23",
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "msgline",
+            address: "0x65Be094765731F394bc6d9DF53bDF3376F1Fc8B0",
+          },
+          {
+            name: "layerzero",
+            address: "0x509354A4ebf98aCC7a65d2264694A65a2938cac9",
+          }
+        ],
         tokens: [
           {
             symbol: "eth",
@@ -61,6 +77,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
         lnv2OppositeAddress: "0x48d769d5C7ff75703cDd1543A1a2ed9bC9044A23",
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "msgline",
+            address: "0x65Be094765731F394bc6d9DF53bDF3376F1Fc8B0",
+          },
+        ],
         tokens: [
           {
             symbol: "ring",
@@ -74,6 +96,16 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "msgline",
+            address: "0x65Be094765731F394bc6d9DF53bDF3376F1Fc8B0",
+          },
+          {
+            name: "layerzero",
+            address: "0x463D1730a8527CA58d48EF70C7460B9920346567",
+          }
+        ],
         tokens: [
           {
             symbol: "ring",
@@ -91,6 +123,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
         lnv2OppositeAddress: "0x48d769d5C7ff75703cDd1543A1a2ed9bC9044A23",
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "msgline",
+            address: "0x65Be094765731F394bc6d9DF53bDF3376F1Fc8B0",
+          },
+        ],
         tokens: [
           {
             symbol: "ring",
@@ -108,6 +146,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "msgline",
+            address: "0x65Be094765731F394bc6d9DF53bDF3376F1Fc8B0",
+          },
+        ],
         tokens: [
           {
             symbol: "crab",
@@ -125,6 +169,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x94C614DAeFDbf151E1BB53d6A201ae5fF56A9337",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x61B6B8c7C00aA7F060a2BEDeE6b11927CC9c3eF1",
+          },
+        ],
         tokens: [
           {
             symbol: "usdt",
@@ -142,6 +192,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x767Bc046c989f5e63683fB530f939DD34b91ceAC",
         lnv2OppositeAddress: null,
         lnv3Address: null,
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x96892F3EaD26515592Da38432cFABad991BBd69d",
+          },
+        ],
         tokens: [
           {
             symbol: "usdt",
@@ -159,6 +215,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x767Bc046c989f5e63683fB530f939DD34b91ceAC",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x463d1730a8527ca58d48ef70c7460b9920346567",
+          },
+        ],
         tokens: [
           {
             symbol: "usdt",
@@ -176,6 +238,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x767Bc046c989f5e63683fB530f939DD34b91ceAC",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x89AF830781A2C1d3580Db930bea11094F55AfEae",
+          },
+        ],
         tokens: [
           {
             symbol: "usdt",
@@ -193,6 +261,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x767Bc046c989f5e63683fB530f939DD34b91ceAC",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x61B6B8c7C00aA7F060a2BEDeE6b11927CC9c3eF1",
+          },
+        ],
         tokens: [
           {
             symbol: "eth",
@@ -210,6 +284,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x767Bc046c989f5e63683fB530f939DD34b91ceAC",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x61B6B8c7C00aA7F060a2BEDeE6b11927CC9c3eF1",
+          },
+        ],
         tokens: [
           {
             symbol: "usdt",
@@ -223,6 +303,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x767Bc046c989f5e63683fB530f939DD34b91ceAC",
         lnv2OppositeAddress: null,
         lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x3F7DF5866591e7E48D18C8EbeAE61Bc343a63283",
+          },
+        ],
         tokens: [
           {
             symbol: "usdt",
@@ -236,6 +322,12 @@ export class BaseConfigService {
         lnv2DefaultAddress: null,
         lnv2OppositeAddress: null,
         lnv3Address: "0xB180D7DcB5CC161C862aD60442FA37527546cAFC",
+        messagers: [
+          {
+            name: "msgline",
+            address: "0x98982b1685a63596834a05C1288dA7fbF27d684E",
+          },
+        ],
         tokens: [
           {
             symbol: "eth",
@@ -254,6 +346,7 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x8429D7Dfd91D6F970ba89fFC005e67D15f1E4739",
         lnv2OppositeAddress: "0xbA96d83E2A04c4E50F2D6D7eCA03D70bA2426e5f",
         lnv3Address: "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
+        messagers: [],
         tokens: [
           {
             symbol: "usdt",
@@ -275,6 +368,7 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0x8429D7Dfd91D6F970ba89fFC005e67D15f1E4739",
         lnv2OppositeAddress: "0xbA96d83E2A04c4E50F2D6D7eCA03D70bA2426e5f",
         lnv3Address: "0x38627Cb033De66a1E07e73f5D0a7a7adFB6741fa",
+        messagers: [],
         tokens: [
           {
             symbol: "usdt",
@@ -296,6 +390,7 @@ export class BaseConfigService {
         lnv2DefaultAddress: "0xBe23e871318E49C747CB909AC65aCCFAEAac3a37",
         lnv2OppositeAddress: undefined,
         lnv3Address: "0xDc55fF59F82AA50D8A4A61dB8CcaDffD26Fb7dD2",
+        messagers: [],
         tokens: [
           {
             symbol: "usdt",
@@ -317,6 +412,7 @@ export class BaseConfigService {
         lnv2DefaultAddress: undefined,
         lnv2OppositeAddress: undefined,
         lnv3Address: "0x00e7EFf0826dfCDf2AA5945dFF710B48f4AA7E64",
+        messagers: [],
         tokens: [
           {
             symbol: "usdt",
@@ -334,6 +430,7 @@ export class BaseConfigService {
         lnv2DefaultAddress: undefined,
         lnv2OppositeAddress: undefined,
         lnv3Address: "0x00e7EFf0826dfCDf2AA5945dFF710B48f4AA7E64",
+        messagers: [],
         tokens: [
           {
             symbol: "usdt",

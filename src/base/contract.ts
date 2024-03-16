@@ -277,12 +277,14 @@ export class LnBridgeContract extends EthereumContract {
       return await this.staticCall(
         "setProviderFee",
         [remoteChainId, sourceToken, targetToken, baseFee, liquidityFeeRate],
+        null,
         gasLimit
       );
     } else {
       return await this.staticCall(
         "updateProviderFeeAndMargin",
         [remoteChainId, sourceToken, targetToken, 0, baseFee, liquidityFeeRate],
+        null,
         gasLimit
       );
     }
@@ -539,7 +541,51 @@ export class Lnv3BridgeContract extends EthereumContract {
         liquidityFeeRate,
         transferLimit,
       ],
+      null,
       gasLimit
+    );
+  }
+
+  async tryWithdrawLiquidity(
+    remoteChainId: number,
+    transferIds: string[],
+    provider: string,
+    extParams: string,
+    value: bigint,
+    gasLimit: bigint | null = null
+  ): Promise<string> | null {
+    return await this.staticCall(
+      "requestWithdrawLiquidity",
+      [
+        remoteChainId,
+        transferIds,
+        provider,
+        extParams
+      ],
+      value,
+      gasLimit,
+    );
+  }
+
+  async withdrawLiquidity(
+    remoteChainId: number,
+    transferIds: string[],
+    provider: string,
+    extParams: string,
+    gas: GasPrice,
+    value: bigint,
+    gasLimit: bigint | null = null
+  ) {
+    return await this.call(
+      "requestWithdrawLiquidity",
+      [
+        remoteChainId,
+        transferIds,
+        provider,
+        extParams
+      ],
+      gas,
+      value,
     );
   }
 
@@ -669,5 +715,13 @@ export class Lnv3BridgeContract extends EthereumContract {
       nonce,
       gasLimit
     );
+  }
+
+  encodeWithdrawLiquidity(transferIds: string[], chainId: number, provider: string): string {
+    return this.interface.encodeFunctionData("withdrawLiquidity", [
+      transferIds,
+      chainId,
+      provider
+    ]);
   }
 }

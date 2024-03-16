@@ -9,7 +9,7 @@ import {
 } from "../base/contract";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { EthereumProvider, GasPrice } from "../base/provider";
-import { Ether, GWei, EtherBigNumber } from "../base/bignumber";
+import { Any, Ether, GWei, EtherBigNumber } from "../base/bignumber";
 
 export interface HistoryRecord {
   id: string;
@@ -38,6 +38,12 @@ export interface ValidInfo {
 export interface TransferRecord {
   lastTransferId: string;
   record: HistoryRecord;
+}
+
+export interface WithdrawLiquidityRecord {
+  transferIds: string[];
+  totalAmount: number;
+  channel: string;
 }
 
 @Injectable()
@@ -153,6 +159,81 @@ export class DataworkerService implements OnModuleInit {
       feeUsed = gasPrice.fee.gasPrice * this.relayGasLimit;
     }
     return feeUsed;
+  }
+
+  async queryLiquidity(
+    url: string,
+    fromChain: string,
+    toChain: string,
+    relayer: string,
+    token: string,
+    amountThreshold: number,
+    countThreshold: number,
+    decimals: number,
+  ): Promise<WithdrawLiquidityRecord | null> {
+      if (!amountThreshold && !countThreshold) return null;
+      let query = `{
+            historyRecords(
+                row: 100,
+                relayer: \"${relayer.toLowerCase()}\",
+                recvTokenAddress: \"${token.toLowerCase()}\",
+                fromChains: [\"${fromChain}\"],
+                toChains: [\"${toChain}\"],
+                bridges: [\"lnv3\"],
+                needWithdrawLiquidity: true
+            ) {total, records { id, lastRequestWithdraw, sendAmount }}}`;
+
+    const needWithdrawRecords = await axios
+      .post(url, {
+        query,
+        variables: {},
+        operationName: null,
+      })
+      .then((res) => res.data.data.historyRecords);
+      let totalWithdrawAmount = BigInt(0);
+      let transferIds = [];
+      for (const record of needWithdrawRecords.records) {
+          if (Number(record.lastRequestWithdraw) != 0) {
+              continue;
+          }
+          totalWithdrawAmount += BigInt(record.sendAmount);
+          transferIds.push(last(record.id.split("-")));
+      }
+      totalWithdrawAmount /= (new Any(1, decimals)).Number;
+
+      if (transferIds.length === 0) return null;
+
+      if (!countThreshold && amountThreshold) {
+          if (totalWithdrawAmount < amountThreshold) return null;
+      } else if (countThreshold && !amountThreshold) {
+          if (transferIds.length < countThreshold) return null;
+      } else {
+          if (totalWithdrawAmount < amountThreshold && transferIds.length < countThreshold) return null;
+      }
+      
+      const queryRelayInfo = `{
+          queryLnBridgeRelayInfos(
+              fromChain: \"${fromChain}\",
+              toChain: \"${toChain}\"
+              relayer: \"${relayer.toLowerCase()}\",
+          ) {records { messageChannel }}}`;
+
+      const channelInfo = await axios
+        .post(url, {
+            query: queryRelayInfo,
+            variables: {},
+            operationName: null,
+        })
+        .then((res) => res.data.data.queryLnBridgeRelayInfos);
+      if (!channelInfo || channelInfo.records.length === 0) {
+        return null;
+      }
+      // request channel
+      return {
+          transferIds: transferIds,
+          totalAmount: Number(totalWithdrawAmount),
+          channel: channelInfo.records[0].messageChannel
+      }
   }
 
   async updateConfirmedBlock(url: string, id: string, confirmInfo: string) {

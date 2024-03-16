@@ -24,6 +24,7 @@ import { last } from "lodash";
 
 import { ethers } from "ethers";
 import { SafeWallet } from "../base/safewallet";
+import { messagerInstance } from "../base/messager";
 
 export class ChainInfo {
   chainName: string;
@@ -32,6 +33,7 @@ export class ChainInfo {
   provider: EthereumProvider;
   fixedGasPrice: number;
   notSupport1559: boolean;
+  lnv3Address: string;
   adjustingFee: boolean;
 }
 
@@ -47,6 +49,8 @@ export class LnProviderInfo {
   fromAddress: string;
   toAddress: string;
   fromToken: Erc20Contract;
+  withdrawLiquidityAmountThreshold: number;
+  withdrawLiquidityCountThreshold: number;
 }
 
 export class LnBridge {
@@ -61,6 +65,7 @@ export class LnBridge {
   bridgeType: string;
   lnProviders: LnProviderInfo[];
   heartBeatTime: number;
+  toWallet: EthereumConnectedWallet;
 }
 
 @Injectable()
@@ -71,6 +76,7 @@ export class RelayerService implements OnModuleInit {
   private readonly scheduleAdjustFeeInterval = 8640; // 1day
   private readonly maxWaitingPendingTimes = 180;
   private readonly heartBeatInterval = 6; // 1 minute
+  private readonly withdrawLiqudityInterval = 2160; // 6 hour
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
@@ -103,7 +109,8 @@ export class RelayerService implements OnModuleInit {
             try {
               const txPending = await this.relay(
                 item,
-                value.lastAdjustTime === 0
+                value.lastAdjustTime === 0,
+                value.lastWithdrawLiqudity === 0
               );
               if (txPending) {
                 item.isProcessing = false;
@@ -148,6 +155,7 @@ export class RelayerService implements OnModuleInit {
             txHashCache: "",
             checkTimes: 0,
             lastAdjustTime: this.scheduleAdjustFeeInterval,
+            lastWithdrawLiqudity: this.withdrawLiqudityInterval,
           },
         ];
       })
@@ -265,6 +273,8 @@ export class RelayerService implements OnModuleInit {
               ),
               relayer: toSafeWallet?.address ?? toWallet.address,
               swapRate: token.swapRate,
+              withdrawLiquidityAmountThreshold: token.withdrawLiquidityAmountThreshold,
+              withdrawLiquidityCountThreshold: token.withdrawLiquidityCountThreshold,
             };
           })
           .filter((item) => item !== null);
@@ -281,6 +291,7 @@ export class RelayerService implements OnModuleInit {
           toBridge: toConnectInfo,
           lnProviders: lnProviders,
           heartBeatTime: this.heartBeatInterval,
+          toWallet: toWallet,
         };
       })
       .filter((item) => item !== null);
@@ -453,13 +464,16 @@ export class RelayerService implements OnModuleInit {
 
   private adjustClock(chainInfo) {
     chainInfo.lastAdjustTime += 1;
+    chainInfo.lastWithdrawLiqudity += 1;
     if (chainInfo.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
       chainInfo.lastAdjustTime = 0;
-      //this.logger.log(`[${chainInfo.chainName}] schedule adjust fee`);
+    }
+    if (chainInfo.lastWithdrawLiqudity >= this.withdrawLiqudityInterval) {
+      chainInfo.lastWithdrawLiqudity = 0;
     }
   }
 
-  async relay(bridge: LnBridge, needAdjustFee: boolean) {
+  async relay(bridge: LnBridge, needAdjustFee: boolean, needWithdrawLiqudity: boolean) {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
     const fromChainInfo = bridge.fromBridge.chainInfo;
@@ -542,6 +556,67 @@ export class RelayerService implements OnModuleInit {
           toChainInfo,
           lnProvider
         );
+      }
+      if (bridge.bridgeType === "lnv3" && needWithdrawLiqudity) {
+        try {
+          let srcDecimals = 18;
+          if (lnProvider.fromAddress !== zeroAddress) {
+              srcDecimals = await lnProvider.fromToken.decimals();
+          }
+          const needWithdrawRecords = await this.dataworkerService.queryLiquidity(
+            this.configureService.indexer,
+            fromChainInfo.chainName,
+            toChainInfo.chainName,
+            lnProvider.relayer,
+            lnProvider.toAddress,
+            lnProvider.withdrawLiquidityAmountThreshold,
+            lnProvider.withdrawLiquidityCountThreshold,
+            srcDecimals
+          );
+          if (needWithdrawRecords != null) {
+            // token transfer direction fromChain -> toChain
+            // withdrawLiquidity message direction toChain -> fromChain
+            const fromChannel = this.configureService.getMessagerAddress(fromChainInfo.chainName, needWithdrawRecords.channel);
+            const toChannel = this.configureService.getMessagerAddress(toChainInfo.chainName, needWithdrawRecords.channel);
+            const messager = messagerInstance(needWithdrawRecords.channel, toChannel.address, bridge.toWallet.wallet);
+            const lnv3Contract = toBridgeContract as Lnv3BridgeContract;
+            const appPayload = lnv3Contract.encodeWithdrawLiquidity(needWithdrawRecords.transferIds, toChainInfo.chainId, lnProvider.relayer);
+            const payload = messager.encodePayload(toChainInfo.chainId, toChainInfo.lnv3Address, fromChainInfo.lnv3Address, appPayload);
+            const params = await messager.params(
+                toChainInfo.chainId,
+                fromChainInfo.chainId,
+                fromChannel.address,
+                payload,
+                lnProvider.relayer,
+            );
+            const err = await lnv3Contract.tryWithdrawLiquidity(
+                fromChainInfo.chainId,
+                needWithdrawRecords.transferIds,
+                lnProvider.relayer,
+                params.extParams,
+                params.fee
+            );
+            if (err != null) {
+                this.logger.warn(`try to withdraw liquidity failed, err ${err}, from ${fromChainInfo.chainId}, to ${toChainInfo.chainId}`);
+            } else {
+                this.logger.log(
+                    `withdrawLiquidity ${fromChainInfo.chainId}->${toChainInfo.chainId}, info: ${JSON.stringify(needWithdrawRecords)}, fee: ${params.fee}`
+                );
+                let gasPrice = await toChainInfo.provider.feeData(1, toChainInfo.notSupport1559);
+                const tx = await lnv3Contract.withdrawLiquidity(
+                  fromChainInfo.chainId,
+                  needWithdrawRecords.transferIds,
+                  lnProvider.relayer,
+                  params.extParams,
+                  gasPrice,
+                  params.fee
+                );
+                this.logger.log(`withdrawLiquidity tx ${tx.hash} on ${toChainInfo.chainId}`);
+            }
+          }
+        } catch (e) {
+          this.logger.warn(`try to withdraw liquidity failed, err ${e}`);
+        }
       }
       // checkProfit
       const needRelayRecord = await this.dataworkerService.queryRecordNeedRelay(
