@@ -334,6 +334,25 @@ export class BaseConfigService {
             address: "0x0000000000000000000000000000000000000000",
           },
         ],
+      },
+      {
+        name: "astar-zkevm",
+        id: 3776,
+        lnv2DefaultAddress: null,
+        lnv2OppositeAddress: null,
+        lnv3Address: "0xD476650e03a45E70202b0bcAfa04E1513920f83a",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x61B6B8c7C00aA7F060a2BEDeE6b11927CC9c3eF1",
+          },
+        ],
+        tokens: [
+          {
+            symbol: "eth",
+            address: "0x0000000000000000000000000000000000000000",
+          },
+        ],
       }
     ],
   };
