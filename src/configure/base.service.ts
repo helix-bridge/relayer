@@ -460,6 +460,24 @@ export class BaseConfigService {
             address: "0x89AF830781A2C1d3580Db930bea11094F55AfEae",
           },
         ],
+      },
+      {
+        name: "morph",
+        id: 2710,
+        lnv2DefaultAddress: undefined,
+        lnv2OppositeAddress: undefined,
+        lnv3Address: "0xD476650e03a45E70202b0bcAfa04E1513920f83a",
+        messagers: [],
+        tokens: [
+          {
+            symbol: "usdt",
+            address: "0x463D1730a8527CA58d48EF70C7460B9920346567",
+          },
+          {
+            symbol: "usdc",
+            address: "0x89AF830781A2C1d3580Db930bea11094F55AfEae",
+          },
+        ],
       }
     ],
   };
