@@ -89,7 +89,8 @@ export class DataworkerService implements OnModuleInit {
                 results: [${this.statusPending}],
                 relayer: \"${relayer.toLowerCase()}\",
                 token: \"${token.toLowerCase()}\",
-                order: "${firstPendingOrderBy}"
+                order: "${firstPendingOrderBy}",
+                notsubmited: true
             ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
     const pendingRecord = await axios
       .post(url, {
@@ -98,6 +99,7 @@ export class DataworkerService implements OnModuleInit {
         operationName: null,
       })
       .then((res) => res.data.data.firstHistoryRecord);
+
     if (pendingRecord === null) {
       return null;
     }
