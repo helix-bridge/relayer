@@ -43,6 +43,7 @@ export interface TokenInfo {
   swapRate: number;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
+  useDynamicBaseFee: boolean;
 }
 
 export interface BridgeInfo {
