@@ -819,6 +819,7 @@ export class RelayerService implements OnModuleInit {
         await this.dataworkerService.updateConfirmedBlock(
           this.configureService.indexer,
           record.id,
+          record.relayer,
           `${tx.hash}`,
           bridge.toWallet
         );

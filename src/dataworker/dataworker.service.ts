@@ -18,6 +18,7 @@ export interface HistoryRecord {
   sendTokenAddress: string;
   recvToken: string;
   sender: string;
+  relayer: string;
   recipient: string;
   sendAmount: string;
   recvAmount: string;
@@ -93,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
                 token: \"${token.toLowerCase()}\",
                 order: "${firstPendingOrderBy}",
                 notsubmited: true
-            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -240,10 +241,10 @@ export class DataworkerService implements OnModuleInit {
       }
   }
 
-  async updateConfirmedBlock(url: string, id: string, confirmInfo: string, wallet: EthereumConnectedWallet) {
+  async updateConfirmedBlock(url: string, id: string, relayer: string, confirmInfo: string, wallet: EthereumConnectedWallet) {
     const now = Math.floor(Date.now() / 1000);
     const signature = await this.signMessage(wallet, confirmInfo, now);
-    const mutation = `mutation {signConfirmedBlock( id: \"${id}\", block: \"${confirmInfo}\", timestamp: ${now}, signature: \"${signature}\")}`;
+    const mutation = `mutation {signConfirmedBlock( id: \"${id}\", relayer: \"${relayer}\" block: \"${confirmInfo}\", timestamp: ${now}, signature: \"${signature}\")}`;
     await axios.post(url, {
       query: mutation,
       variables: null,
@@ -339,6 +340,7 @@ export class DataworkerService implements OnModuleInit {
         await this.updateConfirmedBlock(
           url,
           record.id,
+          record.relayer,
           `${confirmedBlock}/${reorgThreshold}`,
           wallet
         );
