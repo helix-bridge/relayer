@@ -525,6 +525,8 @@ export class RelayerService implements OnModuleInit {
             );
           } catch(e) {
               // ignore error
+              // this time don't send heartbeat
+              continue;
           }
           await this.dataworkerService.sendHeartBeat(
             this.configureService.indexer,
