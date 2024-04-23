@@ -51,10 +51,10 @@ export class LnProviderInfo {
   fromToken: Erc20Contract;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
+  useDynamicBaseFee: boolean;
 }
 
 export class LnBridge {
-  isProcessing: boolean;
   fromBridge: BridgeConnectInfo;
   toBridge: BridgeConnectInfo;
   safeWalletRole: string;
@@ -72,14 +72,16 @@ export class LnBridge {
 export class RelayerService implements OnModuleInit {
   private readonly logger = new Logger("relayer");
   private readonly scheduleInterval = 10000;
-  private readonly waitingPendingTime = 12; // 2 minute
   private readonly scheduleAdjustFeeInterval = 8640; // 1day
   private readonly maxWaitingPendingTimes = 180;
-  private readonly heartBeatInterval = 6; // 1 minute
+  private readonly heartBeatInterval = 12; // 2 minute
   private readonly withdrawLiqudityInterval = 2160; // 6 hour
+  private readonly updateDynamicFeeInterval = 60; // 10 min
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
+
+  private timer = new Map();
 
   constructor(
     protected taskService: TasksService,
@@ -93,34 +95,44 @@ export class RelayerService implements OnModuleInit {
     this.initConfigure();
     this.store = new Store(this.configureService.storePath);
     this.chainInfos.forEach((value, key) => {
+      this.timer.set(key, {
+        lastAdjustTime: 0,
+        lastWithdrawLiqudity: 0,
+        lastUpdateDynamicFeeInterval: 0,
+        isProcessing: false
+      });
+
       this.taskService.addScheduleTask(
         `${key}-lnbridge-relayer`,
         this.scheduleInterval,
         async () => {
-          this.adjustClock(value);
+          const timer = this.timer.get(key);
+          if (timer.isProcessing) {
+            return;
+          }
+          timer.isProcessing = true;
           for (let item of this.lnBridges.values()) {
             if (item.toBridge.chainInfo.chainName !== key) {
               continue;
             }
-            if (item.isProcessing) {
-              return;
-            }
-            item.isProcessing = true;
             try {
               const txPending = await this.relay(
                 item,
-                value.lastAdjustTime === 0,
-                value.lastWithdrawLiqudity === 0
+                timer.lastAdjustTime === 0,
+                timer.lastWithdrawLiqudity === 0,
+                timer.lastUpdateDynamicFeeInterval === 0
               );
               if (txPending) {
-                item.isProcessing = false;
+                timer.isProcessing = false;
+                this.adjustClock(key);
                 return;
               }
             } catch (err) {
               this.logger.warn(`relay bridge failed, err: ${err}`);
             }
-            item.isProcessing = false;
           }
+          timer.isProcessing = false;
+          this.adjustClock(key);
         }
       );
     });
@@ -154,8 +166,6 @@ export class RelayerService implements OnModuleInit {
             tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
-            lastAdjustTime: this.scheduleAdjustFeeInterval,
-            lastWithdrawLiqudity: this.withdrawLiqudityInterval,
           },
         ];
       })
@@ -275,12 +285,12 @@ export class RelayerService implements OnModuleInit {
               swapRate: token.swapRate,
               withdrawLiquidityAmountThreshold: token.withdrawLiquidityAmountThreshold,
               withdrawLiquidityCountThreshold: token.withdrawLiquidityCountThreshold,
+              useDynamicBaseFee: token.useDynamicBaseFee,
             };
           })
           .filter((item) => item !== null);
 
         return {
-          isProcessing: false,
           safeWalletRole: config.safeWalletRole,
           minProfit: config.minProfit,
           maxProfit: config.maxProfit,
@@ -462,18 +472,24 @@ export class RelayerService implements OnModuleInit {
     return false;
   }
 
-  private adjustClock(chainInfo) {
-    chainInfo.lastAdjustTime += 1;
-    chainInfo.lastWithdrawLiqudity += 1;
-    if (chainInfo.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
-      chainInfo.lastAdjustTime = 0;
+  private adjustClock(key: string) {
+    let timer = this.timer.get(key);
+
+    timer.lastAdjustTime += 1;
+    timer.lastWithdrawLiqudity += 1;
+    timer.lastUpdateDynamicFeeInterval += 1;
+    if (timer.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
+      timer.lastAdjustTime = 0;
     }
-    if (chainInfo.lastWithdrawLiqudity >= this.withdrawLiqudityInterval) {
-      chainInfo.lastWithdrawLiqudity = 0;
+    if (timer.lastWithdrawLiqudity >= this.withdrawLiqudityInterval) {
+      timer.lastWithdrawLiqudity = 0;
+    }
+    if (timer.lastUpdateDynamicFeeInterval >= this.updateDynamicFeeInterval) {
+      timer.lastUpdateDynamicFeeInterval = 0;
     }
   }
 
-  async relay(bridge: LnBridge, needAdjustFee: boolean, needWithdrawLiqudity: boolean) {
+  async relay(bridge: LnBridge, needAdjustFee: boolean, needWithdrawLiqudity: boolean, needUpdateDynamicFee: boolean) {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
     const fromChainInfo = bridge.fromBridge.chainInfo;
@@ -509,6 +525,8 @@ export class RelayerService implements OnModuleInit {
             );
           } catch(e) {
               // ignore error
+              // this time don't send heartbeat
+              continue;
           }
           await this.dataworkerService.sendHeartBeat(
             this.configureService.indexer,
@@ -518,6 +536,7 @@ export class RelayerService implements OnModuleInit {
             lnProvider.fromAddress,
             softTransferLimit,
             bridge.bridgeType,
+            bridge.toWallet,
           );
         }
       }
@@ -540,17 +559,53 @@ export class RelayerService implements OnModuleInit {
       }
     }
 
+    let nativeFeeUsed = BigInt(0);
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
-      if (needAdjustFee) {
-        let gasPrice = await toChainInfo.provider.feeData(
-          1,
-          toChainInfo.notSupport1559
-        );
-        const feeUsed = this.dataworkerService.relayFee(gasPrice);
+      if (lnProvider.useDynamicBaseFee && needUpdateDynamicFee) {
+        if (nativeFeeUsed <= 0) {
+          let gasPrice = await toChainInfo.provider.feeData(
+            1,
+            toChainInfo.notSupport1559
+          );
+          nativeFeeUsed = this.dataworkerService.relayFee(gasPrice);
+        }
+        const dynamicBaseFee = nativeFeeUsed * BigInt(lnProvider.swapRate);
+
+        let srcDecimals = 18;
+        if (lnProvider.fromAddress !== zeroAddress) {
+            srcDecimals = await lnProvider.fromToken.decimals();
+        }
+        // native fee decimals = 10**18
+        function nativeFeeToToken(fee: bigint): bigint {
+          return (
+            (fee *
+             BigInt((lnProvider.swapRate * 100).toFixed()) *
+             new Any(1, srcDecimals).Number) /
+             new Ether(100).Number
+          );
+        }
+        const baseFee = nativeFeeToToken(nativeFeeUsed + new Ether(bridge.minProfit).Number);
+        await this.dataworkerService.signDynamicBaseFee(
+            this.configureService.indexer,
+            fromChainInfo.chainId,
+            toChainInfo.chainId,
+            lnProvider.relayer,
+            lnProvider.fromAddress,
+            baseFee,
+            bridge.bridgeType,
+            bridge.toWallet);
+      } else if (needAdjustFee) {
+        if (nativeFeeUsed <= 0) {
+          let gasPrice = await toChainInfo.provider.feeData(
+            1,
+            toChainInfo.notSupport1559
+          );
+          nativeFeeUsed = this.dataworkerService.relayFee(gasPrice);
+        }
         await this.adjustFee(
           bridge,
-          feeUsed,
+          nativeFeeUsed,
           fromBridgeContract,
           fromChainInfo,
           toChainInfo,
@@ -645,7 +700,8 @@ export class RelayerService implements OnModuleInit {
         fromChainInfo.provider,
         toChainInfo.provider,
         bridge.reorgThreshold,
-        toChainInfo.notSupport1559
+        toChainInfo.notSupport1559,
+        bridge.toWallet
       );
 
       if (!validInfo.isValid) {
@@ -765,15 +821,9 @@ export class RelayerService implements OnModuleInit {
         await this.dataworkerService.updateConfirmedBlock(
           this.configureService.indexer,
           record.id,
-          `${tx.hash}`
-        );
-        await this.adjustFee(
-          bridge,
-          validInfo.feeUsed,
-          fromBridgeContract,
-          fromChainInfo,
-          toChainInfo,
-          lnProvider
+          record.relayer,
+          `${tx.hash}`,
+          bridge.toWallet
         );
       }
       return true;

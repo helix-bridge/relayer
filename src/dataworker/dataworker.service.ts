@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import axios from "axios";
+import { ethers } from "ethers";
 import { last } from "lodash";
 import {
   Erc20Contract,
@@ -17,6 +18,7 @@ export interface HistoryRecord {
   sendTokenAddress: string;
   recvToken: string;
   sender: string;
+  relayer: string;
   recipient: string;
   sendAmount: string;
   recvAmount: string;
@@ -54,6 +56,7 @@ export class DataworkerService implements OnModuleInit {
   private readonly statusRefund = 4;
   private readonly pendingToConfirmRefund = 5;
   private readonly relayGasLimit = BigInt(100000);
+  private readonly dynamicFeeExpiredTime = 60 * 15; // 15 min
 
   async onModuleInit() {
     this.logger.log("data worker started");
@@ -91,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
                 token: \"${token.toLowerCase()}\",
                 order: "${firstPendingOrderBy}",
                 notsubmited: true
-            ) {id, startTime, sendTokenAddress, recvToken, sender, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -238,12 +241,23 @@ export class DataworkerService implements OnModuleInit {
       }
   }
 
-  async updateConfirmedBlock(url: string, id: string, confirmInfo: string) {
-    const mutation = `mutation {updateConfirmedBlock( id: \"${id}\", block: \"${confirmInfo}\")}`;
+  async updateConfirmedBlock(url: string, id: string, relayer: string, confirmInfo: string, wallet: EthereumConnectedWallet) {
+    const now = Math.floor(Date.now() / 1000);
+    const signature = await this.signMessage(wallet, confirmInfo, now);
+    const mutation = `mutation {signConfirmedBlock( id: \"${id}\", relayer: \"${relayer}\" block: \"${confirmInfo}\", timestamp: ${now}, signature: \"${signature}\")}`;
     await axios.post(url, {
       query: mutation,
       variables: null,
     });
+  }
+
+  async signMessage(
+    wallet: EthereumConnectedWallet,
+    message: string,
+    timestamp: number
+  ) {
+    const messageHash = ethers.solidityPackedKeccak256(['uint256', 'string'], [timestamp, message]);
+    return await wallet.wallet.signMessage(ethers.getBytes(messageHash));
   }
 
   async sendHeartBeat(
@@ -253,12 +267,44 @@ export class DataworkerService implements OnModuleInit {
     relayer: string,
     tokenAddress: string,
     softTransferLimit: bigint,
-    version: string
+    version: string,
+    wallet: EthereumConnectedWallet
   ) {
     if (version !== "lnv3") {
       version = "lnv2";
     }
-    const mutation = `mutation {lnBridgeHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\", softTransferLimit: \"${softTransferLimit}\")}`;
+
+    const now = Math.floor(Date.now() / 1000);
+    const signature = await this.signMessage(wallet, `${softTransferLimit}`, now);
+    const mutation = `mutation {signHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\", softTransferLimit: \"${softTransferLimit}\", timestamp: ${now}, signature: \"${signature}\")}`;
+    await axios.post(url, {
+      query: mutation,
+      variables: null,
+    });
+  }
+
+  async signDynamicBaseFee(
+    url: string,
+    fromChainId: number,
+    toChainId: number,
+    relayer: string,
+    tokenAddress: string,
+    dynamicFee: bigint,
+    version: string,
+    wallet: EthereumConnectedWallet
+  ) {
+    if (version !== "lnv3") {
+      version = "lnv2";
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const dynamicFeeExpire = now + this.dynamicFeeExpiredTime;
+    const messageHash = ethers.solidityPackedKeccak256(['uint112', 'uint64'], [dynamicFee, dynamicFeeExpire]);
+    const dynamicFeeSignature = await wallet.wallet.signMessage(ethers.getBytes(messageHash));
+    const message = `${dynamicFee}:${dynamicFeeExpire}:${dynamicFeeSignature}`;
+    const signature = await this.signMessage(wallet, message, now);
+
+    const mutation = `mutation {signDynamicFee( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\", dynamicFee: \"${dynamicFee}\", dynamicFeeExpire: \"${dynamicFeeExpire}\", dynamicFeeSignature: \"${dynamicFeeSignature}\", timestamp: ${now}, signature: \"${signature}\")}`;
     await axios.post(url, {
       query: mutation,
       variables: null,
@@ -273,7 +319,8 @@ export class DataworkerService implements OnModuleInit {
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
     reorgThreshold: number,
-    notSupport1559: boolean
+    notSupport1559: boolean,
+    wallet
   ): Promise<ValidInfo> {
     // 1. tx must be finalized
     const transactionInfo = await fromProvider.checkPendingTransaction(
@@ -293,7 +340,9 @@ export class DataworkerService implements OnModuleInit {
         await this.updateConfirmedBlock(
           url,
           record.id,
-          `${confirmedBlock}/${reorgThreshold}`
+          record.relayer,
+          `${confirmedBlock}/${reorgThreshold}`,
+          wallet
         );
       }
       return {
