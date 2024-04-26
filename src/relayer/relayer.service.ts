@@ -564,10 +564,21 @@ export class RelayerService implements OnModuleInit {
     for (const lnProvider of bridge.lnProviders) {
       if (lnProvider.useDynamicBaseFee && needUpdateDynamicFee) {
         if (nativeFeeUsed <= 0) {
-          let gasPrice = await toChainInfo.provider.feeData(
-            1,
-            toChainInfo.notSupport1559
-          );
+          let gasPrice;
+          if (toChainInfo.fixedGasPrice !== undefined) {
+              gasPrice = {
+                  isEip1559: false,
+                  fee: {
+                      gasPrice: new GWei(toChainInfo.fixedGasPrice).Number,
+                  },
+                  eip1559fee: null,
+              };
+          } else {
+            gasPrice = await toChainInfo.provider.feeData(
+              1,
+              toChainInfo.notSupport1559
+            );
+          }
           nativeFeeUsed = this.dataworkerService.relayFee(gasPrice);
         }
         const dynamicBaseFee = nativeFeeUsed * BigInt(lnProvider.swapRate);
@@ -597,10 +608,21 @@ export class RelayerService implements OnModuleInit {
             bridge.toWallet);
       } else if (needAdjustFee) {
         if (nativeFeeUsed <= 0) {
-          let gasPrice = await toChainInfo.provider.feeData(
-            1,
-            toChainInfo.notSupport1559
-          );
+          let gasPrice;
+          if (toChainInfo.fixedGasPrice !== undefined) {
+              gasPrice = {
+                  isEip1559: false,
+                  fee: {
+                      gasPrice: new GWei(toChainInfo.fixedGasPrice).Number,
+                  },
+                  eip1559fee: null,
+              };
+          } else {
+            gasPrice = await toChainInfo.provider.feeData(
+              1,
+              toChainInfo.notSupport1559
+            );
+          }
           nativeFeeUsed = this.dataworkerService.relayFee(gasPrice);
         }
         await this.adjustFee(
@@ -657,7 +679,21 @@ export class RelayerService implements OnModuleInit {
                 this.logger.log(
                     `withdrawLiquidity ${fromChainInfo.chainId}->${toChainInfo.chainId}, info: ${JSON.stringify(needWithdrawRecords)}, fee: ${params.fee}`
                 );
-                let gasPrice = await toChainInfo.provider.feeData(1, toChainInfo.notSupport1559);
+                let gasPrice;
+                if (toChainInfo.fixedGasPrice !== undefined) {
+                    gasPrice = {
+                        isEip1559: false,
+                        fee: {
+                            gasPrice: new GWei(toChainInfo.fixedGasPrice).Number,
+                        },
+                        eip1559fee: null,
+                    };
+                } else {
+                  gasPrice = await toChainInfo.provider.feeData(
+                    1,
+                    toChainInfo.notSupport1559
+                  );
+                }
                 const tx = await lnv3Contract.withdrawLiquidity(
                   fromChainInfo.chainId,
                   needWithdrawRecords.transferIds,
@@ -713,6 +749,15 @@ export class RelayerService implements OnModuleInit {
           `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
         );
         continue;
+      }
+      if (toChainInfo.fixedGasPrice !== undefined) {
+          validInfo.gasPrice = {
+              isEip1559: false,
+              fee: {
+                  gasPrice: new GWei(toChainInfo.fixedGasPrice).Number,
+              },
+              eip1559fee: null,
+          };
       }
       let nonce: number | null = null;
       // try relay: check balance and fee enough
