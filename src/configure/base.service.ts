@@ -295,6 +295,10 @@ export class BaseConfigService {
             symbol: "usdt",
             address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
           },
+          {
+            symbol: "eth",
+            address: "0x0000000000000000000000000000000000000000",
+          }
         ],
       },
       {
