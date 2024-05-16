@@ -138,6 +138,14 @@ export class BaseConfigService {
             symbol: "crab",
             address: "0x656567Eb75b765FC320783cc6EDd86bD854b2305",
           },
+          {
+            symbol: "ahPINK",
+            address: "0x0000000000000000000000000000000000000404"
+          },
+          {
+            symbol: "ahUSDT",
+            address: "0x0000000000000000000000000000000000000403"
+          }
         ],
       },
       {
@@ -355,6 +363,29 @@ export class BaseConfigService {
           {
             symbol: "eth",
             address: "0x0000000000000000000000000000000000000000",
+          },
+        ],
+      },
+      {
+        name: "moonbeam",
+        id: 1284,
+        lnv2DefaultAddress: null,
+        lnv2OppositeAddress: null,
+        lnv3Address: "0xbA5D580B18b6436411562981e02c8A9aA1776D10",
+        messagers: [
+          {
+            name: "layerzero",
+            address: "0x61B6B8c7C00aA7F060a2BEDeE6b11927CC9c3eF1",
+          },
+        ],
+        tokens: [
+          {
+            symbol: "xcUSDT",
+            address: "0xFFFFFFfFea09FB06d082fd1275CD48b191cbCD1d",
+          },
+          {
+            symbol: "xcPINK",
+            address: "0xffffffff30478fafbe935e466da114e14fb3563d",
           },
         ],
       }
