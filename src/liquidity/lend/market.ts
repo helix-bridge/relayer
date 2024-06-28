@@ -1,4 +1,3 @@
-
 export abstract class LendMarket {
   public name: string;
   public wrappedToken: string;
@@ -9,5 +8,9 @@ export abstract class LendMarket {
   abstract address(): string;
   abstract borrowAvailable(account: string, asset: string): Promise<bigint>;
   abstract batchRepayRawData(onBehalfOf: string): Promise<string[]>;
-  abstract borrowRawData(token: string, amount: bigint, onBehalfOf: string): string;
+  abstract borrowRawData(
+    token: string,
+    amount: bigint,
+    onBehalfOf: string
+  ): string;
 }

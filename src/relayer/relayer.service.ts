@@ -298,10 +298,7 @@ export class RelayerService implements OnModuleInit {
             return {
               fromAddress: fromToken.address,
               toAddress: toToken.address,
-              toToken: new Erc20Contract(
-                toToken.address,
-                toWallet.wallet
-              ),
+              toToken: new Erc20Contract(toToken.address, toWallet.wallet),
               fromToken: new Erc20Contract(
                 fromToken.address,
                 fromWallet.wallet
@@ -551,28 +548,34 @@ export class RelayerService implements OnModuleInit {
               }
             }
             const softLimitInfo = await toBridgeContract.getSoftTransferLimit(
-                lnProvider.relayer,
-                lnProvider.toAddress,
-                toChainInfo.provider.provider,
+              lnProvider.relayer,
+              lnProvider.toAddress,
+              toChainInfo.provider.provider
             );
             if (softLimitInfo.allowance < softLimitInfo.balance) {
-                softTransferLimit = softLimitInfo.allowance;
+              softTransferLimit = softLimitInfo.allowance;
             } else {
-                softTransferLimit = softLimitInfo.balance;
-                // from lend market
-                for (const market of toChainInfo.lendMarket) {
-                    const avaiable = await market.borrowAvailable(lnProvider.relayer, lnProvider.toAddress);
-                    if (avaiable > BigInt(0)) {
-                        const totalAvaiable = softLimitInfo.balance + avaiable;
-                        softTransferLimit = totalAvaiable > softLimitInfo.allowance ? softLimitInfo.allowance : totalAvaiable;
-                        break;
-                    }
-                };
+              softTransferLimit = softLimitInfo.balance;
+              // from lend market
+              for (const market of toChainInfo.lendMarket) {
+                const avaiable = await market.borrowAvailable(
+                  lnProvider.relayer,
+                  lnProvider.toAddress
+                );
+                if (avaiable > BigInt(0)) {
+                  const totalAvaiable = softLimitInfo.balance + avaiable;
+                  softTransferLimit =
+                    totalAvaiable > softLimitInfo.allowance
+                      ? softLimitInfo.allowance
+                      : totalAvaiable;
+                  break;
+                }
+              }
             }
-          } catch(e) {
-              // ignore error
-              // this time don't send heartbeat
-              continue;
+          } catch (e) {
+            // ignore error
+            // this time don't send heartbeat
+            continue;
           }
           await this.dataworkerService.sendHeartBeat(
             this.configureService.indexer,
@@ -838,54 +841,68 @@ export class RelayerService implements OnModuleInit {
         let reservedBalance: bigint;
         // native token
         if (lnProvider.toAddress === zeroAddress) {
-            reservedBalance = await toChainInfo.provider.balanceOf(lnProvider.relayer);
+          reservedBalance = await toChainInfo.provider.balanceOf(
+            lnProvider.relayer
+          );
         } else {
-            reservedBalance = await lnProvider.toToken.balanceOf(lnProvider.relayer);
+          reservedBalance = await lnProvider.toToken.balanceOf(
+            lnProvider.relayer
+          );
         }
         let txs = [];
         // relay directly
         if (reservedBalance >= relayData.value) {
-            txs = [
-                {
-                    to: toBridgeContract.address,
-                    value: relayData.value.toString(),
-                    data: relayData.data
-                }
-            ];
+          txs = [
+            {
+              to: toBridgeContract.address,
+              value: relayData.value.toString(),
+              data: relayData.data,
+            },
+          ];
         } else {
-            // search from lend market
-            const needBorrow = relayData.value - reservedBalance;
-            for (const market of toChainInfo.lendMarket) {
-                const avaiable = await market.borrowAvailable(lnProvider.relayer, lnProvider.toAddress);
-                if (avaiable > needBorrow) {
-                    // borrow and relay
-                    // if native token, borrow wtoken and withdraw then relay
-                    // 1. borrow
-                    txs.push({
-                        to: market.address(),
-                        value: "0",
-                        data: market.borrowRawData(lnProvider.toAddress, needBorrow, lnProvider.relayer)
-                    });
-                    // 2. withdraw if native token
-                    if (lnProvider.toAddress === zeroAddress) {
-                        txs.push({
-                            to: market.wrappedToken,
-                            value: "0",
-                            data: (new WETHContract(market.wrappedToken, toChainInfo.provider.provider)).withdrawRawData(needBorrow)
-                        });
-                    }
-                    // relay
-                    txs.push({
-                        to: toBridgeContract.address,
-                        value: relayData.value.toString(),
-                        data: relayData.data
-                    });
-                    break;
-                }
+          // search from lend market
+          const needBorrow = relayData.value - reservedBalance;
+          for (const market of toChainInfo.lendMarket) {
+            const avaiable = await market.borrowAvailable(
+              lnProvider.relayer,
+              lnProvider.toAddress
+            );
+            if (avaiable > needBorrow) {
+              // borrow and relay
+              // if native token, borrow wtoken and withdraw then relay
+              // 1. borrow
+              txs.push({
+                to: market.address(),
+                value: "0",
+                data: market.borrowRawData(
+                  lnProvider.toAddress,
+                  needBorrow,
+                  lnProvider.relayer
+                ),
+              });
+              // 2. withdraw if native token
+              if (lnProvider.toAddress === zeroAddress) {
+                txs.push({
+                  to: market.wrappedToken,
+                  value: "0",
+                  data: new WETHContract(
+                    market.wrappedToken,
+                    toChainInfo.provider.provider
+                  ).withdrawRawData(needBorrow),
+                });
+              }
+              // relay
+              txs.push({
+                to: toBridgeContract.address,
+                value: relayData.value.toString(),
+                data: relayData.data,
+              });
+              break;
             }
+          }
         }
         if (txs.length == 0) {
-            continue;
+          continue;
         }
         const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
           txs,

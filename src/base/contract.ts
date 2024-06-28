@@ -43,19 +43,23 @@ export class EthereumContract {
   ): Promise<SoftLimitAmount> {
     // native token
     if (targetToken === zeroAddress) {
-        const balance = await provider.getBalance(relayer) * BigInt(9) / BigInt(10);
-        return {
-            balance,
-            allowance: balance
-        };
+      const balance =
+        ((await provider.getBalance(relayer)) * BigInt(9)) / BigInt(10);
+      return {
+        balance,
+        allowance: balance,
+      };
     } else {
-        const targetTokenContract = new Erc20Contract(targetToken, provider)
-        const balance = await targetTokenContract.balanceOf(relayer);
-        const allowance = await targetTokenContract.allowance(relayer, this.address);
-        return {
-            balance,
-            allowance
-        };
+      const targetTokenContract = new Erc20Contract(targetToken, provider);
+      const balance = await targetTokenContract.balanceOf(relayer);
+      const allowance = await targetTokenContract.allowance(
+        relayer,
+        this.address
+      );
+      return {
+        balance,
+        allowance,
+      };
     }
   }
 
@@ -747,12 +751,7 @@ export class WETHContract extends EthereumContract {
   }
 
   withdrawRawData(amount: bigint): string {
-      return this.interface.encodeFunctionData(
-          "withdraw",
-          [
-              amount
-          ]
-      );
+    return this.interface.encodeFunctionData("withdraw", [amount]);
   }
 }
 
@@ -766,37 +765,26 @@ export class MulticallContract extends EthereumContract {
 
   // address == 0: native balance
   async getBalance(account: string, addresses: string[]): Promise<bigint[]> {
-      let args = [];
-      for (const address of addresses) {
-          if (address === zeroAddress) {
-              args.push([
-                  this.address,
-                  this.interface.encodeFunctionData(
-                      "getEthBalance",
-                      [
-                          account
-                      ]
-                  )
-              ]);
-          } else {
-              args.push([
-                  address,
-                  this.interface.encodeFunctionData(
-                      "balanceOf",
-                      [
-                          account
-                      ]
-                  )
-              ]);
-          }
+    let args = [];
+    for (const address of addresses) {
+      if (address === zeroAddress) {
+        args.push([
+          this.address,
+          this.interface.encodeFunctionData("getEthBalance", [account]),
+        ]);
+      } else {
+        args.push([
+          address,
+          this.interface.encodeFunctionData("balanceOf", [account]),
+        ]);
       }
-      const response = await this.staticCall("aggregate", [args], null);
-      let result: bigint[] = [];
-      const balances = response[1];
-      for (const balance of balances) {
-          result.push(BigInt(balance));
-      }
-      return result;
+    }
+    const response = await this.staticCall("aggregate", [args], null);
+    let result: bigint[] = [];
+    const balances = response[1];
+    for (const balance of balances) {
+      result.push(BigInt(balance));
+    }
+    return result;
   }
 }
-
