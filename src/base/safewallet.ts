@@ -96,20 +96,11 @@ export class SafeWallet {
   }
 
   async proposeTransaction(
-    address: string,
-    data: string,
-    value: bigint,
+    transactions: MetaTransactionData[],
     isProposor: boolean,
     chainId: bigint,
   ): Promise<TransactionPropose | null> {
     this.safeSdk ?? (await this.connect(chainId));
-    const transactions: MetaTransactionData[] = [
-      {
-        to: address,
-        value: value.toString(),
-        data,
-      },
-    ];
     const tx = await this.safeSdk.createTransaction({ transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
@@ -123,7 +114,7 @@ export class SafeWallet {
           readyExecute: signatures !== null,
           safeTxHash: safeTxHash,
           txData: transaction.data,
-          to: address,
+          to: transaction.to,
           signatures,
         };
       }
@@ -145,7 +136,7 @@ export class SafeWallet {
       readyExecute: false,
       safeTxHash: safeTxHash,
       txData: "",
-      to: address,
+      to: "",
       signatures: "",
     };
   }

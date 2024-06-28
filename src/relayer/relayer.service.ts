@@ -9,6 +9,7 @@ import {
   Lnv3BridgeContract,
   SafeContract,
   zeroAddress,
+  WETHContract,
 } from "../base/contract";
 import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
@@ -25,6 +26,8 @@ import { last } from "lodash";
 import { ethers } from "ethers";
 import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
+import { Aave } from "../liquidity/lend/aave";
+import { LendMarket } from "../liquidity/lend/market";
 
 export class ChainInfo {
   chainName: string;
@@ -35,6 +38,7 @@ export class ChainInfo {
   notSupport1559: boolean;
   lnv3Address: string;
   adjustingFee: boolean;
+  lendMarket: LendMarket[];
 }
 
 export class BridgeConnectInfo {
@@ -49,6 +53,7 @@ export class LnProviderInfo {
   fromAddress: string;
   toAddress: string;
   fromToken: Erc20Contract;
+  toToken: Erc20Contract;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
   useDynamicBaseFee: boolean;
@@ -151,13 +156,28 @@ export class RelayerService implements OnModuleInit {
           );
           return null;
         }
+        const provider = new EthereumProvider(rpcnode.rpc);
+        const lendMarket = rpcnode.lendMarket.map((market) => {
+          switch (market.protocol) {
+            // currently only support aave
+            case "aave":
+              return new Aave(
+                rpcnode.name,
+                market.healthFactorLimit,
+                market.tokens,
+                provider.provider
+              );
+            default:
+              return null;
+          }
+        });
         return [
           rpcnode.name,
           {
             chainName: rpcnode.name,
             rpc: rpcnode.rpc,
             chainId: chainInfo.id,
-            provider: new EthereumProvider(rpcnode.rpc),
+            provider: provider,
             fixedGasPrice: rpcnode.fixedGasPrice,
             notSupport1559: rpcnode.notSupport1559,
             lnv2DefaultAddress: chainInfo.lnv2DefaultAddress,
@@ -166,6 +186,7 @@ export class RelayerService implements OnModuleInit {
             tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
+            lendMarket: lendMarket,
           },
         ];
       })
@@ -277,6 +298,10 @@ export class RelayerService implements OnModuleInit {
             return {
               fromAddress: fromToken.address,
               toAddress: toToken.address,
+              toToken: new Erc20Contract(
+                toToken.address,
+                toWallet.wallet
+              ),
               fromToken: new Erc20Contract(
                 fromToken.address,
                 fromWallet.wallet
@@ -518,11 +543,25 @@ export class RelayerService implements OnModuleInit {
                     continue;
                 }
             }
-            softTransferLimit = await toBridgeContract.getSoftTransferLimit(
+            const softLimitInfo = await toBridgeContract.getSoftTransferLimit(
                 lnProvider.relayer,
                 lnProvider.toAddress,
                 toChainInfo.provider.provider,
             );
+            if (softLimitInfo.allowance < softLimitInfo.balance) {
+                softTransferLimit = softLimitInfo.allowance;
+            } else {
+                softTransferLimit = softLimitInfo.balance;
+                // from lend market
+                for (const market of toChainInfo.lendMarket) {
+                    const avaiable = await market.borrowAvailable(lnProvider.relayer, lnProvider.toAddress);
+                    if (avaiable > BigInt(0)) {
+                        const totalAvaiable = softLimitInfo.balance + avaiable;
+                        softTransferLimit = totalAvaiable > softLimitInfo.allowance ? softLimitInfo.allowance : totalAvaiable;
+                        break;
+                    }
+                };
+            }
           } catch(e) {
               // ignore error
               // this time don't send heartbeat
@@ -753,10 +792,62 @@ export class RelayerService implements OnModuleInit {
       const isExecutor = bridge.safeWalletRole === "executor";
       if (bridge.safeWalletRole === "signer" || isExecutor) {
         const relayData = toBridgeContract.relayRawData(args);
+        // txs
+        // 1. balance is enough to pay for relay
+        let reservedBalance: bigint;
+        // native token
+        if (lnProvider.toAddress === zeroAddress) {
+            reservedBalance = await toChainInfo.provider.balanceOf(lnProvider.relayer);
+        } else {
+            reservedBalance = await lnProvider.toToken.balanceOf(lnProvider.relayer);
+        }
+        let txs = [];
+        // relay directly
+        if (reservedBalance >= relayData.value) {
+            txs = [
+                {
+                    to: toBridgeContract.address,
+                    value: relayData.value.toString(),
+                    data: relayData.data
+                }
+            ];
+        } else {
+            // search from lend market
+            const needBorrow = relayData.value - reservedBalance;
+            for (const market of toChainInfo.lendMarket) {
+                const avaiable = await market.borrowAvailable(lnProvider.relayer, lnProvider.toAddress);
+                if (avaiable > needBorrow) {
+                    // borrow and relay
+                    // if native token, borrow wtoken and withdraw then relay
+                    // 1. borrow
+                    txs.push({
+                        to: market.address(),
+                        value: "0",
+                        data: market.borrowRawData(lnProvider.toAddress, needBorrow, lnProvider.relayer)
+                    });
+                    // 2. withdraw if native token
+                    if (lnProvider.toAddress === zeroAddress) {
+                        txs.push({
+                            to: market.wrappedToken,
+                            value: "0",
+                            data: (new WETHContract(market.wrappedToken, toChainInfo.provider.provider)).withdrawRawData(needBorrow)
+                        });
+                    }
+                    // relay
+                    txs.push({
+                        to: toBridgeContract.address,
+                        value: relayData.value.toString(),
+                        data: relayData.data
+                    });
+                    break;
+                }
+            }
+        }
+        if (txs.length == 0) {
+            continue;
+        }
         const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
-          toBridgeContract.address,
-          relayData.data,
-          relayData.value,
+          txs,
           isExecutor,
           BigInt(toChainInfo.chainId)
         );
