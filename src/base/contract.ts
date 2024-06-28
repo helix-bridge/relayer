@@ -166,6 +166,11 @@ export interface LnProviderFeeInfo {
   transferLimit: bigint;
 }
 
+export interface RelayRawData {
+  data: string;
+  value: bigint;
+}
+
 export class SafeContract extends EthereumContract {
   constructor(
     address: string,
@@ -365,14 +370,14 @@ export class LnBridgeContract extends EthereumContract {
     );
   }
 
-  relayRawData(args: RelayArgs | RelayArgsV3): string {
+  relayRawData(args: RelayArgs | RelayArgsV3): RelayRawData {
     var value = null;
     const argsV2 = args as RelayArgs;
     const parameter = argsV2.transferParameter;
     if (parameter.targetToken === zeroAddress) {
       value = parameter.amount;
     }
-    return this.interface.encodeFunctionData("transferAndReleaseMargin", [
+    const data = this.interface.encodeFunctionData("transferAndReleaseMargin", [
       [
         parameter.previousTransferId,
         parameter.relayer,
@@ -385,6 +390,7 @@ export class LnBridgeContract extends EthereumContract {
       argsV2.remoteChainId,
       argsV2.expectedTransferId,
     ]);
+    return { data, value };
   }
 
   async relay(
@@ -659,14 +665,14 @@ export class Lnv3BridgeContract extends EthereumContract {
     );
   }
 
-  relayRawData(args: RelayArgsV3 | RelayArgs): string {
+  relayRawData(args: RelayArgsV3 | RelayArgs): RelayRawData {
     var value = null;
     const argsV3 = args as RelayArgsV3;
     const parameter = argsV3.transferParameter;
     if (parameter.targetToken === zeroAddress) {
       value = parameter.targetAmount;
     }
-    return this.interface.encodeFunctionData("relay", [
+    const data = this.interface.encodeFunctionData("relay", [
       [
         parameter.remoteChainId,
         parameter.provider,
@@ -680,6 +686,7 @@ export class Lnv3BridgeContract extends EthereumContract {
       argsV3.expectedTransferId,
       true,
     ]);
+    return { data, value };
   }
 
   async relay(

@@ -755,7 +755,8 @@ export class RelayerService implements OnModuleInit {
         const relayData = toBridgeContract.relayRawData(args);
         const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
           toBridgeContract.address,
-          relayData,
+          relayData.data,
+          relayData.value,
           isExecutor,
           BigInt(toChainInfo.chainId)
         );
