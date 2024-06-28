@@ -50,7 +50,7 @@ export class BaseConfigService {
           {
             name: "layerzero",
             address: "0x509354A4ebf98aCC7a65d2264694A65a2938cac9",
-          }
+          },
         ],
         tokens: [
           {
@@ -104,7 +104,7 @@ export class BaseConfigService {
           {
             name: "layerzero",
             address: "0x463D1730a8527CA58d48EF70C7460B9920346567",
-          }
+          },
         ],
         tokens: [
           {
@@ -140,12 +140,12 @@ export class BaseConfigService {
           },
           {
             symbol: "ahPINK",
-            address: "0x0000000000000000000000000000000000000404"
+            address: "0x0000000000000000000000000000000000000404",
           },
           {
             symbol: "ahUSDT",
-            address: "0x0000000000000000000000000000000000000403"
-          }
+            address: "0x0000000000000000000000000000000000000403",
+          },
         ],
       },
       {
@@ -306,7 +306,7 @@ export class BaseConfigService {
           {
             symbol: "eth",
             address: "0x0000000000000000000000000000000000000000",
-          }
+          },
         ],
       },
       {
@@ -388,7 +388,7 @@ export class BaseConfigService {
             address: "0xffffffff30478fafbe935e466da114e14fb3563d",
           },
         ],
-      }
+      },
     ],
   };
   testConfigure: BaseConfigure = {
@@ -513,7 +513,7 @@ export class BaseConfigService {
             address: "0x89AF830781A2C1d3580Db930bea11094F55AfEae",
           },
         ],
-      }
+      },
     ],
   };
 

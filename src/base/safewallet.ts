@@ -23,9 +23,9 @@ export interface TransactionPropose {
 }
 
 export interface ProposalCalls {
-    address: string;
-    data: string;
-    value: bigint;
+  address: string;
+  data: string;
+  value: bigint;
 }
 
 export class SafeWallet {
@@ -98,7 +98,7 @@ export class SafeWallet {
   async proposeTransaction(
     transactions: MetaTransactionData[],
     isProposor: boolean,
-    chainId: bigint,
+    chainId: bigint
   ): Promise<TransactionPropose | null> {
     this.safeSdk ?? (await this.connect(chainId));
     const tx = await this.safeSdk.createTransaction({ transactions });
