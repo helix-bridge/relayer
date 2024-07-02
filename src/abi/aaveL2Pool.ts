@@ -542,13 +542,6 @@ export const aaveL2Pool = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "args", type: "bytes32" }],
-    name: "borrow",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       { internalType: "uint8", name: "id", type: "uint8" },
       {

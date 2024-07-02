@@ -514,6 +514,24 @@ export class BaseConfigService {
           },
         ],
       },
+      {
+        name: "base-sepolia",
+        id: 84532,
+        lnv2DefaultAddress: undefined,
+        lnv2OppositeAddress: undefined,
+        lnv3Address: "0x29D148A9e87C763292a33A55B9dBcAf44A194102",
+        messagers: [],
+        tokens: [
+          {
+            symbol: "usdt",
+            address: "0x61B6B8c7C00aA7F060a2BEDeE6b11927CC9c3eF1",
+          },
+          {
+            symbol: "eth",
+            address: "0x0000000000000000000000000000000000000000",
+          }
+        ],
+      },
     ],
   };
 

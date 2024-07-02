@@ -7,6 +7,7 @@ import { Any } from "../../base/bignumber";
 
 export interface DeptToken {
   address: string;
+  decimals: number;
   underlyingAddress: string;
   // the min repay amount each time
   minRepayAmount: bigint;
@@ -70,8 +71,30 @@ export class AddressBookConfigure {
     ],
   };
 
+  testConfigure: AddressBook = {
+    version: "v3",
+    chains: [
+      {
+        name: "base-sepolia",
+        l2Pool: "0x07eA79F68B2B3df564D0A34F8e19D9B1e339814b",
+        oracle: "0x29E1eF0209275D0F403E8C57861C2df8706eA244",
+        multicall: "0xcA11bde05977b3631167028862bE2a173976CA11",
+        // find at https://github.com/bgd-labs/aave-address-book/blob/main/src/AaveV3Arbitrum.sol
+        deptTokens: [
+          {
+            symbol: "weth",
+            vToken: "0xf0F0025Dc51f532Ab84c33Eb9d01583EAa0F74c7",
+            underlyingToken: "0x4200000000000000000000000000000000000006",
+            decimals: 18,
+            isNativeWrapped: true,
+          },
+        ],
+      },
+    ]
+  };
+
   public addressBook(isTest: boolean): AddressBook {
-    return this.formalConfigure;
+    return isTest ? this.testConfigure : this.formalConfigure;
   }
 }
 
@@ -89,8 +112,11 @@ export class Aave extends LendMarket {
     tokens: LendTokenInfo[],
     signer: Wallet | HDNodeWallet | ethers.Provider
   ) {
-    const addressBook = new AddressBookConfigure().addressBook(false);
+    const addressBook = new AddressBookConfigure().addressBook(true);
     const bookInfo = addressBook.chains.find((e) => e.name == chainName);
+    if (!bookInfo) {
+        throw new Error(`[Lend]Chain ${chainName} Not Support`);
+    }
     const wtoken = bookInfo.deptTokens.find((dt) => dt.isNativeWrapped);
     super("aave", wtoken?.underlyingToken);
 
@@ -98,6 +124,9 @@ export class Aave extends LendMarket {
     this.poolContract = new AaveL2Pool(bookInfo.l2Pool, signer);
     this.oracle = new AaveOracle(bookInfo.oracle, signer);
     this.multicall = new MulticallContract(bookInfo.multicall, signer);
+    if (!tokens) {
+        throw new Error(`[Lend]Chain ${chainName} tokens empty`);
+    }
     this.debtTokens = tokens.map((token) => {
       const tokenInfo = bookInfo.deptTokens.find(
         (dt) => dt.symbol == token.symbol
@@ -105,6 +134,7 @@ export class Aave extends LendMarket {
       return {
         address: tokenInfo.vToken,
         underlyingAddress: tokenInfo.underlyingToken,
+        decimals: tokenInfo.decimals,
         minRepayAmount:
           (BigInt((token.minRepay * 10000).toFixed()) *
             new Any(1, tokenInfo.decimals).Number) /
@@ -139,7 +169,8 @@ export class Aave extends LendMarket {
       accountInfo.totalDebtBase;
 
     const price = await this.oracle.getAssetPrice(dtToken.underlyingAddress);
-    return (availableBase * BigInt(1e8)) / price;
+    // dept token and underlying token have the same decimals
+    return (availableBase * new Any(1, dtToken.decimals).Number) / price;
   }
 
   // batch query debt tokens
@@ -183,7 +214,11 @@ export class Aave extends LendMarket {
   }
 
   borrowRawData(token: string, amount: bigint, onBehalfOf: string): string {
-    return this.poolContract.borrowRawData(token, amount, onBehalfOf);
+    let borrowToken = token;
+    if (token === zeroAddress) {
+        borrowToken = this.wrappedToken;
+    }
+    return this.poolContract.borrowRawData(borrowToken, amount, onBehalfOf);
   }
 
   address(): string {

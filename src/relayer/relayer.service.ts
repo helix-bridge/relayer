@@ -157,13 +157,13 @@ export class RelayerService implements OnModuleInit {
           return null;
         }
         const provider = new EthereumProvider(rpcnode.rpc);
-        const lendMarket = rpcnode.lendMarket.map((market) => {
+        const lendMarket = rpcnode.lendMarket?.map((market) => {
           switch (market.protocol) {
             // currently only support aave
             case "aave":
               return new Aave(
                 rpcnode.name,
-                market.healthFactorLimit,
+                market.healthFactorLimit?? 3.0,
                 market.tokens,
                 provider.provider
               );
@@ -186,7 +186,7 @@ export class RelayerService implements OnModuleInit {
             tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
-            lendMarket: lendMarket,
+            lendMarket: lendMarket ?? [],
           },
         ];
       })
@@ -867,6 +867,7 @@ export class RelayerService implements OnModuleInit {
               lnProvider.relayer,
               lnProvider.toAddress
             );
+            this.logger.log(`borrow available: ${avaiable}, need ${needBorrow}`);
             if (avaiable > needBorrow) {
               // borrow and relay
               // if native token, borrow wtoken and withdraw then relay
@@ -917,6 +918,7 @@ export class RelayerService implements OnModuleInit {
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
             txInfo.txData,
+            txInfo.operation,
             txInfo.signatures
           );
           if (err != null) {
@@ -925,9 +927,11 @@ export class RelayerService implements OnModuleInit {
             );
             continue;
           } else {
+            this.logger.log(`[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}`);
             const tx = await safeContract.execTransaction(
               txInfo.to,
               txInfo.txData,
+              txInfo.operation,
               txInfo.signatures,
               validInfo.gasPrice
             );

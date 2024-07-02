@@ -200,12 +200,13 @@ export class SafeContract extends EthereumContract {
   async tryExecTransaction(
     to: string,
     data: string,
+    operation: number,
     signatures: string,
     value: bigint | null = null
   ): Promise<string> | null {
     return await this.staticCall(
       "execTransaction",
-      [to, 0, data, 0, 0, 0, 0, zeroAddress, zeroAddress, signatures],
+      [to, 0, data, operation, 0, 0, 0, zeroAddress, zeroAddress, signatures],
       value
     );
   }
@@ -213,6 +214,7 @@ export class SafeContract extends EthereumContract {
   async execTransaction(
     to: string,
     data: string,
+    operation: number,
     signatures: string,
     gas: GasPrice,
     nonce: number | null = null,
@@ -221,7 +223,7 @@ export class SafeContract extends EthereumContract {
   ): Promise<TransactionResponse> {
     return await this.call(
       "execTransaction",
-      [to, 0, data, 0, 0, 0, 0, zeroAddress, zeroAddress, signatures],
+      [to, 0, data, operation, 0, 0, 0, zeroAddress, zeroAddress, signatures],
       gas,
       value,
       nonce,

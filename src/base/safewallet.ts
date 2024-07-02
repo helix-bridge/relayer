@@ -19,6 +19,7 @@ export interface TransactionPropose {
   readyExecute: boolean;
   safeTxHash: string;
   txData: string;
+  operation: number;
   signatures: string | null;
 }
 
@@ -115,6 +116,7 @@ export class SafeWallet {
           safeTxHash: safeTxHash,
           txData: transaction.data,
           to: transaction.to,
+          operation: transaction.operation,
           signatures,
         };
       }
@@ -137,6 +139,7 @@ export class SafeWallet {
       safeTxHash: safeTxHash,
       txData: "",
       to: "",
+      operation: 0,
       signatures: "",
     };
   }

@@ -45,7 +45,7 @@ export class AaveL2Pool extends EthereumContract {
 
   // view
   async getUserAccountData(account: string): Promise<AccountData> {
-    return await this.contract.getUserAccountData();
+    return await this.contract.getUserAccountData(account);
   }
 
   async borrow(
