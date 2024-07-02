@@ -7,6 +7,8 @@ import {
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
+import { ceramicApiKit } from "./ceramicApiKit";
+
 const ApiKit = require("@safe-global/api-kit");
 
 type Opts = {
@@ -34,6 +36,8 @@ export class SafeWallet {
   public signer: Wallet | HDNodeWallet;
   private safeSdk: Safe;
   private safeService: SafeApiKit;
+  private ceramicService: ceramicApiKit;
+
   constructor(
     address: string,
     apiService: string,
@@ -110,7 +114,7 @@ export class SafeWallet {
         data,
       },
     ];
-    const tx = await this.safeSdk.createTransaction({ transactions });
+    const tx = await this.safeSdk.createTransaction( { transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
       const transaction = await this.safeService.getTransaction(safeTxHash);
