@@ -174,10 +174,10 @@ export class DataworkerService implements OnModuleInit {
     token: string,
     amountThreshold: number,
     countThreshold: number,
-    decimals: number,
+    decimals: number
   ): Promise<WithdrawLiquidityRecord | null> {
-      if (!amountThreshold && !countThreshold) return null;
-      let query = `{
+    if (!amountThreshold && !countThreshold) return null;
+    let query = `{
             historyRecords(
                 row: 100,
                 relayer: \"${relayer.toLowerCase()}\",
@@ -195,53 +195,63 @@ export class DataworkerService implements OnModuleInit {
         operationName: null,
       })
       .then((res) => res.data.data.historyRecords);
-      let totalWithdrawAmount = BigInt(0);
-      let transferIds = [];
-      for (const record of needWithdrawRecords.records) {
-          if (Number(record.lastRequestWithdraw) != 0) {
-              continue;
-          }
-          totalWithdrawAmount += BigInt(record.sendAmount);
-          transferIds.push(last(record.id.split("-")));
+    let totalWithdrawAmount = BigInt(0);
+    let transferIds = [];
+    for (const record of needWithdrawRecords.records) {
+      if (Number(record.lastRequestWithdraw) != 0) {
+        continue;
       }
-      totalWithdrawAmount /= (new Any(1, decimals)).Number;
+      totalWithdrawAmount += BigInt(record.sendAmount);
+      transferIds.push(last(record.id.split("-")));
+    }
+    totalWithdrawAmount /= new Any(1, decimals).Number;
 
-      if (transferIds.length === 0) return null;
+    if (transferIds.length === 0) return null;
 
-      if (!countThreshold && amountThreshold) {
-          if (totalWithdrawAmount < amountThreshold) return null;
-      } else if (countThreshold && !amountThreshold) {
-          if (transferIds.length < countThreshold) return null;
-      } else {
-          if (totalWithdrawAmount < amountThreshold && transferIds.length < countThreshold) return null;
-      }
-      
-      const queryRelayInfo = `{
+    if (!countThreshold && amountThreshold) {
+      if (totalWithdrawAmount < amountThreshold) return null;
+    } else if (countThreshold && !amountThreshold) {
+      if (transferIds.length < countThreshold) return null;
+    } else {
+      if (
+        totalWithdrawAmount < amountThreshold &&
+        transferIds.length < countThreshold
+      )
+        return null;
+    }
+
+    const queryRelayInfo = `{
           queryLnBridgeRelayInfos(
               fromChain: \"${fromChain}\",
               toChain: \"${toChain}\"
               relayer: \"${relayer.toLowerCase()}\",
           ) {records { messageChannel }}}`;
 
-      const channelInfo = await axios
-        .post(url, {
-            query: queryRelayInfo,
-            variables: {},
-            operationName: null,
-        })
-        .then((res) => res.data.data.queryLnBridgeRelayInfos);
-      if (!channelInfo || channelInfo.records.length === 0) {
-        return null;
-      }
-      // request channel
-      return {
-          transferIds: transferIds,
-          totalAmount: Number(totalWithdrawAmount),
-          channel: channelInfo.records[0].messageChannel
-      }
+    const channelInfo = await axios
+      .post(url, {
+        query: queryRelayInfo,
+        variables: {},
+        operationName: null,
+      })
+      .then((res) => res.data.data.queryLnBridgeRelayInfos);
+    if (!channelInfo || channelInfo.records.length === 0) {
+      return null;
+    }
+    // request channel
+    return {
+      transferIds: transferIds,
+      totalAmount: Number(totalWithdrawAmount),
+      channel: channelInfo.records[0].messageChannel,
+    };
   }
 
-  async updateConfirmedBlock(url: string, id: string, relayer: string, confirmInfo: string, wallet: EthereumConnectedWallet) {
+  async updateConfirmedBlock(
+    url: string,
+    id: string,
+    relayer: string,
+    confirmInfo: string,
+    wallet: EthereumConnectedWallet
+  ) {
     const now = Math.floor(Date.now() / 1000);
     const signature = await this.signMessage(wallet, confirmInfo, now);
     const mutation = `mutation {signConfirmedBlock( id: \"${id}\", relayer: \"${relayer}\" block: \"${confirmInfo}\", timestamp: ${now}, signature: \"${signature}\")}`;
@@ -256,7 +266,10 @@ export class DataworkerService implements OnModuleInit {
     message: string,
     timestamp: number
   ) {
-    const messageHash = ethers.solidityPackedKeccak256(['uint256', 'string'], [timestamp, message]);
+    const messageHash = ethers.solidityPackedKeccak256(
+      ["uint256", "string"],
+      [timestamp, message]
+    );
     return await wallet.wallet.signMessage(ethers.getBytes(messageHash));
   }
 
@@ -275,7 +288,11 @@ export class DataworkerService implements OnModuleInit {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    const signature = await this.signMessage(wallet, `${softTransferLimit}`, now);
+    const signature = await this.signMessage(
+      wallet,
+      `${softTransferLimit}`,
+      now
+    );
     const mutation = `mutation {signHeartBeat( version: \"${version}\", fromChainId: \"${fromChainId}\", toChainId: \"${toChainId}\", relayer: \"${relayer}\", tokenAddress: \"${tokenAddress}\", softTransferLimit: \"${softTransferLimit}\", timestamp: ${now}, signature: \"${signature}\")}`;
     await axios.post(url, {
       query: mutation,
@@ -299,8 +316,13 @@ export class DataworkerService implements OnModuleInit {
 
     const now = Math.floor(Date.now() / 1000);
     const dynamicFeeExpire = now + this.dynamicFeeExpiredTime;
-    const messageHash = ethers.solidityPackedKeccak256(['uint112', 'uint64'], [dynamicFee, dynamicFeeExpire]);
-    const dynamicFeeSignature = await wallet.wallet.signMessage(ethers.getBytes(messageHash));
+    const messageHash = ethers.solidityPackedKeccak256(
+      ["uint112", "uint64"],
+      [dynamicFee, dynamicFeeExpire]
+    );
+    const dynamicFeeSignature = await wallet.wallet.signMessage(
+      ethers.getBytes(messageHash)
+    );
     const message = `${dynamicFee}:${dynamicFeeExpire}:${dynamicFeeSignature}`;
     const signature = await this.signMessage(wallet, message, now);
 
@@ -327,7 +349,9 @@ export class DataworkerService implements OnModuleInit {
       record.requestTxHash
     );
     if (!transactionInfo || transactionInfo.confirmedBlock < reorgThreshold) {
-      const confirmedBlock = transactionInfo ? transactionInfo.confirmedBlock : 0;
+      const confirmedBlock = transactionInfo
+        ? transactionInfo.confirmedBlock
+        : 0;
       this.logger.log(
         `request tx waiting finalize ${confirmedBlock}, hash: ${record.requestTxHash}`
       );

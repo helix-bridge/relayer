@@ -36,12 +36,15 @@ export class EthereumContract {
   ): Promise<bigint> {
     // native token
     if (targetToken === zeroAddress) {
-        return await provider.getBalance(relayer) * BigInt(9) / BigInt(10);
+      return ((await provider.getBalance(relayer)) * BigInt(9)) / BigInt(10);
     } else {
-        const targetTokenContract = new Erc20Contract(targetToken, provider)
-        const balance = await targetTokenContract.balanceOf(relayer);
-        const allowance = await targetTokenContract.allowance(relayer, this.address);
-        return balance < allowance ? balance: allowance;
+      const targetTokenContract = new Erc20Contract(targetToken, provider);
+      const balance = await targetTokenContract.balanceOf(relayer);
+      const allowance = await targetTokenContract.allowance(
+        relayer,
+        this.address
+      );
+      return balance < allowance ? balance : allowance;
     }
   }
 
@@ -166,6 +169,11 @@ export interface LnProviderFeeInfo {
   transferLimit: bigint;
 }
 
+export interface RelayRawData {
+  data: string;
+  value: bigint;
+}
+
 export class SafeContract extends EthereumContract {
   constructor(
     address: string,
@@ -259,7 +267,7 @@ export class LnBridgeContract extends EthereumContract {
     remoteChainId: number,
     relayer: string,
     sourceToken: string,
-    targetToken: string,
+    targetToken: string
   ): Promise<boolean> {
     return true;
   }
@@ -365,14 +373,14 @@ export class LnBridgeContract extends EthereumContract {
     );
   }
 
-  relayRawData(args: RelayArgs | RelayArgsV3): string {
+  relayRawData(args: RelayArgs | RelayArgsV3): RelayRawData {
     var value = null;
     const argsV2 = args as RelayArgs;
     const parameter = argsV2.transferParameter;
     if (parameter.targetToken === zeroAddress) {
       value = parameter.amount;
     }
-    return this.interface.encodeFunctionData("transferAndReleaseMargin", [
+    const data = this.interface.encodeFunctionData("transferAndReleaseMargin", [
       [
         parameter.previousTransferId,
         parameter.relayer,
@@ -385,6 +393,7 @@ export class LnBridgeContract extends EthereumContract {
       argsV2.remoteChainId,
       argsV2.expectedTransferId,
     ]);
+    return { data, value };
   }
 
   async relay(
@@ -443,10 +452,7 @@ export class Lnv3BridgeContract extends EthereumContract {
     return ethers.keccak256(encode);
   }
 
-  private getProviderStateKey(
-    provider: string,
-    sourceToken: string
-  ) {
+  private getProviderStateKey(provider: string, sourceToken: string) {
     const encode = ethers.solidityPacked(
       ["address", "address"],
       [provider, sourceToken]
@@ -488,25 +494,18 @@ export class Lnv3BridgeContract extends EthereumContract {
 
   async getLnProviderPenalty(
     relayer: string,
-    sourceToken: string,
+    sourceToken: string
   ): Promise<bigint> {
-    const providerStateKey = this.getProviderStateKey(
-      sourceToken,
-      relayer
-    );
+    const providerStateKey = this.getProviderStateKey(sourceToken, relayer);
     return await this.contract.penaltyReserves(providerStateKey);
   }
 
   async getTokenBasePenalty(
     remoteChainId: number,
     sourceToken: string,
-    targetToken: string,
+    targetToken: string
   ): Promise<bigint> {
-    const tokenKey = this.getTokenKey(
-      remoteChainId,
-      sourceToken,
-      targetToken
-    );
+    const tokenKey = this.getTokenKey(remoteChainId, sourceToken, targetToken);
     return (await this.contract.tokenInfos(tokenKey)).config.penalty;
   }
 
@@ -514,12 +513,19 @@ export class Lnv3BridgeContract extends EthereumContract {
     remoteChainId: number,
     relayer: string,
     sourceToken: string,
-    targetToken: string,
+    targetToken: string
   ): Promise<boolean> {
-      // get token base penalty
-      const basePenalty = await this.getTokenBasePenalty(remoteChainId, sourceToken, targetToken);
-      const providerPenalty = await this.getLnProviderPenalty(relayer, sourceToken);
-      return providerPenalty > basePenalty;
+    // get token base penalty
+    const basePenalty = await this.getTokenBasePenalty(
+      remoteChainId,
+      sourceToken,
+      targetToken
+    );
+    const providerPenalty = await this.getLnProviderPenalty(
+      relayer,
+      sourceToken
+    );
+    return providerPenalty > basePenalty;
   }
 
   async tryUpdateFee(
@@ -556,14 +562,9 @@ export class Lnv3BridgeContract extends EthereumContract {
   ): Promise<string> | null {
     return await this.staticCall(
       "requestWithdrawLiquidity",
-      [
-        remoteChainId,
-        transferIds,
-        provider,
-        extParams
-      ],
+      [remoteChainId, transferIds, provider, extParams],
       value,
-      gasLimit,
+      gasLimit
     );
   }
 
@@ -578,14 +579,9 @@ export class Lnv3BridgeContract extends EthereumContract {
   ) {
     return await this.call(
       "requestWithdrawLiquidity",
-      [
-        remoteChainId,
-        transferIds,
-        provider,
-        extParams
-      ],
+      [remoteChainId, transferIds, provider, extParams],
       gas,
-      value,
+      value
     );
   }
 
@@ -659,14 +655,14 @@ export class Lnv3BridgeContract extends EthereumContract {
     );
   }
 
-  relayRawData(args: RelayArgsV3 | RelayArgs): string {
+  relayRawData(args: RelayArgsV3 | RelayArgs): RelayRawData {
     var value = null;
     const argsV3 = args as RelayArgsV3;
     const parameter = argsV3.transferParameter;
     if (parameter.targetToken === zeroAddress) {
       value = parameter.targetAmount;
     }
-    return this.interface.encodeFunctionData("relay", [
+    const data = this.interface.encodeFunctionData("relay", [
       [
         parameter.remoteChainId,
         parameter.provider,
@@ -680,6 +676,7 @@ export class Lnv3BridgeContract extends EthereumContract {
       argsV3.expectedTransferId,
       true,
     ]);
+    return { data, value };
   }
 
   async relay(
@@ -717,11 +714,15 @@ export class Lnv3BridgeContract extends EthereumContract {
     );
   }
 
-  encodeWithdrawLiquidity(transferIds: string[], chainId: number, provider: string): string {
+  encodeWithdrawLiquidity(
+    transferIds: string[],
+    chainId: number,
+    provider: string
+  ): string {
     return this.interface.encodeFunctionData("withdrawLiquidity", [
       transferIds,
       chainId,
-      provider
+      provider,
     ]);
   }
 }

@@ -99,7 +99,7 @@ export class RelayerService implements OnModuleInit {
         lastAdjustTime: 0,
         lastWithdrawLiqudity: 0,
         lastUpdateDynamicFeeInterval: 0,
-        isProcessing: false
+        isProcessing: false,
       });
 
       this.taskService.addScheduleTask(
@@ -283,8 +283,10 @@ export class RelayerService implements OnModuleInit {
               ),
               relayer: toSafeWallet?.address ?? toWallet.address,
               swapRate: token.swapRate,
-              withdrawLiquidityAmountThreshold: token.withdrawLiquidityAmountThreshold,
-              withdrawLiquidityCountThreshold: token.withdrawLiquidityCountThreshold,
+              withdrawLiquidityAmountThreshold:
+                token.withdrawLiquidityAmountThreshold,
+              withdrawLiquidityCountThreshold:
+                token.withdrawLiquidityCountThreshold,
               useDynamicBaseFee: token.useDynamicBaseFee,
             };
           })
@@ -489,7 +491,12 @@ export class RelayerService implements OnModuleInit {
     }
   }
 
-  async relay(bridge: LnBridge, needAdjustFee: boolean, needWithdrawLiqudity: boolean, needUpdateDynamicFee: boolean) {
+  async relay(
+    bridge: LnBridge,
+    needAdjustFee: boolean,
+    needWithdrawLiqudity: boolean,
+    needUpdateDynamicFee: boolean
+  ) {
     // checkPending transaction
     const toChainInfo = bridge.toBridge.chainInfo;
     const fromChainInfo = bridge.fromBridge.chainInfo;
@@ -504,29 +511,29 @@ export class RelayerService implements OnModuleInit {
         for (const lnProvider of bridge.lnProviders) {
           let softTransferLimit = BigInt(0);
           try {
-            if (bridge.bridgeType === 'lnv3') {
-                const penaltyEnough = await fromBridgeContract.isPenaltyEnough(
-                    toChainInfo.chainId,
-                    lnProvider.relayer,
-                    lnProvider.fromAddress,
-                    lnProvider.toAddress
+            if (bridge.bridgeType === "lnv3") {
+              const penaltyEnough = await fromBridgeContract.isPenaltyEnough(
+                toChainInfo.chainId,
+                lnProvider.relayer,
+                lnProvider.fromAddress,
+                lnProvider.toAddress
+              );
+              if (!penaltyEnough) {
+                this.logger.warn(
+                  `penalty not enough, from ${fromChainInfo.chainName}, to ${toChainInfo.chainName}, token ${lnProvider.fromAddress}`
                 );
-                if (!penaltyEnough) {
-                    this.logger.warn(
-                        `penalty not enough, from ${fromChainInfo.chainName}, to ${toChainInfo.chainName}, token ${lnProvider.fromAddress}`
-                    );
-                    continue;
-                }
+                continue;
+              }
             }
             softTransferLimit = await toBridgeContract.getSoftTransferLimit(
-                lnProvider.relayer,
-                lnProvider.toAddress,
-                toChainInfo.provider.provider,
+              lnProvider.relayer,
+              lnProvider.toAddress,
+              toChainInfo.provider.provider
             );
-          } catch(e) {
-              // ignore error
-              // this time don't send heartbeat
-              continue;
+          } catch (e) {
+            // ignore error
+            // this time don't send heartbeat
+            continue;
           }
           await this.dataworkerService.sendHeartBeat(
             this.configureService.indexer,
@@ -536,7 +543,7 @@ export class RelayerService implements OnModuleInit {
             lnProvider.fromAddress,
             softTransferLimit,
             bridge.bridgeType,
-            bridge.toWallet,
+            bridge.toWallet
           );
         }
       }
@@ -574,27 +581,30 @@ export class RelayerService implements OnModuleInit {
 
         let srcDecimals = 18;
         if (lnProvider.fromAddress !== zeroAddress) {
-            srcDecimals = await lnProvider.fromToken.decimals();
+          srcDecimals = await lnProvider.fromToken.decimals();
         }
         // native fee decimals = 10**18
         function nativeFeeToToken(fee: bigint): bigint {
           return (
             (fee *
-             BigInt((lnProvider.swapRate * 100).toFixed()) *
-             new Any(1, srcDecimals).Number) /
-             new Ether(100).Number
+              BigInt((lnProvider.swapRate * 100).toFixed()) *
+              new Any(1, srcDecimals).Number) /
+            new Ether(100).Number
           );
         }
-        const baseFee = nativeFeeToToken(nativeFeeUsed + new Ether(bridge.minProfit).Number);
+        const baseFee = nativeFeeToToken(
+          nativeFeeUsed + new Ether(bridge.minProfit).Number
+        );
         await this.dataworkerService.signDynamicBaseFee(
-            this.configureService.indexer,
-            fromChainInfo.chainId,
-            toChainInfo.chainId,
-            lnProvider.relayer,
-            lnProvider.fromAddress,
-            baseFee,
-            bridge.bridgeType,
-            bridge.toWallet);
+          this.configureService.indexer,
+          fromChainInfo.chainId,
+          toChainInfo.chainId,
+          lnProvider.relayer,
+          lnProvider.fromAddress,
+          baseFee,
+          bridge.bridgeType,
+          bridge.toWallet
+        );
       } else if (needAdjustFee) {
         if (nativeFeeUsed <= 0) {
           let gasPrice = await toChainInfo.provider.feeData(
@@ -616,57 +626,88 @@ export class RelayerService implements OnModuleInit {
         try {
           let srcDecimals = 18;
           if (lnProvider.fromAddress !== zeroAddress) {
-              srcDecimals = await lnProvider.fromToken.decimals();
+            srcDecimals = await lnProvider.fromToken.decimals();
           }
-          const needWithdrawRecords = await this.dataworkerService.queryLiquidity(
-            this.configureService.indexer,
-            fromChainInfo.chainName,
-            toChainInfo.chainName,
-            lnProvider.relayer,
-            lnProvider.toAddress,
-            lnProvider.withdrawLiquidityAmountThreshold,
-            lnProvider.withdrawLiquidityCountThreshold,
-            srcDecimals
-          );
+          const needWithdrawRecords =
+            await this.dataworkerService.queryLiquidity(
+              this.configureService.indexer,
+              fromChainInfo.chainName,
+              toChainInfo.chainName,
+              lnProvider.relayer,
+              lnProvider.toAddress,
+              lnProvider.withdrawLiquidityAmountThreshold,
+              lnProvider.withdrawLiquidityCountThreshold,
+              srcDecimals
+            );
           if (needWithdrawRecords != null) {
             // token transfer direction fromChain -> toChain
             // withdrawLiquidity message direction toChain -> fromChain
-            const fromChannel = this.configureService.getMessagerAddress(fromChainInfo.chainName, needWithdrawRecords.channel);
-            const toChannel = this.configureService.getMessagerAddress(toChainInfo.chainName, needWithdrawRecords.channel);
-            const messager = messagerInstance(needWithdrawRecords.channel, toChannel.address, bridge.toWallet.wallet);
+            const fromChannel = this.configureService.getMessagerAddress(
+              fromChainInfo.chainName,
+              needWithdrawRecords.channel
+            );
+            const toChannel = this.configureService.getMessagerAddress(
+              toChainInfo.chainName,
+              needWithdrawRecords.channel
+            );
+            const messager = messagerInstance(
+              needWithdrawRecords.channel,
+              toChannel.address,
+              bridge.toWallet.wallet
+            );
             const lnv3Contract = toBridgeContract as Lnv3BridgeContract;
-            const appPayload = lnv3Contract.encodeWithdrawLiquidity(needWithdrawRecords.transferIds, toChainInfo.chainId, lnProvider.relayer);
-            const payload = messager.encodePayload(toChainInfo.chainId, toChainInfo.lnv3Address, fromChainInfo.lnv3Address, appPayload);
+            const appPayload = lnv3Contract.encodeWithdrawLiquidity(
+              needWithdrawRecords.transferIds,
+              toChainInfo.chainId,
+              lnProvider.relayer
+            );
+            const payload = messager.encodePayload(
+              toChainInfo.chainId,
+              toChainInfo.lnv3Address,
+              fromChainInfo.lnv3Address,
+              appPayload
+            );
             const params = await messager.params(
-                toChainInfo.chainId,
-                fromChainInfo.chainId,
-                fromChannel.address,
-                payload,
-                lnProvider.relayer,
+              toChainInfo.chainId,
+              fromChainInfo.chainId,
+              fromChannel.address,
+              payload,
+              lnProvider.relayer
             );
             const err = await lnv3Contract.tryWithdrawLiquidity(
+              fromChainInfo.chainId,
+              needWithdrawRecords.transferIds,
+              lnProvider.relayer,
+              params.extParams,
+              params.fee
+            );
+            if (err != null) {
+              this.logger.warn(
+                `try to withdraw liquidity failed, err ${err}, from ${fromChainInfo.chainId}, to ${toChainInfo.chainId}`
+              );
+            } else {
+              this.logger.log(
+                `withdrawLiquidity ${fromChainInfo.chainId}->${
+                  toChainInfo.chainId
+                }, info: ${JSON.stringify(needWithdrawRecords)}, fee: ${
+                  params.fee
+                }`
+              );
+              let gasPrice = await toChainInfo.provider.feeData(
+                1,
+                toChainInfo.notSupport1559
+              );
+              const tx = await lnv3Contract.withdrawLiquidity(
                 fromChainInfo.chainId,
                 needWithdrawRecords.transferIds,
                 lnProvider.relayer,
                 params.extParams,
+                gasPrice,
                 params.fee
-            );
-            if (err != null) {
-                this.logger.warn(`try to withdraw liquidity failed, err ${err}, from ${fromChainInfo.chainId}, to ${toChainInfo.chainId}`);
-            } else {
-                this.logger.log(
-                    `withdrawLiquidity ${fromChainInfo.chainId}->${toChainInfo.chainId}, info: ${JSON.stringify(needWithdrawRecords)}, fee: ${params.fee}`
-                );
-                let gasPrice = await toChainInfo.provider.feeData(1, toChainInfo.notSupport1559);
-                const tx = await lnv3Contract.withdrawLiquidity(
-                  fromChainInfo.chainId,
-                  needWithdrawRecords.transferIds,
-                  lnProvider.relayer,
-                  params.extParams,
-                  gasPrice,
-                  params.fee
-                );
-                this.logger.log(`withdrawLiquidity tx ${tx.hash} on ${toChainInfo.chainId}`);
+              );
+              this.logger.log(
+                `withdrawLiquidity tx ${tx.hash} on ${toChainInfo.chainId}`
+              );
             }
           }
         } catch (e) {
@@ -755,7 +796,8 @@ export class RelayerService implements OnModuleInit {
         const relayData = toBridgeContract.relayRawData(args);
         const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
           toBridgeContract.address,
-          relayData,
+          relayData.data,
+          relayData.value,
           isExecutor,
           BigInt(toChainInfo.chainId)
         );
