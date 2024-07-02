@@ -118,7 +118,7 @@ export class RelayerService implements OnModuleInit {
             return;
           }
           timer.isProcessing = true;
-          
+
           for (let item of this.lnBridges.values()) {
             if (item.toBridge.chainInfo.chainName !== key) {
               continue;
@@ -175,7 +175,7 @@ export class RelayerService implements OnModuleInit {
             case "aave":
               return new Aave(
                 rpcnode.name,
-                market.healthFactorLimit?? 3.0,
+                market.healthFactorLimit ?? 3.0,
                 market.tokens,
                 provider.provider
               );
@@ -344,20 +344,17 @@ export class RelayerService implements OnModuleInit {
   }
 
   async gasPrice(chainInfo: ChainInfo) {
-      if (chainInfo.fixedGasPrice !== undefined) {
-        return {
-          isEip1559: false,
-          fee: {
-            gasPrice: new GWei(chainInfo.fixedGasPrice).Number,
-          },
-          eip1559fee: null,
-        };
-      } else {
-        return await chainInfo.provider.feeData(
-          1,
-          chainInfo.notSupport1559
-        );
-      }
+    if (chainInfo.fixedGasPrice !== undefined) {
+      return {
+        isEip1559: false,
+        fee: {
+          gasPrice: new GWei(chainInfo.fixedGasPrice).Number,
+        },
+        eip1559fee: null,
+      };
+    } else {
+      return await chainInfo.provider.feeData(1, chainInfo.notSupport1559);
+    }
   }
 
   async adjustFee(
@@ -460,9 +457,7 @@ export class RelayerService implements OnModuleInit {
     let chainInfo = this.chainInfos.get(chainName);
 
     if (chainInfo.txHashCache) {
-      chainInfo.txHashCache = await this.store.getPendingTransaction(
-        chainName
-      );
+      chainInfo.txHashCache = await this.store.getPendingTransaction(chainName);
     }
     if (chainInfo.txHashCache) {
       transactionInfo = await chainInfo.provider.checkPendingTransaction(
@@ -533,82 +528,82 @@ export class RelayerService implements OnModuleInit {
 
   // After triggering repay, if there is already a relay transaction, replace it.
   async repayDept(chain: string) {
-      if (await this.checkPendingTransaction(chain)) {
-        return false;
-      }
-      // get all relayers
-      let relayers = [];
-      for (let lnBridge of this.lnBridges.values()) {
-          if (lnBridge.toBridge.chainInfo.chainName === chain) {
-              for (const lnProvider of lnBridge.lnProviders) {
-                  if (!relayers.includes(lnProvider.relayer)) {
-                      relayers.push({
-                          address: lnProvider.relayer,
-                          isSafe: ["signer", "executor"].includes(lnBridge.safeWalletRole),
-                          isExecutor: lnBridge.safeWalletRole === 'executor',
-                          safeWallet: lnBridge.toBridge.safeWallet
-                      });
-                  }
-              }
-          }
-      }
-      const chainInfo = this.chainInfos.get(chain);
-      for (const relayer of relayers) {
-         for (const market of chainInfo.lendMarket) {
-             // currently only support safeWallet
-             if (!relayer.isSafe) {
-                 continue;
-             }
-             const repayRawDatas = await market.batchRepayRawData(relayer.address);
-             if (repayRawDatas.length === 0) {
-                 continue;
-             }
-             this.logger.log(`[${chain}] balance enough, proposol to repay balance`);
-             const txInfo = await relayer.safeWallet.proposeTransaction(
-                 repayRawDatas,
-                 relayer.isExecutor,
-                 BigInt(chainInfo.chainId)
-             );
-             if (txInfo !== null && txInfo.readyExecute && relayer.isExecutor) {
-                 const safeContract = new SafeContract(
-                     relayer.safeWallet.address,
-                     relayer.safeWallet.signer
-                 );
-                 const err = await safeContract.tryExecTransaction(
-                     txInfo.to,
-                     txInfo.txData,
-                     txInfo.operation,
-                     txInfo.signatures
-                 );
-                 if (err != null) {
-                     this.logger.warn(
-                         `[${chain}] try to repay using safe failed, err ${err}`
-                     );
-                     continue;
-                 } else {
-                     this.logger.log(`[${chain}] ready to repay using safe tx`);
-                     const gasPrice = await this.gasPrice(chainInfo);
-                     const tx = await safeContract.execTransaction(
-                         txInfo.to,
-                         txInfo.txData,
-                         txInfo.operation,
-                         txInfo.signatures,
-                         gasPrice
-                     );
-                     await this.store.savePendingTransaction(
-                         chainInfo.chainName,
-                         tx.hash
-                     );
-                     chainInfo.txHashCache = tx.hash;
-                     this.logger.log(
-                         `[${chain}] success repay message, txhash: ${tx.hash}`
-                     );
-                 }
-             }
-             return true;
-         }
-      }
+    if (await this.checkPendingTransaction(chain)) {
       return false;
+    }
+    // get all relayers
+    let relayers = [];
+    for (let lnBridge of this.lnBridges.values()) {
+      if (lnBridge.toBridge.chainInfo.chainName === chain) {
+        for (const lnProvider of lnBridge.lnProviders) {
+          if (!relayers.includes(lnProvider.relayer)) {
+            relayers.push({
+              address: lnProvider.relayer,
+              isSafe: ["signer", "executor"].includes(lnBridge.safeWalletRole),
+              isExecutor: lnBridge.safeWalletRole === "executor",
+              safeWallet: lnBridge.toBridge.safeWallet,
+            });
+          }
+        }
+      }
+    }
+    const chainInfo = this.chainInfos.get(chain);
+    for (const relayer of relayers) {
+      for (const market of chainInfo.lendMarket) {
+        // currently only support safeWallet
+        if (!relayer.isSafe) {
+          continue;
+        }
+        const repayRawDatas = await market.batchRepayRawData(relayer.address);
+        if (repayRawDatas.length === 0) {
+          continue;
+        }
+        this.logger.log(`[${chain}] balance enough, proposol to repay balance`);
+        const txInfo = await relayer.safeWallet.proposeTransaction(
+          repayRawDatas,
+          relayer.isExecutor,
+          BigInt(chainInfo.chainId)
+        );
+        if (txInfo !== null && txInfo.readyExecute && relayer.isExecutor) {
+          const safeContract = new SafeContract(
+            relayer.safeWallet.address,
+            relayer.safeWallet.signer
+          );
+          const err = await safeContract.tryExecTransaction(
+            txInfo.to,
+            txInfo.txData,
+            txInfo.operation,
+            txInfo.signatures
+          );
+          if (err != null) {
+            this.logger.warn(
+              `[${chain}] try to repay using safe failed, err ${err}`
+            );
+            continue;
+          } else {
+            this.logger.log(`[${chain}] ready to repay using safe tx`);
+            const gasPrice = await this.gasPrice(chainInfo);
+            const tx = await safeContract.execTransaction(
+              txInfo.to,
+              txInfo.txData,
+              txInfo.operation,
+              txInfo.signatures,
+              gasPrice
+            );
+            await this.store.savePendingTransaction(
+              chainInfo.chainName,
+              tx.hash
+            );
+            chainInfo.txHashCache = tx.hash;
+            this.logger.log(
+              `[${chain}] success repay message, txhash: ${tx.hash}`
+            );
+          }
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   async relay(
@@ -695,7 +690,11 @@ export class RelayerService implements OnModuleInit {
 
     if (bridge.safeWalletRole !== "signer") {
       try {
-        if (await this.checkPendingTransaction(bridge.toBridge.chainInfo.chainName)) {
+        if (
+          await this.checkPendingTransaction(
+            bridge.toBridge.chainInfo.chainName
+          )
+        ) {
           return true;
         }
       } catch (err) {
@@ -965,7 +964,9 @@ export class RelayerService implements OnModuleInit {
               lnProvider.relayer,
               lnProvider.toAddress
             );
-            this.logger.log(`borrow available: ${avaiable}, need ${needBorrow}`);
+            this.logger.log(
+              `borrow available: ${avaiable}, need ${needBorrow}`
+            );
             if (avaiable > needBorrow) {
               // borrow and relay
               // if native token, borrow wtoken and withdraw then relay
@@ -1025,7 +1026,9 @@ export class RelayerService implements OnModuleInit {
             );
             continue;
           } else {
-            this.logger.log(`[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}`);
+            this.logger.log(
+              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}`
+            );
             const tx = await safeContract.execTransaction(
               txInfo.to,
               txInfo.txData,

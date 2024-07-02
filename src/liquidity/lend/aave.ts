@@ -1,6 +1,11 @@
 import { Wallet, HDNodeWallet, ethers } from "ethers";
 import { AaveOracle, AaveL2Pool } from "./contract";
-import { MulticallContract, zeroAddress, WETHContract, Erc20Contract } from "../../base/contract";
+import {
+  MulticallContract,
+  zeroAddress,
+  WETHContract,
+  Erc20Contract,
+} from "../../base/contract";
 import { LendMarket, TxInfo } from "./market";
 import { LendTokenInfo } from "../../configure/configure.service";
 import { Any } from "../../base/bignumber";
@@ -44,7 +49,7 @@ export interface AddressBook {
 
 export enum DeptStatus {
   HasDept,
-  NoDept
+  NoDept,
 }
 
 export class AddressBookConfigure {
@@ -96,7 +101,7 @@ export class AddressBookConfigure {
           },
         ],
       },
-    ]
+    ],
   };
 
   public addressBook(isTest: boolean): AddressBook {
@@ -146,7 +151,10 @@ export class Aave extends LendMarket {
       return {
         address: tokenInfo.vToken,
         underlyingAddress: tokenInfo.underlyingToken,
-        underlyTokenContract: new Erc20Contract(tokenInfo.underlyingToken, signer),
+        underlyTokenContract: new Erc20Contract(
+          tokenInfo.underlyingToken,
+          signer
+        ),
         decimals: tokenInfo.decimals,
         minRepayAmount:
           (BigInt((token.minRepay * 10000).toFixed()) *
@@ -159,9 +167,9 @@ export class Aave extends LendMarket {
       };
     });
   }
-  
+
   public enableDeptStatus(account: string) {
-      this.deptStatus.set(account, DeptStatus.HasDept);
+    this.deptStatus.set(account, DeptStatus.HasDept);
   }
 
   // suppose the pool is big enough
@@ -198,7 +206,12 @@ export class Aave extends LendMarket {
       return [];
     }
     const tokens: string[] = this.debtTokens
-      .map((token) => [token.address, token.underlyingAddress === this.wrappedToken ? zeroAddress : token.underlyingAddress])
+      .map((token) => [
+        token.address,
+        token.underlyingAddress === this.wrappedToken
+          ? zeroAddress
+          : token.underlyingAddress,
+      ])
       .flat();
     // [dept, underlying, dept, underlying, ...]
     const balances: bigint[] = await this.multicall.getBalance(account, tokens);
@@ -220,11 +233,13 @@ export class Aave extends LendMarket {
       // repay only when enough avaiable balance
       // The signers cannot ensure that they see the same balances, but they can ensure that they see the same borrowing amounts.
       // we need to fix the deptBalance to generate unique tx, the balance is a little bigger than real balance
-      const maxInterest = deptBalance * BigInt(20) / BigInt(100 * 365); // 20 APY 1 day
+      const maxInterest = (deptBalance * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
       const ignoreSize = maxInterest.toString().length;
-      const fixedDeptBalance = (deptBalance / BigInt(10 ** ignoreSize) + BigInt(1)) * BigInt(10 ** ignoreSize);
+      const fixedDeptBalance =
+        (deptBalance / BigInt(10 ** ignoreSize) + BigInt(1)) *
+        BigInt(10 ** ignoreSize);
       if (fixedDeptBalance > avaiableRepayAmount) {
-          continue;
+        continue;
       }
       // donot satisfy min repay condition
       if (fixedDeptBalance < deptToken.minRepayAmount) {
@@ -241,38 +256,43 @@ export class Aave extends LendMarket {
     // 1. if native token, deposit for weth
     // 2. approve L2Pool the underlying token
     // 3. repay
-    return needToRepayDepts.map((dept) => {
-      let txs = [];
-      if (dept.token.underlyingAddress === this.wrappedToken) {
+    return needToRepayDepts
+      .map((dept) => {
+        let txs = [];
+        if (dept.token.underlyingAddress === this.wrappedToken) {
           txs.push({
-              to: this.wrappedToken,
-              value: dept.amount.toString(),
-              data: this.wethContract.depositRawData()
+            to: this.wrappedToken,
+            value: dept.amount.toString(),
+            data: this.wethContract.depositRawData(),
           });
-      }
-      txs.push({
+        }
+        txs.push({
           to: dept.token.underlyingAddress,
-          value: '0',
-          data: dept.token.underlyTokenContract.approveRawData(this.poolContract.address, dept.amount)
-      });
-      const repayData = this.poolContract.repayRawData(
-        dept.token.underlyingAddress,
-        dept.amount,
-        onBehalfOf
-      );
-      txs.push({
+          value: "0",
+          data: dept.token.underlyTokenContract.approveRawData(
+            this.poolContract.address,
+            dept.amount
+          ),
+        });
+        const repayData = this.poolContract.repayRawData(
+          dept.token.underlyingAddress,
+          dept.amount,
+          onBehalfOf
+        );
+        txs.push({
           to: this.poolContract.address,
-          value: '0',
-          data: repayData
-      });
-      return txs;
-    }).flat();
+          value: "0",
+          data: repayData,
+        });
+        return txs;
+      })
+      .flat();
   }
 
   borrowRawData(token: string, amount: bigint, onBehalfOf: string): string {
     let borrowToken = token;
     if (token === zeroAddress) {
-        borrowToken = this.wrappedToken;
+      borrowToken = this.wrappedToken;
     }
     return this.poolContract.borrowRawData(borrowToken, amount, onBehalfOf);
   }

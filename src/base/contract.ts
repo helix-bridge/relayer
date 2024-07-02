@@ -102,9 +102,9 @@ export class EthereumContract {
       }
       const result = await this.contract[method].staticCall(...args);
       if (hasReturnValue) {
-          return result;
+        return result;
       } else {
-          return null;
+        return null;
       }
     } catch (error) {
       return error.message;
@@ -149,7 +149,6 @@ export class Erc20Contract extends EthereumContract {
   ): Promise<TransactionResponse> {
     return this.call("approve", [address, amount], gas, null, null, null);
   }
-
 
   approveRawData(spender: string, amount: bigint): string {
     return this.interface.encodeFunctionData("approve", [spender, amount]);

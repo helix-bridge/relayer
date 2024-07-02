@@ -529,7 +529,7 @@ export class BaseConfigService {
           {
             symbol: "eth",
             address: "0x0000000000000000000000000000000000000000",
-          }
+          },
         ],
       },
     ],
