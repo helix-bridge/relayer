@@ -84,6 +84,7 @@ export class EthereumContract {
   async staticCall(
     method: string,
     args: any,
+    hasReturnValue: boolean = false,
     value: bigint | null = null,
     gasLimit: bigint | null = null,
     from: string | null = null
@@ -99,8 +100,12 @@ export class EthereumContract {
       if (value != null) {
         args = [...args, options];
       }
-      await this.contract[method].staticCall(...args);
-      return null;
+      const result = await this.contract[method].staticCall(...args);
+      if (hasReturnValue) {
+          return result;
+      } else {
+          return null;
+      }
     } catch (error) {
       return error.message;
     }
@@ -143,6 +148,11 @@ export class Erc20Contract extends EthereumContract {
     gas: GasPrice
   ): Promise<TransactionResponse> {
     return this.call("approve", [address, amount], gas, null, null, null);
+  }
+
+
+  approveRawData(spender: string, amount: bigint): string {
+    return this.interface.encodeFunctionData("approve", [spender, amount]);
   }
 }
 
@@ -207,6 +217,7 @@ export class SafeContract extends EthereumContract {
     return await this.staticCall(
       "execTransaction",
       [to, 0, data, operation, 0, 0, 0, zeroAddress, zeroAddress, signatures],
+      false,
       value
     );
   }
@@ -302,6 +313,7 @@ export class LnBridgeContract extends EthereumContract {
       return await this.staticCall(
         "setProviderFee",
         [remoteChainId, sourceToken, targetToken, baseFee, liquidityFeeRate],
+        false,
         null,
         gasLimit
       );
@@ -309,6 +321,7 @@ export class LnBridgeContract extends EthereumContract {
       return await this.staticCall(
         "updateProviderFeeAndMargin",
         [remoteChainId, sourceToken, targetToken, 0, baseFee, liquidityFeeRate],
+        false,
         null,
         gasLimit
       );
@@ -385,6 +398,7 @@ export class LnBridgeContract extends EthereumContract {
         argsV2.remoteChainId,
         argsV2.expectedTransferId,
       ],
+      false,
       value,
       gasLimit
     );
@@ -564,6 +578,7 @@ export class Lnv3BridgeContract extends EthereumContract {
         liquidityFeeRate,
         transferLimit,
       ],
+      false,
       null,
       gasLimit
     );
@@ -580,6 +595,7 @@ export class Lnv3BridgeContract extends EthereumContract {
     return await this.staticCall(
       "requestWithdrawLiquidity",
       [remoteChainId, transferIds, provider, extParams],
+      false,
       value,
       gasLimit
     );
@@ -667,6 +683,7 @@ export class Lnv3BridgeContract extends EthereumContract {
         argsV3.expectedTransferId,
         true,
       ],
+      false,
       value,
       gasLimit
     );
@@ -755,6 +772,10 @@ export class WETHContract extends EthereumContract {
   withdrawRawData(amount: bigint): string {
     return this.interface.encodeFunctionData("withdraw", [amount]);
   }
+
+  depositRawData(): string {
+    return this.interface.encodeFunctionData("deposit", []);
+  }
 }
 
 export class MulticallContract extends EthereumContract {
@@ -781,7 +802,7 @@ export class MulticallContract extends EthereumContract {
         ]);
       }
     }
-    const response = await this.staticCall("aggregate", [args], null);
+    const response = await this.staticCall("aggregate", [args], true, null);
     let result: bigint[] = [];
     const balances = response[1];
     for (const balance of balances) {

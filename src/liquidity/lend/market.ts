@@ -1,3 +1,9 @@
+export interface TxInfo {
+  to: string;
+  value: string;
+  data: string;
+}
+
 export abstract class LendMarket {
   public name: string;
   public wrappedToken: string;
@@ -7,7 +13,7 @@ export abstract class LendMarket {
   }
   abstract address(): string;
   abstract borrowAvailable(account: string, asset: string): Promise<bigint>;
-  abstract batchRepayRawData(onBehalfOf: string): Promise<string[]>;
+  abstract batchRepayRawData(onBehalfOf: string): Promise<TxInfo[]>;
   abstract borrowRawData(
     token: string,
     amount: bigint,

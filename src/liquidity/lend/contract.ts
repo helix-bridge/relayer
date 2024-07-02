@@ -97,7 +97,6 @@ export class AaveL2Pool extends EthereumContract {
       token,
       amount,
       VariableRate,
-      0,
       onBehalfOf,
     ]);
     return data;

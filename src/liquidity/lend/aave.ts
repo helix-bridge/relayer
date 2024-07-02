@@ -1,7 +1,7 @@
 import { Wallet, HDNodeWallet, ethers } from "ethers";
 import { AaveOracle, AaveL2Pool } from "./contract";
-import { MulticallContract, zeroAddress } from "../../base/contract";
-import { LendMarket } from "./market";
+import { MulticallContract, zeroAddress, WETHContract, Erc20Contract } from "../../base/contract";
+import { LendMarket, TxInfo } from "./market";
 import { LendTokenInfo } from "../../configure/configure.service";
 import { Any } from "../../base/bignumber";
 
@@ -9,6 +9,7 @@ export interface DeptToken {
   address: string;
   decimals: number;
   underlyingAddress: string;
+  underlyTokenContract: Erc20Contract;
   // the min repay amount each time
   minRepayAmount: bigint;
   // the min reserved underlying balance
@@ -39,6 +40,11 @@ export interface ChainInfo {
 export interface AddressBook {
   version: string;
   chains: ChainInfo[];
+}
+
+export enum DeptStatus {
+  HasDept,
+  NoDept
 }
 
 export class AddressBookConfigure {
@@ -103,6 +109,8 @@ export class Aave extends LendMarket {
   public poolContract: AaveL2Pool;
   public oracle: AaveOracle;
   public multicall: MulticallContract;
+  public wethContract: WETHContract;
+  public deptStatus = new Map();
 
   public debtTokens: DeptToken[];
 
@@ -115,7 +123,7 @@ export class Aave extends LendMarket {
     const addressBook = new AddressBookConfigure().addressBook(true);
     const bookInfo = addressBook.chains.find((e) => e.name == chainName);
     if (!bookInfo) {
-        throw new Error(`[Lend]Chain ${chainName} Not Support`);
+      throw new Error(`[Lend]Chain ${chainName} Not Support`);
     }
     const wtoken = bookInfo.deptTokens.find((dt) => dt.isNativeWrapped);
     super("aave", wtoken?.underlyingToken);
@@ -124,8 +132,12 @@ export class Aave extends LendMarket {
     this.poolContract = new AaveL2Pool(bookInfo.l2Pool, signer);
     this.oracle = new AaveOracle(bookInfo.oracle, signer);
     this.multicall = new MulticallContract(bookInfo.multicall, signer);
+    if (wtoken !== undefined) {
+      this.wethContract = new WETHContract(wtoken?.underlyingToken, signer);
+    }
+    // refresh status from chain when start
     if (!tokens) {
-        throw new Error(`[Lend]Chain ${chainName} tokens empty`);
+      throw new Error(`[Lend]Chain ${chainName} tokens empty`);
     }
     this.debtTokens = tokens.map((token) => {
       const tokenInfo = bookInfo.deptTokens.find(
@@ -134,6 +146,7 @@ export class Aave extends LendMarket {
       return {
         address: tokenInfo.vToken,
         underlyingAddress: tokenInfo.underlyingToken,
+        underlyTokenContract: new Erc20Contract(tokenInfo.underlyingToken, signer),
         decimals: tokenInfo.decimals,
         minRepayAmount:
           (BigInt((token.minRepay * 10000).toFixed()) *
@@ -145,6 +158,10 @@ export class Aave extends LendMarket {
           BigInt(10000),
       };
     });
+  }
+  
+  public enableDeptStatus(account: string) {
+      this.deptStatus.set(account, DeptStatus.HasDept);
   }
 
   // suppose the pool is big enough
@@ -177,40 +194,79 @@ export class Aave extends LendMarket {
   // the balanceOf(debtToken) > 0 and balanceOf(underlyingToken) > 0
   // repay amount = min(balanceOf(debtToken), balanceOf(underlyingToken))
   async checkDeptToRepay(account: string): Promise<WaitingRepayInfo[]> {
+    if (this.deptStatus.get(account) === DeptStatus.NoDept) {
+      return [];
+    }
     const tokens: string[] = this.debtTokens
-      .map((token) => [token.address, token.underlyingAddress])
+      .map((token) => [token.address, token.underlyingAddress === this.wrappedToken ? zeroAddress : token.underlyingAddress])
       .flat();
     // [dept, underlying, dept, underlying, ...]
     const balances: bigint[] = await this.multicall.getBalance(account, tokens);
     let result: WaitingRepayInfo[] = [];
+    let deptStatus: DeptStatus = DeptStatus.NoDept;
     for (let i = 0; i < balances.length; i += 2) {
       const deptBalance = balances[i];
+      if (deptBalance > BigInt(0)) {
+        deptStatus = DeptStatus.HasDept;
+      } else {
+        continue;
+      }
       const underlyingBalance = balances[i + 1];
       const deptToken = this.debtTokens[(i / 2) | 0];
       if (underlyingBalance < deptToken.minReserved) {
         continue;
       }
       const avaiableRepayAmount = underlyingBalance - deptToken.minReserved;
-      const repayBalance =
-        deptBalance > avaiableRepayAmount ? avaiableRepayAmount : deptBalance;
+      // repay only when enough avaiable balance
+      // The signers cannot ensure that they see the same balances, but they can ensure that they see the same borrowing amounts.
+      // we need to fix the deptBalance to generate unique tx, the balance is a little bigger than real balance
+      const maxInterest = deptBalance * BigInt(20) / BigInt(100 * 365); // 20 APY 1 day
+      const ignoreSize = maxInterest.toString().length;
+      const fixedDeptBalance = (deptBalance / BigInt(10 ** ignoreSize) + BigInt(1)) * BigInt(10 ** ignoreSize);
+      if (fixedDeptBalance > avaiableRepayAmount) {
+          continue;
+      }
       // donot satisfy min repay condition
-      if (repayBalance < deptToken.minRepayAmount) {
+      if (fixedDeptBalance < deptToken.minRepayAmount) {
         continue;
       }
-      result.push({ token: deptToken, amount: repayBalance });
+      result.push({ token: deptToken, amount: fixedDeptBalance });
     }
+    this.deptStatus.set(account, deptStatus);
     return result;
   }
 
-  async batchRepayRawData(onBehalfOf: string): Promise<string[]> {
+  async batchRepayRawData(onBehalfOf: string): Promise<TxInfo[]> {
     const needToRepayDepts = await this.checkDeptToRepay(onBehalfOf);
-    return needToRepayDepts.map((dept) =>
-      this.poolContract.repayRawData(
+    // 1. if native token, deposit for weth
+    // 2. approve L2Pool the underlying token
+    // 3. repay
+    return needToRepayDepts.map((dept) => {
+      let txs = [];
+      if (dept.token.underlyingAddress === this.wrappedToken) {
+          txs.push({
+              to: this.wrappedToken,
+              value: dept.amount.toString(),
+              data: this.wethContract.depositRawData()
+          });
+      }
+      txs.push({
+          to: dept.token.underlyingAddress,
+          value: '0',
+          data: dept.token.underlyTokenContract.approveRawData(this.poolContract.address, dept.amount)
+      });
+      const repayData = this.poolContract.repayRawData(
         dept.token.underlyingAddress,
         dept.amount,
         onBehalfOf
-      )
-    );
+      );
+      txs.push({
+          to: this.poolContract.address,
+          value: '0',
+          data: repayData
+      });
+      return txs;
+    }).flat();
   }
 
   borrowRawData(token: string, amount: bigint, onBehalfOf: string): string {

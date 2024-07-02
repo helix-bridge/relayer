@@ -918,13 +918,6 @@ export const aaveL2Pool = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "bytes32", name: "args", type: "bytes32" }],
-    name: "repay",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       { internalType: "address", name: "asset", type: "address" },
       { internalType: "uint256", name: "amount", type: "uint256" },
