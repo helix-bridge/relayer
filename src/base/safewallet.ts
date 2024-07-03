@@ -16,6 +16,7 @@ type Opts = {
 
 export interface TransactionPropose {
   to: string;
+  value: bigint;
   readyExecute: boolean;
   safeTxHash: string;
   txData: string;
@@ -116,6 +117,7 @@ export class SafeWallet {
           safeTxHash: safeTxHash,
           txData: transaction.data,
           to: transaction.to,
+          value: BigInt(transaction.value),
           operation: transaction.operation,
           signatures,
         };
@@ -139,6 +141,7 @@ export class SafeWallet {
       safeTxHash: safeTxHash,
       txData: "",
       to: "",
+      value: BigInt(0),
       operation: 0,
       signatures: "",
     };

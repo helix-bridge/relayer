@@ -198,6 +198,21 @@ export class Aave extends LendMarket {
     return (availableBase * new Any(1, dtToken.decimals).Number) / price;
   }
 
+  async withdrawAvailable(account: string, asset: string): Promise<bigint> {
+    if (asset == zeroAddress && !this.wrappedToken) {
+      return BigInt(0);
+    }
+    const dtToken = this.debtTokens.find(
+      (dt) =>
+        dt.underlyingAddress == asset ||
+        (asset == zeroAddress && dt.underlyingAddress == this.wrappedToken)
+    );
+    if (this.healthFactorLimit <= 1 || !dtToken) {
+      return BigInt(0);
+    }
+    const accountInfo = await this.poolContract.getUserAccountData(account);
+  }
+
   // batch query debt tokens
   // the balanceOf(debtToken) > 0 and balanceOf(underlyingToken) > 0
   // repay amount = min(balanceOf(debtToken), balanceOf(underlyingToken))
@@ -295,6 +310,14 @@ export class Aave extends LendMarket {
       borrowToken = this.wrappedToken;
     }
     return this.poolContract.borrowRawData(borrowToken, amount, onBehalfOf);
+  }
+
+  withdrawRawData(token: string, amount: bigint, onBehalfOf: string): string {
+    let withdrawToken = token;
+    if (token === zeroAddress) {
+      withdrawToken = this.wrappedToken;
+    }
+    return this.poolContract.withdrawRawData(withdrawToken, amount, onBehalfOf);
   }
 
   address(): string {

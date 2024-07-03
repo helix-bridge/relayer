@@ -80,6 +80,38 @@ export class AaveL2Pool extends EthereumContract {
     );
   }
 
+  async supply(
+    token: string,
+    amount: bigint,
+    onBehalfOf: string,
+    gas: GasPrice
+  ): Promise<TransactionResponse> {
+    return await this.call(
+      "supply",
+      [token, amount, onBehalfOf],
+      gas,
+      null,
+      null,
+      null
+    );
+  }
+
+  async withdraw(
+    token: string,
+    amount: bigint,
+    to: string,
+    gas: GasPrice
+  ): Promise<TransactionResponse> {
+    return await this.call(
+      "withdraw",
+      [token, amount, to],
+      gas,
+      null,
+      null,
+      null
+    );
+  }
+
   // if native token, borrow weth, and withdraw it
   borrowRawData(token: string, amount: bigint, onBehalfOf: string): string {
     const data = this.interface.encodeFunctionData("borrow", [
@@ -98,6 +130,24 @@ export class AaveL2Pool extends EthereumContract {
       amount,
       VariableRate,
       onBehalfOf,
+    ]);
+    return data;
+  }
+
+  supplyRawData(token: string, amount: bigint, onBehalfOf: string): string {
+    const data = this.interface.encodeFunctionData("supply", [
+      token,
+      amount,
+      onBehalfOf,
+    ]);
+    return data;
+  }
+
+  withdrawRawData(token: string, amount: bigint, to: string): string {
+    const data = this.interface.encodeFunctionData("withdraw", [
+      token,
+      amount,
+      to,
     ]);
     return data;
   }

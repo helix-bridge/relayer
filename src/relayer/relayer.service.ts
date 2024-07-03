@@ -572,6 +572,7 @@ export class RelayerService implements OnModuleInit {
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
             txInfo.txData,
+            BigInt(0),
             txInfo.operation,
             txInfo.signatures
           );
@@ -586,6 +587,7 @@ export class RelayerService implements OnModuleInit {
             const tx = await safeContract.execTransaction(
               txInfo.to,
               txInfo.txData,
+              BigInt(0),
               txInfo.operation,
               txInfo.signatures,
               gasPrice
@@ -1017,8 +1019,9 @@ export class RelayerService implements OnModuleInit {
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
             txInfo.txData,
+            txInfo.value,
             txInfo.operation,
-            txInfo.signatures
+            txInfo.signatures,
           );
           if (err != null) {
             this.logger.warn(
@@ -1032,6 +1035,7 @@ export class RelayerService implements OnModuleInit {
             const tx = await safeContract.execTransaction(
               txInfo.to,
               txInfo.txData,
+              txInfo.value,
               txInfo.operation,
               txInfo.signatures,
               validInfo.gasPrice
