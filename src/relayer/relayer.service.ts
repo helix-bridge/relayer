@@ -1021,7 +1021,7 @@ export class RelayerService implements OnModuleInit {
             txInfo.txData,
             txInfo.value,
             txInfo.operation,
-            txInfo.signatures,
+            txInfo.signatures
           );
           if (err != null) {
             this.logger.warn(

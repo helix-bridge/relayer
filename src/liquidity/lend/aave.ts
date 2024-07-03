@@ -10,7 +10,7 @@ import { LendMarket, TxInfo } from "./market";
 import { LendTokenInfo } from "../../configure/configure.service";
 import { Any } from "../../base/bignumber";
 
-export interface DeptToken {
+export interface DebtToken {
   address: string;
   decimals: number;
   underlyingAddress: string;
@@ -22,7 +22,7 @@ export interface DeptToken {
 }
 
 export interface WaitingRepayInfo {
-  token: DeptToken;
+  token: DebtToken;
   amount: bigint;
 }
 
@@ -39,7 +39,7 @@ export interface ChainInfo {
   l2Pool: string;
   oracle: string;
   multicall: string;
-  deptTokens: DepotTokenBook[];
+  debtTokens: DepotTokenBook[];
 }
 
 export interface AddressBook {
@@ -47,9 +47,9 @@ export interface AddressBook {
   chains: ChainInfo[];
 }
 
-export enum DeptStatus {
-  HasDept,
-  NoDept,
+export enum DebtStatus {
+  HasDebt,
+  NoDebt,
 }
 
 export class AddressBookConfigure {
@@ -62,7 +62,7 @@ export class AddressBookConfigure {
         oracle: "0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7",
         multicall: "0xcA11bde05977b3631167028862bE2a173976CA11",
         // find at https://github.com/bgd-labs/aave-address-book/blob/main/src/AaveV3Arbitrum.sol
-        deptTokens: [
+        debtTokens: [
           {
             symbol: "usdt",
             vToken: "0xfb00AC187a8Eb5AFAE4eACE434F493Eb62672df7",
@@ -91,7 +91,7 @@ export class AddressBookConfigure {
         oracle: "0x29E1eF0209275D0F403E8C57861C2df8706eA244",
         multicall: "0xcA11bde05977b3631167028862bE2a173976CA11",
         // find at https://github.com/bgd-labs/aave-address-book/blob/main/src/AaveV3Arbitrum.sol
-        deptTokens: [
+        debtTokens: [
           {
             symbol: "weth",
             vToken: "0xf0F0025Dc51f532Ab84c33Eb9d01583EAa0F74c7",
@@ -115,9 +115,9 @@ export class Aave extends LendMarket {
   public oracle: AaveOracle;
   public multicall: MulticallContract;
   public wethContract: WETHContract;
-  public deptStatus = new Map();
+  public debtStatus = new Map();
 
-  public debtTokens: DeptToken[];
+  public debtTokens: DebtToken[];
 
   constructor(
     chainName: string,
@@ -130,7 +130,7 @@ export class Aave extends LendMarket {
     if (!bookInfo) {
       throw new Error(`[Lend]Chain ${chainName} Not Support`);
     }
-    const wtoken = bookInfo.deptTokens.find((dt) => dt.isNativeWrapped);
+    const wtoken = bookInfo.debtTokens.find((dt) => dt.isNativeWrapped);
     super("aave", wtoken?.underlyingToken);
 
     this.healthFactorLimit = healthFactorLimit;
@@ -145,7 +145,7 @@ export class Aave extends LendMarket {
       throw new Error(`[Lend]Chain ${chainName} tokens empty`);
     }
     this.debtTokens = tokens.map((token) => {
-      const tokenInfo = bookInfo.deptTokens.find(
+      const tokenInfo = bookInfo.debtTokens.find(
         (dt) => dt.symbol == token.symbol
       );
       return {
@@ -168,8 +168,8 @@ export class Aave extends LendMarket {
     });
   }
 
-  public enableDeptStatus(account: string) {
-    this.deptStatus.set(account, DeptStatus.HasDept);
+  public enableDebtStatus(account: string) {
+    this.debtStatus.set(account, DebtStatus.HasDebt);
   }
 
   // suppose the pool is big enough
@@ -194,7 +194,7 @@ export class Aave extends LendMarket {
       accountInfo.totalDebtBase;
 
     const price = await this.oracle.getAssetPrice(dtToken.underlyingAddress);
-    // dept token and underlying token have the same decimals
+    // debt token and underlying token have the same decimals
     return (availableBase * new Any(1, dtToken.decimals).Number) / price;
   }
 
@@ -211,13 +211,23 @@ export class Aave extends LendMarket {
       return BigInt(0);
     }
     const accountInfo = await this.poolContract.getUserAccountData(account);
+    // (totalCollateralBase - x) * ltv / BigInt(10000) / BigInt(this.healthFactorLimit) >= totalDebtBase
+    // x <= totalCollateralBase - totalDebtBase * BigInt(this.healthFactorLimit) * BigInt(10000) / ltv
+    const availableBase =
+      accountInfo.totalCollateralBase -
+      (accountInfo.totalDebtBase *
+        BigInt(this.healthFactorLimit) *
+        BigInt(10000)) /
+        accountInfo.ltv;
+    const price = await this.oracle.getAssetPrice(dtToken.underlyingAddress);
+    return (availableBase * new Any(1, dtToken.decimals).Number) / price;
   }
 
   // batch query debt tokens
   // the balanceOf(debtToken) > 0 and balanceOf(underlyingToken) > 0
   // repay amount = min(balanceOf(debtToken), balanceOf(underlyingToken))
-  async checkDeptToRepay(account: string): Promise<WaitingRepayInfo[]> {
-    if (this.deptStatus.get(account) === DeptStatus.NoDept) {
+  async checkDebtToRepay(account: string): Promise<WaitingRepayInfo[]> {
+    if (this.debtStatus.get(account) === DebtStatus.NoDebt) {
       return [];
     }
     const tokens: string[] = this.debtTokens
@@ -228,70 +238,70 @@ export class Aave extends LendMarket {
           : token.underlyingAddress,
       ])
       .flat();
-    // [dept, underlying, dept, underlying, ...]
+    // [debt, underlying, debt, underlying, ...]
     const balances: bigint[] = await this.multicall.getBalance(account, tokens);
     let result: WaitingRepayInfo[] = [];
-    let deptStatus: DeptStatus = DeptStatus.NoDept;
+    let debtStatus: DebtStatus = DebtStatus.NoDebt;
     for (let i = 0; i < balances.length; i += 2) {
-      const deptBalance = balances[i];
-      if (deptBalance > BigInt(0)) {
-        deptStatus = DeptStatus.HasDept;
+      const debtBalance = balances[i];
+      if (debtBalance > BigInt(0)) {
+        debtStatus = DebtStatus.HasDebt;
       } else {
         continue;
       }
       const underlyingBalance = balances[i + 1];
-      const deptToken = this.debtTokens[(i / 2) | 0];
-      if (underlyingBalance < deptToken.minReserved) {
+      const debtToken = this.debtTokens[(i / 2) | 0];
+      if (underlyingBalance < debtToken.minReserved) {
         continue;
       }
-      const avaiableRepayAmount = underlyingBalance - deptToken.minReserved;
+      const avaiableRepayAmount = underlyingBalance - debtToken.minReserved;
       // repay only when enough avaiable balance
       // The signers cannot ensure that they see the same balances, but they can ensure that they see the same borrowing amounts.
-      // we need to fix the deptBalance to generate unique tx, the balance is a little bigger than real balance
-      const maxInterest = (deptBalance * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
+      // we need to fix the debtBalance to generate unique tx, the balance is a little bigger than real balance
+      const maxInterest = (debtBalance * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
       const ignoreSize = maxInterest.toString().length;
-      const fixedDeptBalance =
-        (deptBalance / BigInt(10 ** ignoreSize) + BigInt(1)) *
+      const fixedDebtBalance =
+        (debtBalance / BigInt(10 ** ignoreSize) + BigInt(1)) *
         BigInt(10 ** ignoreSize);
-      if (fixedDeptBalance > avaiableRepayAmount) {
+      if (fixedDebtBalance > avaiableRepayAmount) {
         continue;
       }
       // donot satisfy min repay condition
-      if (fixedDeptBalance < deptToken.minRepayAmount) {
+      if (fixedDebtBalance < debtToken.minRepayAmount) {
         continue;
       }
-      result.push({ token: deptToken, amount: fixedDeptBalance });
+      result.push({ token: debtToken, amount: fixedDebtBalance });
     }
-    this.deptStatus.set(account, deptStatus);
+    this.debtStatus.set(account, debtStatus);
     return result;
   }
 
   async batchRepayRawData(onBehalfOf: string): Promise<TxInfo[]> {
-    const needToRepayDepts = await this.checkDeptToRepay(onBehalfOf);
+    const needToRepayDebts = await this.checkDebtToRepay(onBehalfOf);
     // 1. if native token, deposit for weth
     // 2. approve L2Pool the underlying token
     // 3. repay
-    return needToRepayDepts
-      .map((dept) => {
+    return needToRepayDebts
+      .map((debt) => {
         let txs = [];
-        if (dept.token.underlyingAddress === this.wrappedToken) {
+        if (debt.token.underlyingAddress === this.wrappedToken) {
           txs.push({
             to: this.wrappedToken,
-            value: dept.amount.toString(),
+            value: debt.amount.toString(),
             data: this.wethContract.depositRawData(),
           });
         }
         txs.push({
-          to: dept.token.underlyingAddress,
+          to: debt.token.underlyingAddress,
           value: "0",
-          data: dept.token.underlyTokenContract.approveRawData(
+          data: debt.token.underlyTokenContract.approveRawData(
             this.poolContract.address,
-            dept.amount
+            debt.amount
           ),
         });
         const repayData = this.poolContract.repayRawData(
-          dept.token.underlyingAddress,
-          dept.amount,
+          debt.token.underlyingAddress,
+          debt.amount,
           onBehalfOf
         );
         txs.push({
