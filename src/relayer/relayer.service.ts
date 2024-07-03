@@ -557,15 +557,21 @@ export class RelayerService implements OnModuleInit {
         }
         // repay debt first, if no debt, try to supply if needed
         let hint: string = "repay";
-        let repayOrSupplyRawDatas = await market.batchRepayRawData(relayer.address);
+        let repayOrSupplyRawDatas = await market.batchRepayRawData(
+          relayer.address
+        );
         if (repayOrSupplyRawDatas.length === 0) {
-            repayOrSupplyRawDatas = await market.batchSupplyRawData(relayer.address);
-            if (repayOrSupplyRawDatas.length === 0) {
-              continue;
-            }
-            hint = "supply";
+          repayOrSupplyRawDatas = await market.batchSupplyRawData(
+            relayer.address
+          );
+          if (repayOrSupplyRawDatas.length === 0) {
+            continue;
+          }
+          hint = "supply";
         }
-        this.logger.log(`[${chain}] balance enough, proposol to ${hint} balance`);
+        this.logger.log(
+          `[${chain}] balance enough, proposol to ${hint} balance`
+        );
         const txInfo = await relayer.safeWallet.proposeTransaction(
           repayOrSupplyRawDatas,
           relayer.isExecutor,
@@ -974,7 +980,10 @@ export class RelayerService implements OnModuleInit {
             txs.push({
               to: lnProvider.toAddress,
               value: "0",
-              data: lnProvider.toToken.approveRawData(toBridgeContract.address, targetAmount),
+              data: lnProvider.toToken.approveRawData(
+                toBridgeContract.address,
+                targetAmount
+              ),
             });
           }
           txs.push({
@@ -997,7 +1006,10 @@ export class RelayerService implements OnModuleInit {
                 txs.push({
                   to: lnProvider.toAddress,
                   value: "0",
-                  data: lnProvider.toToken.approveRawData(toBridgeContract.address, targetAmount),
+                  data: lnProvider.toToken.approveRawData(
+                    toBridgeContract.address,
+                    targetAmount
+                  ),
                 });
               }
               // relay

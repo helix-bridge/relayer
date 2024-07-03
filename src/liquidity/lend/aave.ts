@@ -77,7 +77,9 @@ export enum CollateralStatus {
   CollateralLack,
 }
 
-export const maxU256: bigint = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+export const maxU256: bigint = BigInt(
+  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+);
 
 export class AddressBookConfigure {
   formalConfigure: AddressBook = {
@@ -215,7 +217,10 @@ export class Aave extends LendMarket {
           signer
         ),
         aTokenContract: new Erc20Contract(tokenInfo.aToken, signer),
-        autosupplyAmount: new Any(token.autosupplyAmount ?? 0, tokenInfo.decimals).Number,
+        autosupplyAmount: new Any(
+          token.autosupplyAmount ?? 0,
+          tokenInfo.decimals
+        ).Number,
       };
     });
   }
@@ -285,11 +290,15 @@ export class Aave extends LendMarket {
     if (availableBase <= BigInt(0)) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
-    const price = await this.oracle.getAssetPrice(collateralToken.underlyingAddress);
+    const price = await this.oracle.getAssetPrice(
+      collateralToken.underlyingAddress
+    );
     // get aToken
     const availableAToken =
       (availableBase * new Any(1, collateralToken.decimals).Number) / price;
-    const aTokenBalance = await collateralToken.aTokenContract.balanceOf(account);
+    const aTokenBalance = await collateralToken.aTokenContract.balanceOf(
+      account
+    );
     if (aTokenBalance === BigInt(0)) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
@@ -379,7 +388,9 @@ export class Aave extends LendMarket {
   }
 
   async checkCollateralToSupply(account: string): Promise<WaitingSupplyInfo[]> {
-    if (this.collateralStatus.get(account) === CollateralStatus.CollateralFull) {
+    if (
+      this.collateralStatus.get(account) === CollateralStatus.CollateralFull
+    ) {
       return [];
     }
     const tokens: string[] = this.collateralTokens
@@ -406,12 +417,16 @@ export class Aave extends LendMarket {
       const maxInterest = (aTokenBalance * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
       const ignoreSize = maxInterest.toString().length;
       const fixedATokenBalance =
-        aTokenBalance / BigInt(10 ** ignoreSize) * BigInt(10 ** ignoreSize);
-      const needSupplyBalance = collateralToken.autosupplyAmount - fixedATokenBalance;
+        (aTokenBalance / BigInt(10 ** ignoreSize)) * BigInt(10 ** ignoreSize);
+      const needSupplyBalance =
+        collateralToken.autosupplyAmount - fixedATokenBalance;
 
-      const avaiableSupplyAmount = underlyingBalance > needSupplyBalance ? needSupplyBalance : underlyingBalance;
+      const avaiableSupplyAmount =
+        underlyingBalance > needSupplyBalance
+          ? needSupplyBalance
+          : underlyingBalance;
       if (avaiableSupplyAmount <= 0) {
-          continue;
+        continue;
       }
       result.push({ token: collateralToken, amount: avaiableSupplyAmount });
     }
@@ -458,7 +473,9 @@ export class Aave extends LendMarket {
   }
 
   async batchSupplyRawData(onBehalfOf: string): Promise<TxInfo[]> {
-    const needToSupplyCollaterals = await this.checkCollateralToSupply(onBehalfOf);
+    const needToSupplyCollaterals = await this.checkCollateralToSupply(
+      onBehalfOf
+    );
     // 1. if native token, deposit for weth
     // 2. approve L2Pool the underlying token
     // 3. supply
@@ -523,25 +540,26 @@ export class Aave extends LendMarket {
     );
     let avaiable = withdrawAvailable.withdraw + withdrawAvailable.borrow;
     if (avaiable >= amount) {
-      const maxInterest = (withdrawAvailable.withdraw * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
+      const maxInterest =
+        (withdrawAvailable.withdraw * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
       const ignoreSize = maxInterest.toString().length;
       const fixedWithdrawBalance =
         (withdrawAvailable.withdraw / BigInt(10 ** ignoreSize)) *
         BigInt(10 ** ignoreSize);
-      this.logger.log(`[${this.name}] withdraw from collateral to relay withdraw: ${withdrawAvailable.withdraw}, fixed: ${fixedWithdrawBalance}, borrow: ${withdrawAvailable.borrow}, need: ${amount}`);
+      this.logger.log(
+        `[${this.name}] withdraw from collateral to relay withdraw: ${withdrawAvailable.withdraw}, fixed: ${fixedWithdrawBalance}, borrow: ${withdrawAvailable.borrow}, need: ${amount}`
+      );
       // if fixedWithdrawBalance === 0 and withdrawAvailable.withdraw > 0
       // then withdraw all and borrow(enough) to relay
 
-      const withdrawBalance = fixedWithdrawBalance > amount ? amount : fixedWithdrawBalance;
-      const withdrawCollateral = fixedWithdrawBalance > amount ? amount : maxU256;
+      const withdrawBalance =
+        fixedWithdrawBalance > amount ? amount : fixedWithdrawBalance;
+      const withdrawCollateral =
+        fixedWithdrawBalance > amount ? amount : maxU256;
       txs.push({
         to: this.poolContract.address,
         value: "0",
-        data: this.withdrawRawData(
-          token,
-          withdrawCollateral,
-          onBehalfOf
-        ),
+        data: this.withdrawRawData(token, withdrawCollateral, onBehalfOf),
       });
       if (withdrawBalance !== amount) {
         if (withdrawAvailable.borrow >= amount - withdrawBalance) {
@@ -556,14 +574,18 @@ export class Aave extends LendMarket {
           });
           this.enableDebtStatus(onBehalfOf);
         } else {
-          this.logger.warn(`[${this.name}] withdraw fixed amount not enough fixed: ${fixedWithdrawBalance}, amount: ${amount}`);
+          this.logger.warn(
+            `[${this.name}] withdraw fixed amount not enough fixed: ${fixedWithdrawBalance}, amount: ${amount}`
+          );
           return [];
         }
       }
       this.enableCollateralLack(onBehalfOf);
     } else if (avaiable === BigInt(0)) {
       avaiable = await this.borrowAvailable(onBehalfOf, token);
-      this.logger.log(`[${this.name}] borrow from collateral to relay avaiable: ${avaiable}, need: ${amount}`);
+      this.logger.log(
+        `[${this.name}] borrow from collateral to relay avaiable: ${avaiable}, need: ${amount}`
+      );
       if (avaiable >= amount) {
         // borrow and relay
         // if native token, borrow wtoken and withdraw then relay
