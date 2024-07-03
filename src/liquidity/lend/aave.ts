@@ -24,12 +24,24 @@ export interface DebtToken {
   minRepayAmount: bigint;
   // the min reserved underlying balance
   minReserved: bigint;
-  isCollateral: boolean;
-  autoSupplyAsCollateral: boolean;
+}
+
+export interface CollateralToken {
+  symbol: string;
+  decimals: number;
+  underlyingAddress: string;
+  underlyTokenContract: Erc20Contract;
+  aTokenContract: Erc20Contract;
+  autosupplyAmount: bigint;
 }
 
 export interface WaitingRepayInfo {
   token: DebtToken;
+  amount: bigint;
+}
+
+export interface WaitingSupplyInfo {
+  token: CollateralToken;
   amount: bigint;
 }
 
@@ -58,6 +70,11 @@ export interface AddressBook {
 export enum DebtStatus {
   HasDebt,
   NoDebt,
+}
+
+export enum CollateralStatus {
+  CollateralFull,
+  CollateralLack,
 }
 
 export const maxU256: bigint = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
@@ -130,8 +147,10 @@ export class Aave extends LendMarket {
   public multicall: MulticallContract;
   public wethContract: WETHContract;
   public debtStatus = new Map();
+  public collateralStatus = new Map();
 
   public debtTokens: DebtToken[];
+  public collateralTokens: CollateralToken[];
 
   constructor(
     chainName: string,
@@ -163,7 +182,7 @@ export class Aave extends LendMarket {
       const tokenInfo = bookInfo.debtTokens.find(
         (dt) => dt.symbol == token.symbol
       );
-      const collateralInfo = collaterals.find((c) => c.symbol === token.symbol);
+      //const collateralInfo = collaterals.find((c) => c.symbol === token.symbol);
       return {
         address: tokenInfo.vToken,
         underlyingAddress: tokenInfo.underlyingToken,
@@ -181,14 +200,32 @@ export class Aave extends LendMarket {
           (BigInt((token.minReserved * 10000).toFixed()) *
             new Any(1, tokenInfo.decimals).Number) /
           BigInt(10000),
-        isCollateral: collateralInfo !== undefined,
-        autoSupplyAsCollateral: collateralInfo?.autosupply === true,
+      };
+    });
+    this.collateralTokens = collaterals.map((token) => {
+      const tokenInfo = bookInfo.debtTokens.find(
+        (dt) => dt.symbol == token.symbol
+      );
+      return {
+        symbol: token.symbol,
+        decimals: tokenInfo.decimals,
+        underlyingAddress: tokenInfo.underlyingToken,
+        underlyTokenContract: new Erc20Contract(
+          tokenInfo.underlyingToken,
+          signer
+        ),
+        aTokenContract: new Erc20Contract(tokenInfo.aToken, signer),
+        autosupplyAmount: new Any(token.autosupplyAmount ?? 0, tokenInfo.decimals).Number,
       };
     });
   }
 
   public enableDebtStatus(account: string) {
     this.debtStatus.set(account, DebtStatus.HasDebt);
+  }
+
+  public enableCollateralLack(account: string) {
+    this.collateralStatus.set(account, CollateralStatus.CollateralLack);
   }
 
   // suppose the pool is big enough
@@ -228,15 +265,12 @@ export class Aave extends LendMarket {
     if (asset == zeroAddress && !this.wrappedToken) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
-    const dtToken = this.debtTokens.find(
-      (dt) =>
-        dt.underlyingAddress == asset ||
-        (asset == zeroAddress && dt.underlyingAddress == this.wrappedToken)
+    const collateralToken = this.collateralTokens.find(
+      (ct) =>
+        ct.underlyingAddress == asset ||
+        (asset == zeroAddress && ct.underlyingAddress == this.wrappedToken)
     );
-    if (this.healthFactorLimit <= 1 || !dtToken) {
-      return { withdraw: BigInt(0), borrow: BigInt(0) };
-    }
-    if (!dtToken.isCollateral) {
+    if (this.healthFactorLimit <= 1 || !collateralToken) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
     const accountInfo = await this.poolContract.getUserAccountData(account);
@@ -251,21 +285,32 @@ export class Aave extends LendMarket {
     if (availableBase <= BigInt(0)) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
-    const price = await this.oracle.getAssetPrice(dtToken.underlyingAddress);
+    const price = await this.oracle.getAssetPrice(collateralToken.underlyingAddress);
     // get aToken
     const availableAToken =
-      (availableBase * new Any(1, dtToken.decimals).Number) / price;
-    const aTokenBalance = await dtToken.aTokenContract.balanceOf(account);
+      (availableBase * new Any(1, collateralToken.decimals).Number) / price;
+    const aTokenBalance = await collateralToken.aTokenContract.balanceOf(account);
+    if (aTokenBalance === BigInt(0)) {
+      return { withdraw: BigInt(0), borrow: BigInt(0) };
+    }
     if (aTokenBalance > availableAToken) {
       return { withdraw: availableAToken, borrow: BigInt(0) };
     } else {
+      const debtToken = this.debtTokens.find(
+        (dt) =>
+          dt.underlyingAddress == asset ||
+          (asset == zeroAddress && dt.underlyingAddress == this.wrappedToken)
+      );
+      if (!debtToken) {
+        return { withdraw: availableAToken, borrow: BigInt(0) };
+      }
       // withdraw aTokenBalance, others borrow
       // (totalCollateralBase - aTokenBase) * ltv / BigInt(10000) / BigInt(this.healthFactorLimit) >= totalDebtBase + xBase
       // xBase <= (totalCollateralBase - aTokenBase) * ltv / BigInt(10000) / BigInt(this.healthFactorLimit) - totalDebtBase
 
       // aTokenBalance => aTokenBase
       const aTokenBase =
-        (aTokenBalance * price) / new Any(1, dtToken.decimals).Number;
+        (aTokenBalance * price) / new Any(1, debtToken.decimals).Number;
       // because aTokenBalance < availableAToken, then availableBorrowBase > 0
       const availableBorrowBase =
         ((accountInfo.totalCollateralBase - aTokenBase) * accountInfo.ltv) /
@@ -275,7 +320,7 @@ export class Aave extends LendMarket {
       return {
         withdraw: aTokenBalance,
         borrow:
-          (availableBorrowBase * new Any(1, dtToken.decimals).Number) / price,
+          (availableBorrowBase * new Any(1, debtToken.decimals).Number) / price,
       };
     }
   }
@@ -333,6 +378,47 @@ export class Aave extends LendMarket {
     return result;
   }
 
+  async checkCollateralToSupply(account: string): Promise<WaitingSupplyInfo[]> {
+    if (this.collateralStatus.get(account) === CollateralStatus.CollateralFull) {
+      return [];
+    }
+    const tokens: string[] = this.collateralTokens
+      .map((token) => [
+        token.aTokenContract.address,
+        token.underlyingAddress === this.wrappedToken
+          ? zeroAddress
+          : token.underlyingAddress,
+      ])
+      .flat();
+    // [aToken, underlying, aToken, underlying, ...]
+    const balances: bigint[] = await this.multicall.getBalance(account, tokens);
+    let result: WaitingSupplyInfo[] = [];
+    let collateralStatus: CollateralStatus = CollateralStatus.CollateralFull;
+    for (let i = 0; i < balances.length; i += 2) {
+      const aTokenBalance = balances[i];
+      const collateralToken = this.collateralTokens[(i / 2) | 0];
+      if (aTokenBalance >= collateralToken.autosupplyAmount) {
+        continue;
+      } else {
+        collateralStatus = CollateralStatus.CollateralLack;
+      }
+      const underlyingBalance = balances[i + 1];
+      const maxInterest = (aTokenBalance * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
+      const ignoreSize = maxInterest.toString().length;
+      const fixedATokenBalance =
+        aTokenBalance / BigInt(10 ** ignoreSize) * BigInt(10 ** ignoreSize);
+      const needSupplyBalance = collateralToken.autosupplyAmount - fixedATokenBalance;
+
+      const avaiableSupplyAmount = underlyingBalance > needSupplyBalance ? needSupplyBalance : underlyingBalance;
+      if (avaiableSupplyAmount <= 0) {
+          continue;
+      }
+      result.push({ token: collateralToken, amount: avaiableSupplyAmount });
+    }
+    this.collateralStatus.set(account, collateralStatus);
+    return result;
+  }
+
   async batchRepayRawData(onBehalfOf: string): Promise<TxInfo[]> {
     const needToRepayDebts = await this.checkDebtToRepay(onBehalfOf);
     // 1. if native token, deposit for weth
@@ -365,6 +451,44 @@ export class Aave extends LendMarket {
           to: this.poolContract.address,
           value: "0",
           data: repayData,
+        });
+        return txs;
+      })
+      .flat();
+  }
+
+  async batchSupplyRawData(onBehalfOf: string): Promise<TxInfo[]> {
+    const needToSupplyCollaterals = await this.checkCollateralToSupply(onBehalfOf);
+    // 1. if native token, deposit for weth
+    // 2. approve L2Pool the underlying token
+    // 3. supply
+    return needToSupplyCollaterals
+      .map((collateral) => {
+        let txs = [];
+        if (collateral.token.underlyingAddress === this.wrappedToken) {
+          txs.push({
+            to: this.wrappedToken,
+            value: collateral.amount.toString(),
+            data: this.wethContract.depositRawData(),
+          });
+        }
+        txs.push({
+          to: collateral.token.underlyingAddress,
+          value: "0",
+          data: collateral.token.underlyTokenContract.approveRawData(
+            this.poolContract.address,
+            collateral.amount
+          ),
+        });
+        const supplyData = this.poolContract.supplyRawData(
+          collateral.token.underlyingAddress,
+          collateral.amount,
+          onBehalfOf
+        );
+        txs.push({
+          to: this.poolContract.address,
+          value: "0",
+          data: supplyData,
         });
         return txs;
       })
@@ -405,6 +529,8 @@ export class Aave extends LendMarket {
         (withdrawAvailable.withdraw / BigInt(10 ** ignoreSize)) *
         BigInt(10 ** ignoreSize);
       this.logger.log(`[${this.name}] withdraw from collateral to relay withdraw: ${withdrawAvailable.withdraw}, fixed: ${fixedWithdrawBalance}, borrow: ${withdrawAvailable.borrow}, need: ${amount}`);
+      // if fixedWithdrawBalance === 0 and withdrawAvailable.withdraw > 0
+      // then withdraw all and borrow(enough) to relay
 
       const withdrawBalance = fixedWithdrawBalance > amount ? amount : fixedWithdrawBalance;
       const withdrawCollateral = fixedWithdrawBalance > amount ? amount : maxU256;
@@ -428,11 +554,13 @@ export class Aave extends LendMarket {
               onBehalfOf
             ),
           });
+          this.enableDebtStatus(onBehalfOf);
         } else {
           this.logger.warn(`[${this.name}] withdraw fixed amount not enough fixed: ${fixedWithdrawBalance}, amount: ${amount}`);
           return [];
         }
       }
+      this.enableCollateralLack(onBehalfOf);
     } else if (avaiable === BigInt(0)) {
       avaiable = await this.borrowAvailable(onBehalfOf, token);
       this.logger.log(`[${this.name}] borrow from collateral to relay avaiable: ${avaiable}, need: ${amount}`);
@@ -445,6 +573,7 @@ export class Aave extends LendMarket {
           value: "0",
           data: this.borrowRawData(token, amount, onBehalfOf),
         });
+        this.enableDebtStatus(onBehalfOf);
       }
     } else {
       this.logger.warn(`[${this.name}] not enough balance, need ${amount}`);

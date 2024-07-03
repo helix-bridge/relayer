@@ -8,10 +8,16 @@
             "lendMarket": [
               {
                 "protocol": "aave",
+                "healthFactorLimit": 3.0,
+                "collaterals": [
+                    {
+                        "symbol": "weth",
+                        "autosupplyAmount": 0.0001
+                    }
+                ],
                 "tokens": [
                     {
                         "symbol": "weth",
-                        "healthFactorLimit": 3.0,
                         "minRepay": 0.0000000001,
                         "minReserved": 0
                     }

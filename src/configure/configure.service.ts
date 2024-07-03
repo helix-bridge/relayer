@@ -52,7 +52,7 @@ export interface LendTokenInfo {
 
 export interface CollateralInfo {
   symbol: string;
-  autosupply: boolean;
+  autosupplyAmount: number;
 }
 
 export interface LendInfo {

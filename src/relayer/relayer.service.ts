@@ -555,13 +555,19 @@ export class RelayerService implements OnModuleInit {
         if (!relayer.isSafe) {
           continue;
         }
-        const repayRawDatas = await market.batchRepayRawData(relayer.address);
-        if (repayRawDatas.length === 0) {
-          continue;
+        // repay debt first, if no debt, try to supply if needed
+        let hint: string = "repay";
+        let repayOrSupplyRawDatas = await market.batchRepayRawData(relayer.address);
+        if (repayOrSupplyRawDatas.length === 0) {
+            repayOrSupplyRawDatas = await market.batchSupplyRawData(relayer.address);
+            if (repayOrSupplyRawDatas.length === 0) {
+              continue;
+            }
+            hint = "supply";
         }
-        this.logger.log(`[${chain}] balance enough, proposol to repay balance`);
+        this.logger.log(`[${chain}] balance enough, proposol to ${hint} balance`);
         const txInfo = await relayer.safeWallet.proposeTransaction(
-          repayRawDatas,
+          repayOrSupplyRawDatas,
           relayer.isExecutor,
           BigInt(chainInfo.chainId)
         );
@@ -579,11 +585,11 @@ export class RelayerService implements OnModuleInit {
           );
           if (err != null) {
             this.logger.warn(
-              `[${chain}] try to repay using safe failed, err ${err}`
+              `[${chain}] try to ${hint} using safe failed, err ${err}`
             );
             continue;
           } else {
-            this.logger.log(`[${chain}] ready to repay using safe tx`);
+            this.logger.log(`[${chain}] ready to ${hint} using safe tx`);
             const gasPrice = await this.gasPrice(chainInfo);
             const tx = await safeContract.execTransaction(
               txInfo.to,
@@ -599,7 +605,7 @@ export class RelayerService implements OnModuleInit {
             );
             chainInfo.txHashCache = tx.hash;
             this.logger.log(
-              `[${chain}] success repay message, txhash: ${tx.hash}`
+              `[${chain}] success ${hint} message, txhash: ${tx.hash}`
             );
           }
         }
@@ -910,6 +916,7 @@ export class RelayerService implements OnModuleInit {
       }
       let nonce: number | null = null;
       // try relay: check balance and fee enough
+      const targetAmount = new EtherBigNumber(record.recvAmount).Number;
       const args: RelayArgs | RelayArgsV3 =
         bridge.bridgeType != "lnv3"
           ? {
@@ -918,7 +925,7 @@ export class RelayerService implements OnModuleInit {
                 relayer: lnProvider.relayer,
                 sourceToken: lnProvider.fromAddress,
                 targetToken: lnProvider.toAddress,
-                amount: new EtherBigNumber(record.recvAmount).Number,
+                amount: targetAmount,
                 timestamp: new EtherBigNumber(record.startTime).Number,
                 receiver: record.recipient,
               },
@@ -932,7 +939,7 @@ export class RelayerService implements OnModuleInit {
                 sourceToken: lnProvider.fromAddress,
                 targetToken: lnProvider.toAddress,
                 sourceAmount: new EtherBigNumber(record.sendAmount).Number,
-                targetAmount: new EtherBigNumber(record.recvAmount).Number,
+                targetAmount: targetAmount,
                 receiver: record.recipient,
                 timestamp: new EtherBigNumber(record.messageNonce).Number,
               },
@@ -962,17 +969,22 @@ export class RelayerService implements OnModuleInit {
         }
         let txs = [];
         // relay directly
-        if (reservedBalance >= relayData.value) {
-          txs = [
-            {
-              to: toBridgeContract.address,
-              value: relayData.value.toString(),
-              data: relayData.data,
-            },
-          ];
+        if (reservedBalance >= targetAmount) {
+          if (lnProvider.toAddress !== zeroAddress) {
+            txs.push({
+              to: lnProvider.toAddress,
+              value: "0",
+              data: lnProvider.toToken.approveRawData(toBridgeContract.address, targetAmount),
+            });
+          }
+          txs.push({
+            to: toBridgeContract.address,
+            value: relayData.value.toString(),
+            data: relayData.data,
+          });
         } else {
           // search from lend market
-          const needLending = relayData.value - reservedBalance;
+          const needLending = targetAmount - reservedBalance;
           for (const market of toChainInfo.lendMarket) {
             txs = await market.lendingFromPoolTxs(
               lnProvider.toAddress,
@@ -980,6 +992,14 @@ export class RelayerService implements OnModuleInit {
               lnProvider.relayer
             );
             if (txs.length > 0) {
+              if (lnProvider.toAddress !== zeroAddress) {
+                //approve
+                txs.push({
+                  to: lnProvider.toAddress,
+                  value: "0",
+                  data: lnProvider.toToken.approveRawData(toBridgeContract.address, targetAmount),
+                });
+              }
               // relay
               txs.push({
                 to: toBridgeContract.address,
