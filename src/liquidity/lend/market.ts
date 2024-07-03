@@ -4,6 +4,11 @@ export interface TxInfo {
   data: string;
 }
 
+export interface WithdrawBorrowBalance {
+  withdraw: bigint;
+  borrow: bigint;
+}
+
 export abstract class LendMarket {
   public name: string;
   public wrappedToken: string;
@@ -12,9 +17,23 @@ export abstract class LendMarket {
     this.wrappedToken = wtoken;
   }
   abstract address(): string;
+  abstract lendingFromPoolTxs(
+    token: string,
+    amount: bigint,
+    onBehalfOf: string
+  ): Promise<TxInfo[]>;
   abstract borrowAvailable(account: string, asset: string): Promise<bigint>;
+  abstract withdrawAndBorrowAvailable(
+    account: string,
+    asset: string
+  ): Promise<WithdrawBorrowBalance>;
   abstract batchRepayRawData(onBehalfOf: string): Promise<TxInfo[]>;
   abstract borrowRawData(
+    token: string,
+    amount: bigint,
+    onBehalfOf: string
+  ): string;
+  abstract withdrawRawData(
     token: string,
     amount: bigint,
     onBehalfOf: string

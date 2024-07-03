@@ -50,9 +50,15 @@ export interface LendTokenInfo {
   minReserved: number;
 }
 
+export interface CollateralInfo {
+  symbol: string;
+  autosupply: boolean;
+}
+
 export interface LendInfo {
   protocol: string;
   healthFactorLimit: number;
+  collaterals: CollateralInfo[];
   tokens: LendTokenInfo[];
 }
 

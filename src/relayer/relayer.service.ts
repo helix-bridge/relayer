@@ -176,6 +176,7 @@ export class RelayerService implements OnModuleInit {
               return new Aave(
                 rpcnode.name,
                 market.healthFactorLimit ?? 3.0,
+                market.collaterals,
                 market.tokens,
                 provider.provider
               );
@@ -483,7 +484,7 @@ export class RelayerService implements OnModuleInit {
       if (transactionInfo.confirmedBlock > 0) {
         if (transactionInfo.confirmedBlock < 3) {
           this.logger.log(
-            `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${chainInfo.txHashCache}`
+            `waiting for tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${chainInfo.txHashCache}`
           );
           return true;
         } else {
@@ -653,10 +654,21 @@ export class RelayerService implements OnModuleInit {
               softTransferLimit = softLimitInfo.balance;
               // from lend market
               for (const market of toChainInfo.lendMarket) {
-                const avaiable = await market.borrowAvailable(
-                  lnProvider.relayer,
-                  lnProvider.toAddress
-                );
+                // first check withdraw available
+                const withdrawAvailable =
+                  await market.withdrawAndBorrowAvailable(
+                    lnProvider.relayer,
+                    lnProvider.toAddress
+                  );
+                let avaiable =
+                  withdrawAvailable.withdraw + withdrawAvailable.borrow;
+                // if can't withdraw, then borrow
+                if (avaiable <= BigInt(0)) {
+                  avaiable = await market.borrowAvailable(
+                    lnProvider.relayer,
+                    lnProvider.toAddress
+                  );
+                }
                 if (avaiable > BigInt(0)) {
                   const totalAvaiable = softLimitInfo.balance + avaiable;
                   softTransferLimit =
@@ -960,39 +972,14 @@ export class RelayerService implements OnModuleInit {
           ];
         } else {
           // search from lend market
-          const needBorrow = relayData.value - reservedBalance;
+          const needLending = relayData.value - reservedBalance;
           for (const market of toChainInfo.lendMarket) {
-            const avaiable = await market.borrowAvailable(
-              lnProvider.relayer,
-              lnProvider.toAddress
+            txs = await market.lendingFromPoolTxs(
+              lnProvider.toAddress,
+              needLending,
+              lnProvider.relayer
             );
-            this.logger.log(
-              `borrow available: ${avaiable}, need ${needBorrow}`
-            );
-            if (avaiable > needBorrow) {
-              // borrow and relay
-              // if native token, borrow wtoken and withdraw then relay
-              // 1. borrow
-              txs.push({
-                to: market.address(),
-                value: "0",
-                data: market.borrowRawData(
-                  lnProvider.toAddress,
-                  needBorrow,
-                  lnProvider.relayer
-                ),
-              });
-              // 2. withdraw if native token
-              if (lnProvider.toAddress === zeroAddress) {
-                txs.push({
-                  to: market.wrappedToken,
-                  value: "0",
-                  data: new WETHContract(
-                    market.wrappedToken,
-                    toChainInfo.provider.provider
-                  ).withdrawRawData(needBorrow),
-                });
-              }
+            if (txs.length > 0) {
               // relay
               txs.push({
                 to: toBridgeContract.address,
