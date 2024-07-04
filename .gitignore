@@ -105,6 +105,3 @@ dist
 
 # IDE misc
 .idea
-
-# Application runtime data
-.maintain/db
