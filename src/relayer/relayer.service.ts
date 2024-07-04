@@ -14,7 +14,6 @@ import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
   EthereumProvider,
   TransactionInfo,
-  scaleBigger,
 } from "../base/provider";
 import { EthereumConnectedWallet } from "../base/wallet";
 import { DataworkerService } from "../dataworker/dataworker.service";
@@ -25,6 +24,7 @@ import { last } from "lodash";
 import { ethers } from "ethers";
 import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
+import {ceramicApiKit} from "../base/ceramicApiKit";
 
 export class ChainInfo {
   chainName: string;
@@ -207,10 +207,15 @@ export class RelayerService implements OnModuleInit {
               );
         var toSafeWallet: SafeWallet;
         if (config.safeWalletRole !== undefined) {
+          let ceramicService;
+          if(config.safeWalletMessengerType === "CeramicCompposedb") {
+            ceramicService = new ceramicApiKit(privateKey);
+          }
           toSafeWallet = new SafeWallet(
             config.safeWalletAddress,
             config.safeWalletUrl,
-            toWallet.wallet
+            toWallet.wallet,
+            ceramicService
           );
         }
         //toSafeWallet.connect();

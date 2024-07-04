@@ -41,11 +41,15 @@ export class SafeWallet {
   constructor(
     address: string,
     apiService: string,
-    signer: Wallet | HDNodeWallet
+    signer: Wallet | HDNodeWallet,
+    ceramicService: ceramicApiKit | undefined,
   ) {
     this.address = address;
     this.signer = signer;
     this.apiService = apiService;
+    if (ceramicService) {
+      this.ceramicService = ceramicService;
+    }
   }
 
   async connect(chainId: bigint) {
@@ -117,7 +121,12 @@ export class SafeWallet {
     const tx = await this.safeSdk.createTransaction( { transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
-      const transaction = await this.safeService.getTransaction(safeTxHash);
+      let transaction: SafeMultisigTransactionResponse;
+      if (this.ceramicService) {
+        transaction = await this.ceramicService.getTransaction(safeTxHash);
+      } else {
+        transaction = await this.safeService.getTransaction(safeTxHash);
+      }
       var signatures = this.concatSignatures(transaction);
       const hasBeenSigned = this.isTransactionSignedByAddress(transaction);
       if (hasBeenSigned || signatures !== null) {
@@ -144,7 +153,11 @@ export class SafeWallet {
       senderAddress: this.signer.address,
       senderSignature: senderSignature.data,
     };
-    await this.safeService.proposeTransaction(proposeTransactionProps);
+    if(this.ceramicService) {
+      await this.ceramicService.proposeTransaction(proposeTransactionProps);
+    }else{
+      await this.safeService.proposeTransaction(proposeTransactionProps);
+    }
     return {
       readyExecute: false,
       safeTxHash: safeTxHash,
