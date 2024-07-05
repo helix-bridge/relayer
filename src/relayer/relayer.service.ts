@@ -9,6 +9,7 @@ import {
   Lnv3BridgeContract,
   SafeContract,
   zeroAddress,
+  WETHContract,
 } from "../base/contract";
 import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
@@ -25,6 +26,8 @@ import { last } from "lodash";
 import { ethers } from "ethers";
 import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
+import { Aave } from "../liquidity/lend/aave";
+import { LendMarket } from "../liquidity/lend/market";
 
 export class ChainInfo {
   chainName: string;
@@ -35,6 +38,7 @@ export class ChainInfo {
   notSupport1559: boolean;
   lnv3Address: string;
   adjustingFee: boolean;
+  lendMarket: LendMarket[];
 }
 
 export class BridgeConnectInfo {
@@ -49,6 +53,7 @@ export class LnProviderInfo {
   fromAddress: string;
   toAddress: string;
   fromToken: Erc20Contract;
+  toToken: Erc20Contract;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
   useDynamicBaseFee: boolean;
@@ -77,6 +82,7 @@ export class RelayerService implements OnModuleInit {
   private readonly heartBeatInterval = 12; // 2 minute
   private readonly withdrawLiqudityInterval = 2160; // 6 hour
   private readonly updateDynamicFeeInterval = 60; // 10 min
+  private readonly repayLendInterval = 60;
   private chainInfos = new Map();
   private lnBridges: LnBridge[];
   public store: Store;
@@ -99,6 +105,7 @@ export class RelayerService implements OnModuleInit {
         lastAdjustTime: 0,
         lastWithdrawLiqudity: 0,
         lastUpdateDynamicFeeInterval: 0,
+        lastRepayLend: 0,
         isProcessing: false,
       });
 
@@ -111,11 +118,21 @@ export class RelayerService implements OnModuleInit {
             return;
           }
           timer.isProcessing = true;
+
           for (let item of this.lnBridges.values()) {
             if (item.toBridge.chainInfo.chainName !== key) {
               continue;
             }
             try {
+              if (timer.lastRepayLend === 0) {
+                const busy = await this.repayDept(key);
+                if (busy) {
+                  timer.isProcessing = false;
+                  this.adjustClock(key);
+                  timer.lastRepayLend = 0;
+                  return;
+                }
+              }
               const txPending = await this.relay(
                 item,
                 timer.lastAdjustTime === 0,
@@ -151,13 +168,30 @@ export class RelayerService implements OnModuleInit {
           );
           return null;
         }
+        const provider = new EthereumProvider(rpcnode.rpc);
+        const lendMarket = rpcnode.lendMarket?.map((market) => {
+          switch (market.protocol) {
+            // currently only support aave
+            case "aave":
+              return new Aave(
+                rpcnode.name,
+                this.configureService.config.env === 'test',
+                market.healthFactorLimit ?? 3.0,
+                market.collaterals,
+                market.tokens,
+                provider.provider
+              );
+            default:
+              return null;
+          }
+        });
         return [
           rpcnode.name,
           {
             chainName: rpcnode.name,
             rpc: rpcnode.rpc,
             chainId: chainInfo.id,
-            provider: new EthereumProvider(rpcnode.rpc),
+            provider: provider,
             fixedGasPrice: rpcnode.fixedGasPrice,
             notSupport1559: rpcnode.notSupport1559,
             lnv2DefaultAddress: chainInfo.lnv2DefaultAddress,
@@ -166,6 +200,7 @@ export class RelayerService implements OnModuleInit {
             tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
+            lendMarket: lendMarket ?? [],
           },
         ];
       })
@@ -277,6 +312,7 @@ export class RelayerService implements OnModuleInit {
             return {
               fromAddress: fromToken.address,
               toAddress: toToken.address,
+              toToken: new Erc20Contract(toToken.address, toWallet.wallet),
               fromToken: new Erc20Contract(
                 fromToken.address,
                 fromWallet.wallet
@@ -307,6 +343,20 @@ export class RelayerService implements OnModuleInit {
         };
       })
       .filter((item) => item !== null);
+  }
+
+  async gasPrice(chainInfo: ChainInfo) {
+    if (chainInfo.fixedGasPrice !== undefined) {
+      return {
+        isEip1559: false,
+        fee: {
+          gasPrice: new GWei(chainInfo.fixedGasPrice).Number,
+        },
+        eip1559fee: null,
+      };
+    } else {
+      return await chainInfo.provider.feeData(1, chainInfo.notSupport1559);
+    }
   }
 
   async adjustFee(
@@ -380,21 +430,7 @@ export class RelayerService implements OnModuleInit {
       this.logger.log(
         `[${tokenBridgeInfo}]fee is not sensible, try to update, profit: ${profitFmt}, should in [${lnBridge.minProfit}, ${lnBridge.maxProfit}], new:${sensibleBaseFeeFmt}`
       );
-      var gasPrice;
-      if (fromChainInfo.fixedGasPrice !== undefined) {
-        gasPrice = {
-          isEip1559: false,
-          fee: {
-            gasPrice: new GWei(fromChainInfo.fixedGasPrice).Number,
-          },
-          eip1559fee: null,
-        };
-      } else {
-        gasPrice = await fromChainInfo.provider.feeData(
-          1,
-          fromChainInfo.notSupport1559
-        );
-      }
+      const gasPrice = await this.gasPrice(fromChainInfo);
       if (fromChainInfo.adjustingFee) return;
       // each adjust time, only send one tx
       fromChainInfo.adjustingFee = true;
@@ -418,18 +454,15 @@ export class RelayerService implements OnModuleInit {
     }
   }
 
-  async checkPendingTransaction(bridge: LnBridge) {
-    const toChainInfo = bridge.toBridge.chainInfo;
+  async checkPendingTransaction(chainName: string) {
     let transactionInfo: TransactionInfo | null = null;
-    let chainInfo = this.chainInfos.get(toChainInfo.chainName);
+    let chainInfo = this.chainInfos.get(chainName);
 
     if (chainInfo.txHashCache) {
-      chainInfo.txHashCache = await this.store.getPendingTransaction(
-        toChainInfo.chainName
-      );
+      chainInfo.txHashCache = await this.store.getPendingTransaction(chainName);
     }
     if (chainInfo.txHashCache) {
-      transactionInfo = await toChainInfo.provider.checkPendingTransaction(
+      transactionInfo = await chainInfo.provider.checkPendingTransaction(
         chainInfo.txHashCache
       );
       // may be query error
@@ -438,9 +471,9 @@ export class RelayerService implements OnModuleInit {
         // if always query null, maybe reorg or replaced
         if (chainInfo.checkTimes >= this.maxWaitingPendingTimes) {
           this.logger.warn(
-            `this tx may replaced or reorged, reset txHash ${chainInfo.txHashCache}, ${toChainInfo.chainName}`
+            `this tx may replaced or reorged, reset txHash ${chainInfo.txHashCache}, ${chainName}`
           );
-          await this.store.delPendingTransaction(toChainInfo.chainName);
+          await this.store.delPendingTransaction(chainName);
           chainInfo.txHashCache = null;
           chainInfo.checkTimes = 0;
         }
@@ -452,7 +485,7 @@ export class RelayerService implements OnModuleInit {
       if (transactionInfo.confirmedBlock > 0) {
         if (transactionInfo.confirmedBlock < 3) {
           this.logger.log(
-            `waiting for relay tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${chainInfo.txHashCache}`
+            `waiting for tx finialize: ${transactionInfo.confirmedBlock}, txHash: ${chainInfo.txHashCache}`
           );
           return true;
         } else {
@@ -460,7 +493,7 @@ export class RelayerService implements OnModuleInit {
           this.logger.log(
             `the pending tx is confirmed, txHash: ${chainInfo.txHashCache}`
           );
-          await this.store.delPendingTransaction(toChainInfo.chainName);
+          await this.store.delPendingTransaction(chainName);
           chainInfo.txHashCache = null;
           return false;
         }
@@ -480,6 +513,7 @@ export class RelayerService implements OnModuleInit {
     timer.lastAdjustTime += 1;
     timer.lastWithdrawLiqudity += 1;
     timer.lastUpdateDynamicFeeInterval += 1;
+    timer.lastRepayLend += 1;
     if (timer.lastAdjustTime >= this.scheduleAdjustFeeInterval) {
       timer.lastAdjustTime = 0;
     }
@@ -489,6 +523,103 @@ export class RelayerService implements OnModuleInit {
     if (timer.lastUpdateDynamicFeeInterval >= this.updateDynamicFeeInterval) {
       timer.lastUpdateDynamicFeeInterval = 0;
     }
+    if (timer.lastRepayLend >= this.repayLendInterval) {
+      timer.lastRepayLend = 0;
+    }
+  }
+
+  // After triggering repay, if there is already a relay transaction, replace it.
+  async repayDept(chain: string) {
+    if (await this.checkPendingTransaction(chain)) {
+      return false;
+    }
+    // get all relayers
+    let relayers = [];
+    for (let lnBridge of this.lnBridges.values()) {
+      if (lnBridge.toBridge.chainInfo.chainName === chain) {
+        for (const lnProvider of lnBridge.lnProviders) {
+          if (!relayers.includes(lnProvider.relayer)) {
+            relayers.push({
+              address: lnProvider.relayer,
+              isSafe: ["signer", "executor"].includes(lnBridge.safeWalletRole),
+              isExecutor: lnBridge.safeWalletRole === "executor",
+              safeWallet: lnBridge.toBridge.safeWallet,
+            });
+          }
+        }
+      }
+    }
+    const chainInfo = this.chainInfos.get(chain);
+    for (const relayer of relayers) {
+      for (const market of chainInfo.lendMarket) {
+        // currently only support safeWallet
+        if (!relayer.isSafe) {
+          continue;
+        }
+        // repay debt first, if no debt, try to supply if needed
+        let hint: string = "repay";
+        let repayOrSupplyRawDatas = await market.batchRepayRawData(
+          relayer.address
+        );
+        if (repayOrSupplyRawDatas.length === 0) {
+          repayOrSupplyRawDatas = await market.batchSupplyRawData(
+            relayer.address
+          );
+          if (repayOrSupplyRawDatas.length === 0) {
+            continue;
+          }
+          hint = "supply";
+        }
+        this.logger.log(
+          `[${chain}] balance enough, proposol to ${hint} balance`
+        );
+        const txInfo = await relayer.safeWallet.proposeTransaction(
+          repayOrSupplyRawDatas,
+          relayer.isExecutor,
+          BigInt(chainInfo.chainId)
+        );
+        if (txInfo !== null && txInfo.readyExecute && relayer.isExecutor) {
+          const safeContract = new SafeContract(
+            relayer.safeWallet.address,
+            relayer.safeWallet.signer
+          );
+          const err = await safeContract.tryExecTransaction(
+            txInfo.to,
+            txInfo.txData,
+            BigInt(0),
+            txInfo.operation,
+            txInfo.signatures
+          );
+          if (err != null) {
+            this.logger.warn(
+              `[${chain}] try to ${hint} using safe failed, err ${err}`
+            );
+            continue;
+          } else {
+            this.logger.log(`[${chain}] ready to ${hint} using safe tx`);
+            const gasPrice = await this.gasPrice(chainInfo);
+            const tx = await safeContract.execTransaction(
+              txInfo.to,
+              txInfo.txData,
+              BigInt(0),
+              txInfo.operation,
+              txInfo.signatures,
+              gasPrice
+            );
+            await this.store.savePendingTransaction(
+              chainInfo.chainName,
+              tx.hash
+            );
+            chainInfo.txHashCache = tx.hash;
+            this.logger.log(
+              `[${chain}] success ${hint} message, txhash: ${tx.hash}`
+            );
+          }
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   async relay(
@@ -525,11 +656,42 @@ export class RelayerService implements OnModuleInit {
                 continue;
               }
             }
-            softTransferLimit = await toBridgeContract.getSoftTransferLimit(
+            const softLimitInfo = await toBridgeContract.getSoftTransferLimit(
               lnProvider.relayer,
               lnProvider.toAddress,
               toChainInfo.provider.provider
             );
+            if (softLimitInfo.allowance < softLimitInfo.balance) {
+              softTransferLimit = softLimitInfo.allowance;
+            } else {
+              softTransferLimit = softLimitInfo.balance;
+              // from lend market
+              for (const market of toChainInfo.lendMarket) {
+                // first check withdraw available
+                const withdrawAvailable =
+                  await market.withdrawAndBorrowAvailable(
+                    lnProvider.relayer,
+                    lnProvider.toAddress
+                  );
+                let avaiable =
+                  withdrawAvailable.withdraw + withdrawAvailable.borrow;
+                // if can't withdraw, then borrow
+                if (avaiable <= BigInt(0)) {
+                  avaiable = await market.borrowAvailable(
+                    lnProvider.relayer,
+                    lnProvider.toAddress
+                  );
+                }
+                if (avaiable > BigInt(0)) {
+                  const totalAvaiable = softLimitInfo.balance + avaiable;
+                  softTransferLimit =
+                    totalAvaiable > softLimitInfo.allowance
+                      ? softLimitInfo.allowance
+                      : totalAvaiable;
+                  break;
+                }
+              }
+            }
           } catch (e) {
             // ignore error
             // this time don't send heartbeat
@@ -555,7 +717,11 @@ export class RelayerService implements OnModuleInit {
 
     if (bridge.safeWalletRole !== "signer") {
       try {
-        if (await this.checkPendingTransaction(bridge)) {
+        if (
+          await this.checkPendingTransaction(
+            bridge.toBridge.chainInfo.chainName
+          )
+        ) {
           return true;
         }
       } catch (err) {
@@ -757,6 +923,7 @@ export class RelayerService implements OnModuleInit {
       }
       let nonce: number | null = null;
       // try relay: check balance and fee enough
+      const targetAmount = new EtherBigNumber(record.recvAmount).Number;
       const args: RelayArgs | RelayArgsV3 =
         bridge.bridgeType != "lnv3"
           ? {
@@ -765,7 +932,7 @@ export class RelayerService implements OnModuleInit {
                 relayer: lnProvider.relayer,
                 sourceToken: lnProvider.fromAddress,
                 targetToken: lnProvider.toAddress,
-                amount: new EtherBigNumber(record.recvAmount).Number,
+                amount: targetAmount,
                 timestamp: new EtherBigNumber(record.startTime).Number,
                 receiver: record.recipient,
               },
@@ -779,7 +946,7 @@ export class RelayerService implements OnModuleInit {
                 sourceToken: lnProvider.fromAddress,
                 targetToken: lnProvider.toAddress,
                 sourceAmount: new EtherBigNumber(record.sendAmount).Number,
-                targetAmount: new EtherBigNumber(record.recvAmount).Number,
+                targetAmount: targetAmount,
                 receiver: record.recipient,
                 timestamp: new EtherBigNumber(record.messageNonce).Number,
               },
@@ -794,10 +961,73 @@ export class RelayerService implements OnModuleInit {
       const isExecutor = bridge.safeWalletRole === "executor";
       if (bridge.safeWalletRole === "signer" || isExecutor) {
         const relayData = toBridgeContract.relayRawData(args);
+        // txs
+        // 1. balance is enough to pay for relay
+        let reservedBalance: bigint;
+        // native token
+        if (lnProvider.toAddress === zeroAddress) {
+          reservedBalance = await toChainInfo.provider.balanceOf(
+            lnProvider.relayer
+          );
+        } else {
+          reservedBalance = await lnProvider.toToken.balanceOf(
+            lnProvider.relayer
+          );
+        }
+        let txs = [];
+        // relay directly
+        if (reservedBalance >= targetAmount) {
+          if (lnProvider.toAddress !== zeroAddress) {
+            txs.push({
+              to: lnProvider.toAddress,
+              value: "0",
+              data: lnProvider.toToken.approveRawData(
+                toBridgeContract.address,
+                targetAmount
+              ),
+            });
+          }
+          txs.push({
+            to: toBridgeContract.address,
+            value: (relayData.value ?? BigInt(0)).toString(),
+            data: relayData.data,
+          });
+        } else {
+          // search from lend market
+          const needLending = targetAmount - reservedBalance;
+          for (const market of toChainInfo.lendMarket) {
+            txs = await market.lendingFromPoolTxs(
+              lnProvider.toAddress,
+              needLending,
+              lnProvider.relayer
+            );
+            if (txs.length > 0) {
+              if (lnProvider.toAddress !== zeroAddress) {
+                //approve
+                txs.push({
+                  to: lnProvider.toAddress,
+                  value: "0",
+                  data: lnProvider.toToken.approveRawData(
+                    toBridgeContract.address,
+                    targetAmount
+                  ),
+                });
+              }
+              // relay
+              txs.push({
+                to: toBridgeContract.address,
+                value: relayData.value.toString(),
+                data: relayData.data,
+              });
+              break;
+            }
+          }
+        }
+        if (txs.length == 0) {
+          continue;
+        }
         const txInfo = await bridge.toBridge.safeWallet.proposeTransaction(
-          toBridgeContract.address,
-          relayData.data,
-          relayData.value,
+          txs,
           isExecutor,
           BigInt(toChainInfo.chainId)
         );
@@ -809,6 +1039,8 @@ export class RelayerService implements OnModuleInit {
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
             txInfo.txData,
+            txInfo.value,
+            txInfo.operation,
             txInfo.signatures
           );
           if (err != null) {
@@ -817,9 +1049,14 @@ export class RelayerService implements OnModuleInit {
             );
             continue;
           } else {
+            this.logger.log(
+              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}`
+            );
             const tx = await safeContract.execTransaction(
               txInfo.to,
               txInfo.txData,
+              txInfo.value,
+              txInfo.operation,
               txInfo.signatures,
               validInfo.gasPrice
             );

@@ -1,289 +1,48 @@
 {
-    "indexer": "http://localhost:4002/graphql",
+    "indexer": "http://127.0.0.1:4002/graphql",
     "env": "test",
     "rpcnodes": [
         {
-            "name": "arbitrum-sepolia",
-            "rpc": "https://sepolia-rollup.arbitrum.io/rpc"
+            "name": "base-sepolia",
+            "rpc": "https://sepolia.base.org",
+            "lendMarket": [
+              {
+                "protocol": "aave",
+                "healthFactorLimit": 3.0,
+                "collaterals": [
+                    {
+                        "symbol": "weth",
+                        "autosupplyAmount": 0.0001
+                    }
+                ],
+                "tokens": [
+                    {
+                        "symbol": "weth",
+                        "minRepay": 0.0000000001,
+                        "minReserved": 0
+                    }
+                ]
+              }
+            ]
         },
         {
             "name": "sepolia",
-            "rpc": "https://1rpc.io/sepolia"
-        },
-        {
-            "name": "zksync-sepolia",
-            "rpc": "https://sepolia.era.zksync.dev"
+            "rpc": "https://rpc.sepolia.org"
         }
     ],
     "bridges": [
         {
-            "direction": "sepolia->zksync-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
+            "direction": "sepolia->base-sepolia",
+            "encryptedPrivateKey": "...",
             "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv2-default",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "zksync-sepolia->sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv2-default",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "sepolia->zksync-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
+            "reorgThreshold": 5,
             "bridgeType": "lnv3",
+            "safeWalletAddress": "0x0000000cF324fEd44fB52E9A519Cbb5Bd8217F77",
+            "safeWalletUrl": "https://safe-transaction-base-sepolia.safe.global/api",
+            "safeWalletRole": "executor",
             "tokens": [
                 {
                     "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "zksync-sepolia->sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv3",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "sepolia->arbitrum-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv2-opposite",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "arbitrum-sepolia->sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv2-opposite",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "sepolia->arbitrum-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv3",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "arbitrum-sepolia->sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv3",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "arbitrum-sepolia->zksync-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv2-default",
-            "tokens": [
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "zksync-sepolia->arbitrum-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv2-default",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "arbitrum-sepolia->zksync-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv3",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "eth->eth",
-                    "swapRate": 1
-                }
-            ]
-        },
-        {
-            "direction": "zksync-sepolia->arbitrum-sepolia",
-            "encryptedPrivateKey": "fed6ddf54dcbd79a84f846a13845c1c5:cca92f8d3dfa45b3f281b72a387ad6fea7ea40c9f0ed746cd540dbc6ba5e023b840de32890f1c393d22431034117da512aa02fb267386ccc01601967b5749cf3",
-            "minProfit": 0.00005,
-            "maxProfit": 0.0001,
-            "feeLimit": 0.1,
-            "reorgThreshold": 20,
-            "bridgeType": "lnv3",
-            "tokens": [
-                {
-                    "symbol": "usdt->usdt",
-                    "swapRate": 2000
-                },
-                {
-                    "symbol": "usdc->usdc",
                     "swapRate": 2000
                 },
                 {

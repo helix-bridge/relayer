@@ -33,7 +33,7 @@
     "@nestjs/schedule": "^1.1.0",
     "@safe-global/api-kit": "^2.0.0",
     "@safe-global/protocol-kit": "^2.0.0",
-    "@safe-global/safe-core-sdk-types": "^3.0.0",
+    "@safe-global/safe-core-sdk-types": "^5.0.2",
     "axios": "^1.2.3",
     "ethers": "^6.7.0",
     "level-ts": "^2.1.0",

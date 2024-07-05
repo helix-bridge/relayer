@@ -5,6 +5,8 @@ import { lnDefaultBridge } from "../abi/lnDefaultBridge";
 import { lnOppositeBridge } from "../abi/lnOppositeBridge";
 import { lnv3Bridge } from "../abi/lnv3Bridge";
 import { abiSafe } from "../abi/abiSafe";
+import { multicall3 } from "../abi/multicall3";
+import { weth } from "../abi/weth";
 import { GasPrice } from "../base/provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
@@ -12,6 +14,11 @@ export const zeroTransferId: string =
   "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export const LNV3_STATUS_LOCKED = 1;
+
+export interface SoftLimitAmount {
+  balance: bigint;
+  allowance: bigint;
+}
 
 export class EthereumContract {
   protected contract: Contract;
@@ -33,10 +40,15 @@ export class EthereumContract {
     relayer: string,
     targetToken: string,
     provider: ethers.Provider
-  ): Promise<bigint> {
+  ): Promise<SoftLimitAmount> {
     // native token
     if (targetToken === zeroAddress) {
-      return ((await provider.getBalance(relayer)) * BigInt(9)) / BigInt(10);
+      const balance =
+        ((await provider.getBalance(relayer)) * BigInt(9)) / BigInt(10);
+      return {
+        balance,
+        allowance: balance,
+      };
     } else {
       const targetTokenContract = new Erc20Contract(targetToken, provider);
       const balance = await targetTokenContract.balanceOf(relayer);
@@ -44,7 +56,10 @@ export class EthereumContract {
         relayer,
         this.address
       );
-      return balance < allowance ? balance : allowance;
+      return {
+        balance,
+        allowance,
+      };
     }
   }
 
@@ -69,6 +84,7 @@ export class EthereumContract {
   async staticCall(
     method: string,
     args: any,
+    hasReturnValue: boolean = false,
     value: bigint | null = null,
     gasLimit: bigint | null = null,
     from: string | null = null
@@ -84,8 +100,12 @@ export class EthereumContract {
       if (value != null) {
         args = [...args, options];
       }
-      await this.contract[method].staticCall(...args);
-      return null;
+      const result = await this.contract[method].staticCall(...args);
+      if (hasReturnValue) {
+        return result;
+      } else {
+        return null;
+      }
     } catch (error) {
       return error.message;
     }
@@ -128,6 +148,10 @@ export class Erc20Contract extends EthereumContract {
     gas: GasPrice
   ): Promise<TransactionResponse> {
     return this.call("approve", [address, amount], gas, null, null, null);
+  }
+
+  approveRawData(spender: string, amount: bigint): string {
+    return this.interface.encodeFunctionData("approve", [spender, amount]);
   }
 }
 
@@ -185,12 +209,26 @@ export class SafeContract extends EthereumContract {
   async tryExecTransaction(
     to: string,
     data: string,
+    innervalue: bigint,
+    operation: number,
     signatures: string,
     value: bigint | null = null
   ): Promise<string> | null {
     return await this.staticCall(
       "execTransaction",
-      [to, 0, data, 0, 0, 0, 0, zeroAddress, zeroAddress, signatures],
+      [
+        to,
+        innervalue,
+        data,
+        operation,
+        0,
+        0,
+        0,
+        zeroAddress,
+        zeroAddress,
+        signatures,
+      ],
+      false,
       value
     );
   }
@@ -198,6 +236,8 @@ export class SafeContract extends EthereumContract {
   async execTransaction(
     to: string,
     data: string,
+    innervalue: bigint,
+    operation: number,
     signatures: string,
     gas: GasPrice,
     nonce: number | null = null,
@@ -206,7 +246,18 @@ export class SafeContract extends EthereumContract {
   ): Promise<TransactionResponse> {
     return await this.call(
       "execTransaction",
-      [to, 0, data, 0, 0, 0, 0, zeroAddress, zeroAddress, signatures],
+      [
+        to,
+        innervalue,
+        data,
+        operation,
+        0,
+        0,
+        0,
+        zeroAddress,
+        zeroAddress,
+        signatures,
+      ],
       gas,
       value,
       nonce,
@@ -285,6 +336,7 @@ export class LnBridgeContract extends EthereumContract {
       return await this.staticCall(
         "setProviderFee",
         [remoteChainId, sourceToken, targetToken, baseFee, liquidityFeeRate],
+        false,
         null,
         gasLimit
       );
@@ -292,6 +344,7 @@ export class LnBridgeContract extends EthereumContract {
       return await this.staticCall(
         "updateProviderFeeAndMargin",
         [remoteChainId, sourceToken, targetToken, 0, baseFee, liquidityFeeRate],
+        false,
         null,
         gasLimit
       );
@@ -368,6 +421,7 @@ export class LnBridgeContract extends EthereumContract {
         argsV2.remoteChainId,
         argsV2.expectedTransferId,
       ],
+      false,
       value,
       gasLimit
     );
@@ -547,6 +601,7 @@ export class Lnv3BridgeContract extends EthereumContract {
         liquidityFeeRate,
         transferLimit,
       ],
+      false,
       null,
       gasLimit
     );
@@ -563,6 +618,7 @@ export class Lnv3BridgeContract extends EthereumContract {
     return await this.staticCall(
       "requestWithdrawLiquidity",
       [remoteChainId, transferIds, provider, extParams],
+      false,
       value,
       gasLimit
     );
@@ -650,6 +706,7 @@ export class Lnv3BridgeContract extends EthereumContract {
         argsV3.expectedTransferId,
         true,
       ],
+      false,
       value,
       gasLimit
     );
@@ -724,5 +781,56 @@ export class Lnv3BridgeContract extends EthereumContract {
       chainId,
       provider,
     ]);
+  }
+}
+
+export class WETHContract extends EthereumContract {
+  constructor(
+    address: string,
+    signer: Wallet | HDNodeWallet | ethers.Provider
+  ) {
+    super(address, weth, signer);
+  }
+
+  withdrawRawData(amount: bigint): string {
+    return this.interface.encodeFunctionData("withdraw", [amount]);
+  }
+
+  depositRawData(): string {
+    return this.interface.encodeFunctionData("deposit", []);
+  }
+}
+
+export class MulticallContract extends EthereumContract {
+  constructor(
+    address: string,
+    signer: Wallet | HDNodeWallet | ethers.Provider
+  ) {
+    super(address, multicall3, signer);
+  }
+
+  // address == 0: native balance
+  async getBalance(account: string, addresses: string[]): Promise<bigint[]> {
+    let args = [];
+    for (const address of addresses) {
+      if (address === zeroAddress) {
+        args.push([
+          this.address,
+          this.interface.encodeFunctionData("getEthBalance", [account]),
+        ]);
+      } else {
+        args.push([
+          address,
+          this.interface.encodeFunctionData("balanceOf", [account]),
+        ]);
+      }
+    }
+    const response = await this.staticCall("aggregate", [args], true, null);
+    let result: bigint[] = [];
+    const balances = response[1];
+    for (const balance of balances) {
+      result.push(BigInt(balance));
+    }
+    return result;
   }
 }

@@ -15,7 +15,15 @@ import * as fs from "fs";
         {
             name: 'arbitrum',
             rpc: "https://arb1.arbitrum.io/rpc",
-            fixedGasPrice: 10
+            fixedGasPrice: 10,
+            lendMarket: [
+              {
+                protocol: "aave",
+                symbol: "weth",
+                minRepay: 0.01,
+                minReserved: 0
+              }
+            ]
         }
     ],
     bridges: [
@@ -36,11 +44,30 @@ import * as fs from "fs";
 }
 */
 
+export interface LendTokenInfo {
+  symbol: string;
+  minRepay: number;
+  minReserved: number;
+}
+
+export interface CollateralInfo {
+  symbol: string;
+  autosupplyAmount: number;
+}
+
+export interface LendInfo {
+  protocol: string;
+  healthFactorLimit: number;
+  collaterals: CollateralInfo[];
+  tokens: LendTokenInfo[];
+}
+
 export interface RpcNode {
   name: string;
   rpc: string;
   fixedGasPrice: number;
   notSupport1559: boolean;
+  lendMarket: LendInfo[];
 }
 
 export interface TokenInfo {
