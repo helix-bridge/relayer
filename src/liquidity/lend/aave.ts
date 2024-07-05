@@ -110,6 +110,30 @@ export class AddressBookConfigure {
           },
         ],
       },
+      {
+        name: "op",
+        l2Pool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+        oracle: "0xD81eb3728a631871a7eBBaD631b5f424909f0c77",
+        multicall: "0xcA11bde05977b3631167028862bE2a173976CA11",
+        debtTokens: [
+          {
+            symbol: "usdt",
+            aToken: "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
+            vToken: "0xfb00AC187a8Eb5AFAE4eACE434F493Eb62672df7",
+            underlyingToken: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+            decimals: 6,
+            isNativeWrapped: false,
+          },
+          {
+            symbol: "weth",
+            aToken: "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
+            vToken: "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351",
+            underlyingToken: "0x4200000000000000000000000000000000000006",
+            decimals: 18,
+            isNativeWrapped: true,
+          }
+        ],
+      },
     ],
   };
 
