@@ -175,7 +175,7 @@ export class RelayerService implements OnModuleInit {
             case "aave":
               return new Aave(
                 rpcnode.name,
-                this.configureService.config.env === 'test',
+                this.configureService.config.env === "test",
                 market.healthFactorLimit ?? 3.0,
                 market.collaterals,
                 market.tokens,
@@ -661,8 +661,11 @@ export class RelayerService implements OnModuleInit {
               lnProvider.toAddress,
               toChainInfo.provider.provider
             );
-            if (softLimitInfo.allowance < softLimitInfo.balance) {
-              softTransferLimit = softLimitInfo.allowance;
+            if (bridge.safeWalletRole === undefined) {
+              softTransferLimit =
+                softLimitInfo.allowance < softLimitInfo.balance
+                  ? softLimitInfo.allowance
+                  : softLimitInfo.balance;
             } else {
               softTransferLimit = softLimitInfo.balance;
               // from lend market
@@ -683,11 +686,7 @@ export class RelayerService implements OnModuleInit {
                   );
                 }
                 if (avaiable > BigInt(0)) {
-                  const totalAvaiable = softLimitInfo.balance + avaiable;
-                  softTransferLimit =
-                    totalAvaiable > softLimitInfo.allowance
-                      ? softLimitInfo.allowance
-                      : totalAvaiable;
+                  softTransferLimit = softLimitInfo.balance + avaiable;
                   break;
                 }
               }
