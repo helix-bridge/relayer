@@ -1,4 +1,4 @@
-FROM node:14.21.0-alpine as builder
+FROM node:20-alpine as builder
 RUN mkdir -p /opt/build
 WORKDIR /opt/build
 COPY . ./
