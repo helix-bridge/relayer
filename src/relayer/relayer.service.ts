@@ -1015,7 +1015,7 @@ export class RelayerService implements OnModuleInit {
               // relay
               txs.push({
                 to: toBridgeContract.address,
-                value: relayData.value.toString(),
+                value: (relayData.value ?? BigInt(0)).toString(),
                 data: relayData.data,
               });
               break;
@@ -1067,6 +1067,13 @@ export class RelayerService implements OnModuleInit {
             chainInfo.txHashCache = tx.hash;
             this.logger.log(
               `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] success relay message, txhash: ${tx.hash}`
+            );
+            await this.dataworkerService.updateConfirmedBlock(
+              this.configureService.indexer,
+              record.id,
+              record.relayer,
+              `${tx.hash}`,
+              bridge.toWallet
             );
           }
         }
