@@ -156,12 +156,13 @@ export class Aave extends LendMarket {
 
   constructor(
     chainName: string,
+    isTest: boolean,
     healthFactorLimit: number,
     collaterals: CollateralInfo[],
     tokens: LendTokenInfo[],
     signer: Wallet | HDNodeWallet | ethers.Provider
   ) {
-    const addressBook = new AddressBookConfigure().addressBook(true);
+    const addressBook = new AddressBookConfigure().addressBook(isTest);
     const bookInfo = addressBook.chains.find((e) => e.name == chainName);
     if (!bookInfo) {
       throw new Error(`[Lend]Chain ${chainName} Not Support`);

@@ -175,6 +175,7 @@ export class RelayerService implements OnModuleInit {
             case "aave":
               return new Aave(
                 rpcnode.name,
+                this.configureService.config.env === 'test',
                 market.healthFactorLimit ?? 3.0,
                 market.collaterals,
                 market.tokens,
