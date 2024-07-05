@@ -988,7 +988,7 @@ export class RelayerService implements OnModuleInit {
           }
           txs.push({
             to: toBridgeContract.address,
-            value: relayData.value.toString(),
+            value: (relayData.value ?? BigInt(0)).toString(),
             data: relayData.data,
           });
         } else {
