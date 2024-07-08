@@ -4,9 +4,9 @@ import {
   MetaTransactionData,
 } from "@safe-global/safe-core-sdk-types";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
-import SafeApiKit from "@safe-global/api-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { ceramicApiKit } from "./ceramicApiKit";
+
 
 export interface TransactionPropose {
   to: string;
@@ -16,22 +16,22 @@ export interface TransactionPropose {
   signatures: string | null;
 }
 
-export class SafeWallet {
+export class SafeWalletWithCeramic {
   public address: string;
-  public apiService: string;
   public signer: Wallet | HDNodeWallet;
   private safeSdk: Safe;
-  private safeService: SafeApiKit;
   private ceramicService: ceramicApiKit;
 
   constructor(
     address: string,
-    apiService: string,
     signer: Wallet | HDNodeWallet,
+    ceramicService: ceramicApiKit | undefined,
   ) {
     this.address = address;
     this.signer = signer;
-    this.apiService = apiService;
+    if (ceramicService) {
+      this.ceramicService = ceramicService;
+    }
   }
 
   async connect(chainId: bigint) {
@@ -43,10 +43,6 @@ export class SafeWallet {
     this.safeSdk = await Safe.create({
       ethAdapter: ethAdapter,
       safeAddress: this.address,
-    });
-    this.safeService = new SafeApiKit({
-      txServiceUrl: this.apiService,
-      chainId,
     });
   }
 
@@ -100,15 +96,10 @@ export class SafeWallet {
         data,
       },
     ];
-    const tx = await this.safeSdk.createTransaction( { transactions });
+    const tx = await this.safeSdk.createTransaction({ transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
-      let transaction: SafeMultisigTransactionResponse;
-      if (this.ceramicService) {
-        transaction = await this.ceramicService.getTransaction(safeTxHash);
-      } else {
-        transaction = await this.safeService.getTransaction(safeTxHash);
-      }
+      const transaction = await this.ceramicService.getTransaction(safeTxHash);
       var signatures = this.concatSignatures(transaction);
       const hasBeenSigned = this.isTransactionSignedByAddress(transaction);
       if (hasBeenSigned || signatures !== null) {
@@ -135,11 +126,8 @@ export class SafeWallet {
       senderAddress: this.signer.address,
       senderSignature: senderSignature.data,
     };
-    if(this.ceramicService) {
-      await this.ceramicService.proposeTransaction(proposeTransactionProps);
-    }else{
-      await this.safeService.proposeTransaction(proposeTransactionProps);
-    }
+    await this.ceramicService.proposeTransaction(proposeTransactionProps);
+
     return {
       readyExecute: false,
       safeTxHash: safeTxHash,

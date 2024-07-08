@@ -25,6 +25,7 @@ import { ethers } from "ethers";
 import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
 import {ceramicApiKit} from "../base/ceramicApiKit";
+import { SafeWalletWithCeramic } from "../base/safeWalletWithCeramic";
 
 export class ChainInfo {
   chainName: string;
@@ -40,7 +41,7 @@ export class ChainInfo {
 export class BridgeConnectInfo {
   chainInfo: ChainInfo;
   bridge: LnBridgeContract | Lnv3BridgeContract;
-  safeWallet: SafeWallet;
+  safeWallet: SafeWallet | SafeWalletWithCeramic;
 }
 
 export class LnProviderInfo {
@@ -128,7 +129,9 @@ export class RelayerService implements OnModuleInit {
                 return;
               }
             } catch (err) {
-              this.logger.warn(`relay bridge failed, err: ${err}`);
+              this.logger.warn(`relay bridge failed, err: ${err}, ${err.filename}, ${err.line}`);
+              // output error file and line
+              console.error(err);
             }
           }
           timer.isProcessing = false;
@@ -205,18 +208,21 @@ export class RelayerService implements OnModuleInit {
                 toWallet.wallet,
                 config.bridgeType
               );
-        var toSafeWallet: SafeWallet;
+        var toSafeWallet: SafeWallet | SafeWalletWithCeramic;
         if (config.safeWalletRole !== undefined) {
-          let ceramicService;
-          if(config.safeWalletMessengerType === "CeramicCompposedb") {
-            ceramicService = new ceramicApiKit(privateKey);
-          }
-          toSafeWallet = new SafeWallet(
-            config.safeWalletAddress,
-            config.safeWalletUrl,
-            toWallet.wallet,
-            ceramicService
-          );
+          // if (config.safeWalletMessengerType === "CeramicCompposedb") {
+          //   toSafeWallet = new SafeWalletWithCeramic(
+          //     config.safeWalletAddress,
+          //     toWallet.wallet,
+          //     new ceramicApiKit(privateKey)
+          //   );
+          // } else {
+            toSafeWallet = new SafeWallet(
+              config.safeWalletAddress,
+              config.safeWalletUrl,
+              toWallet.wallet
+            );
+          // }
         }
         //toSafeWallet.connect();
         let toConnectInfo = {
@@ -754,6 +760,7 @@ export class RelayerService implements OnModuleInit {
         continue;
       }
 
+      console.log(22222);
       if (validInfo.feeUsed > new Ether(bridge.feeLimit).Number) {
         this.logger.log(
           `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
@@ -806,6 +813,7 @@ export class RelayerService implements OnModuleInit {
           isExecutor,
           BigInt(toChainInfo.chainId)
         );
+        console.log(txInfo)
         if (txInfo !== null && txInfo.readyExecute && isExecutor) {
           const safeContract = new SafeContract(
             bridge.toBridge.safeWallet.address,

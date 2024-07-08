@@ -377,7 +377,9 @@ export class DataworkerService implements OnModuleInit {
     }
     // 2. tx is not relayed
     const transferId = this.getTransferId(record.id);
+    console.log(transferId)
     const transferFilled = await toBridge.transferHasFilled(transferId);
+    console.log(222)
     if (transferFilled) {
       this.logger.log(
         `[${record.fromChain}>>${record.toChain}]tx has been relayed, waiting for sync, id ${transferId}, txHash ${record.requestTxHash}`
