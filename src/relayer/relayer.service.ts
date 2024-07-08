@@ -28,6 +28,8 @@ import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
 import { Aave } from "../liquidity/lend/aave";
 import { LendMarket } from "../liquidity/lend/market";
+import { CeramicSafeWallet } from "../base/ceramicSafeWallet";
+import { ceramicApiKit } from "../base/ceramicApiKit";
 
 export class ChainInfo {
   chainName: string;
@@ -44,7 +46,7 @@ export class ChainInfo {
 export class BridgeConnectInfo {
   chainInfo: ChainInfo;
   bridge: LnBridgeContract | Lnv3BridgeContract;
-  safeWallet: SafeWallet;
+  safeWallet: SafeWallet | CeramicSafeWallet;
 }
 
 export class LnProviderInfo {
@@ -240,13 +242,21 @@ export class RelayerService implements OnModuleInit {
                 toWallet.wallet,
                 config.bridgeType
               );
-        var toSafeWallet: SafeWallet;
+        var toSafeWallet: SafeWallet | CeramicSafeWallet;
         if (config.safeWalletRole !== undefined) {
+          if (config.safeWalletType === "Ceramic") {
+            toSafeWallet = new CeramicSafeWallet(
+              config.safeWalletAddress,
+              toWallet.wallet,
+              new ceramicApiKit(privateKey)
+            );
+          } else {
           toSafeWallet = new SafeWallet(
             config.safeWalletAddress,
             config.safeWalletUrl,
             toWallet.wallet
           );
+          }
         }
         //toSafeWallet.connect();
         let toConnectInfo = {

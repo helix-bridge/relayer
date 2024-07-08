@@ -26,6 +26,8 @@
   },
   "bin": "dist/main.js",
   "dependencies": {
+    "@composedb/client": "^0.7.1",
+    "@composedb/types": "^0.7.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
@@ -35,11 +37,15 @@
     "@safe-global/protocol-kit": "^2.0.0",
     "@safe-global/safe-core-sdk-types": "^5.0.2",
     "axios": "^1.2.3",
+    "dids": "^5.0.2",
     "ethers": "^6.7.0",
+    "key-did-provider-ed25519": "^4.0.2",
+    "key-did-resolver": "^4.0.0",
     "level-ts": "^2.1.0",
     "readline-sync": "^1.4.10",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.2.0"
+    "rxjs": "^7.2.0",
+    "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",

@@ -134,7 +134,7 @@ export class DataworkerService implements OnModuleInit {
       })
       .then((res) => res.data.data.firstHistoryRecord);
 
-    const lastTransferId =
+    const lastTransferId:string  =
       lastRecord === null ? zeroTransferId : last(lastRecord.id.split("-"));
     return {
       lastTransferId: lastTransferId,
