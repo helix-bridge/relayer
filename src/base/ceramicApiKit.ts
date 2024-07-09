@@ -62,7 +62,7 @@ export class ceramicApiKit {
                              senderAddress,
                              senderSignature,
                              origin
-                           }: ProposeTransactionProps): Promise<void> {
+                           }: ProposeTransactionProps, threshold:number): Promise<void> {
     //TODO： validation for availability, if there's already a transaction with the same safeTxHash, throw error
     if (!this.composeClient) {
       await this.connect();
@@ -120,7 +120,7 @@ console.log(`safeTransactionData.data`, safeTransactionData.data)
                       refundReceiver: " "
                       submissionDate: "${(new Date()).toISOString()}"
                       transactionHash: "${safeTxHash}"
-                      confirmationsRequired: 1
+                      confirmationsRequired: ${threshold}
                   }
                   clientMutationId: "${(new Date()).toISOString()}"
               }
