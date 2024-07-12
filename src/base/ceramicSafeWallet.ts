@@ -87,7 +87,6 @@ export class CeramicSafeWallet {
   ): Promise<TransactionPropose | null> {
     this.safeSdk ?? (await this.connect(chainId));
     const tx = await this.safeSdk.createTransaction({ transactions });
-    console.log(`wallet tx:`, tx);
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
       const transaction = await this.ceramicService.getTransaction(safeTxHash);
