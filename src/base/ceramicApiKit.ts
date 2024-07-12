@@ -4,7 +4,8 @@ import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/saf
 import { definition } from "./ceramicModels";
 import { RuntimeCompositeDefinition } from "@composedb/types";
 
-export async function getComposeClient() {  const module = await (eval(`import('@composedb/client')`) as Promise<typeof import('@composedb/client')>);
+export async function getComposeClient() {
+  const module = await (eval(`import('@composedb/client')`) as Promise<typeof import('@composedb/client')>);
   return module.ComposeClient;
 }
 
@@ -32,15 +33,17 @@ export async function getFromString() {
 export class ceramicApiKit {
   private composeClient: ComposeClient;
   private privateKey: string;
+  private ceramicUrl: string;
 
-  constructor(privateKey: string) {
+  constructor(privateKey: string, ceramicUrl: string) {
     this.privateKey = privateKey;
+    this.ceramicUrl = ceramicUrl;
   }
 
   async connect() {
     const ComposeClient = await getComposeClient();
     const composeClient = new ComposeClient({
-      ceramic: "http://localhost:7007",//TODO: maybe use .env file to manage host URL
+      ceramic: this.ceramicUrl,
       definition: definition as RuntimeCompositeDefinition,
     });
     const fromString = await getFromString();
@@ -62,7 +65,7 @@ export class ceramicApiKit {
                              senderAddress,
                              senderSignature,
                              origin
-                           }: ProposeTransactionProps, threshold:number): Promise<void> {
+                           }: ProposeTransactionProps, threshold: number): Promise<void> {
     //TODO： validation for availability, if there's already a transaction with the same safeTxHash, throw error
     if (!this.composeClient) {
       await this.connect();
@@ -87,7 +90,7 @@ export class ceramicApiKit {
             }
         `);
 
-console.log(`safeTransactionData.data`, safeTransactionData.data)
+    console.log(`safeTransactionData.data`, safeTransactionData.data)
     const transaction = await this.composeClient.executeQuery(`mutation CreateTransaction {
           createTransaction(
               input: {

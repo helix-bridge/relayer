@@ -248,7 +248,7 @@ export class RelayerService implements OnModuleInit {
             toSafeWallet = new CeramicSafeWallet(
               config.safeWalletAddress,
               toWallet.wallet,
-              new ceramicApiKit(privateKey)
+              new ceramicApiKit(privateKey, config.safeWalletCeramicUrl)
             );
           } else {
           toSafeWallet = new SafeWallet(
