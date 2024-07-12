@@ -41,21 +41,26 @@ export class ceramicApiKit {
   }
 
   async connect() {
-    const ComposeClient = await getComposeClient();
-    const composeClient = new ComposeClient({
-      ceramic: this.ceramicUrl,
-      definition: definition as RuntimeCompositeDefinition,
-    });
-    const fromString = await getFromString();
-    const seedArray = fromString(this.privateKey, "base16");
-    const Ed25519Provider = await getEd25519Provider();
-    const provider = new Ed25519Provider(new Uint8Array(seedArray));
-    const DID = await getDID();
-    const getResolver = await getGetResolver();
-    const did = new DID({ provider, resolver: getResolver() });
-    await did.authenticate();
-    composeClient.setDID(did);
-    this.composeClient = composeClient;
+    try {
+      const ComposeClient = await getComposeClient();
+      const composeClient = new ComposeClient({
+        ceramic: this.ceramicUrl,
+        definition: definition as RuntimeCompositeDefinition,
+      });
+      const fromString = await getFromString();
+      const seedArray = fromString(this.privateKey, "base16");
+      const Ed25519Provider = await getEd25519Provider();
+      const provider = new Ed25519Provider(new Uint8Array(seedArray));
+      const DID = await getDID();
+      const getResolver = await getGetResolver();
+      const did = new DID({ provider, resolver: getResolver() });
+      await did.authenticate();
+      composeClient.setDID(did);
+      this.composeClient = composeClient;
+    } catch (error) {
+      console.error('Error on connecting to Ceramic:', error);
+      throw error;
+    }
   }
 
   async proposeTransaction({
@@ -66,7 +71,6 @@ export class ceramicApiKit {
                              senderSignature,
                              origin
                            }: ProposeTransactionProps, threshold: number): Promise<void> {
-    //TODO： validation for availability, if there's already a transaction with the same safeTxHash, throw error
     if (!this.composeClient) {
       await this.connect();
     }
