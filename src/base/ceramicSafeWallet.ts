@@ -64,8 +64,8 @@ export class CeramicSafeWallet {
         left: SafeMultisigConfirmationResponse,
         right: SafeMultisigConfirmationResponse
       ) => {
-        const leftAddress = left.owner.toUpperCase();
-        const rightAddress = right.owner.toUpperCase();
+        const leftAddress = left.owner.toLowerCase();
+        const rightAddress = right.owner.toLowerCase();
         if (leftAddress < rightAddress) {
           return -1;
         } else {
