@@ -90,7 +90,6 @@ export class ceramicApiKit {
             }
         `);
 
-    console.log(`safeTransactionData.data`, safeTransactionData.data)
     const transaction = await this.composeClient.executeQuery(`mutation CreateTransaction {
           createTransaction(
               input: {
@@ -133,14 +132,11 @@ export class ceramicApiKit {
       }
     `);
 
-    // console.log(`sending confirmation:`, confirmation);
-    // console.log(`sending transaction:`, transaction);
 
     return Promise.resolve();
   }
 
   async getTransaction(safeTxHash: string): Promise<SafeMultisigTransactionResponse> {
-    // console.log(`fetching by safeTxHash:`, safeTxHash);
 
     try {
       if (!this.composeClient) {
@@ -219,7 +215,7 @@ export class ceramicApiKit {
         confirmations
       } as SafeMultisigTransactionResponse;
     } catch (error) {
-      console.error('Error fetching transaction:', error);
+      // console.error('Error fetching transaction:', error);
     }
   }
 }
