@@ -88,7 +88,6 @@ export interface BridgeInfo {
   safeWalletUrl: string | undefined;
   safeWalletRole: string | undefined;
   safeWalletType: "Gnosis" | "Ceramic" | undefined;
-  safeWalletCeramicUrl: string | undefined;
   minProfit: number;
   maxProfit: number;
   tokens: TokenInfo[];
