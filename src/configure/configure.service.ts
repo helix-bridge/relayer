@@ -105,7 +105,7 @@ export interface ConfigInfo {
 export class ConfigureService {
   private readonly configPath: string;
   public readonly storePath: string;
-  config: ConfigInfo;
+  public config: ConfigInfo;
   public baseConfig: BaseConfigure;
 
   constructor(
@@ -113,14 +113,9 @@ export class ConfigureService {
     private baseService: BaseConfigService
   ) {
     this.configPath = this.configService.get<string>("LP_BRIDGE_PATH");
-    this.config = JSON.parse(
-      fs.readFileSync(this.configPath, "utf8")
-    )
+    this.config = JSON.parse(fs.readFileSync(this.configPath, "utf8"));
     this.storePath = this.configService.get<string>("LP_BRIDGE_STORE_PATH");
-    this.baseConfig = this.baseService.baseConfigure(
-      this.config.env === "test"
-    );
-
+    this.baseConfig = this.baseService.baseConfigure(this.config.env === "test");
   }
 
   public getChainInfo(name: string): Chain | null {
