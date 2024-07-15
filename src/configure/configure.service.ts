@@ -104,22 +104,24 @@ export interface ConfigInfo {
 
 @Injectable()
 export class ConfigureService {
-  private readonly configPath =
-    this.configService.get<string>("LP_BRIDGE_PATH");
-  public readonly storePath = this.configService.get<string>(
-    "LP_BRIDGE_STORE_PATH"
-  );
-  public config: ConfigInfo = JSON.parse(
-    fs.readFileSync(this.configPath, "utf8")
-  );
+  private readonly configPath: string;
+  public readonly storePath: string;
+  config: ConfigInfo;
   public baseConfig: BaseConfigure;
+
   constructor(
     private configService: ConfigService,
     private baseService: BaseConfigService
   ) {
+    this.configPath = this.configService.get<string>("LP_BRIDGE_PATH");
+    this.config = JSON.parse(
+      fs.readFileSync(this.configPath, "utf8")
+    )
+    this.storePath = this.configService.get<string>("LP_BRIDGE_STORE_PATH");
     this.baseConfig = this.baseService.baseConfigure(
       this.config.env === "test"
     );
+
   }
 
   public getChainInfo(name: string): Chain | null {
