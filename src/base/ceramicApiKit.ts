@@ -1,37 +1,9 @@
-import { ComposeClient } from "@composedb/client";
 import { SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
 import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/safeTransactionServiceTypes";
 import { definition } from "./ceramicModels";
-import { RuntimeCompositeDefinition } from "@composedb/types";
-
-export async function getComposeClient() {
-  const module = await (eval(`import('@composedb/client')`) as Promise<typeof import('@composedb/client')>);
-  return module.ComposeClient;
-}
-
-export async function getEd25519Provider() {
-  const module = await (eval(`import('key-did-provider-ed25519')`) as Promise<typeof import('key-did-provider-ed25519')>);
-  return module.Ed25519Provider;
-}
-
-export async function getDID() {
-  const module = await (eval(`import('dids')`) as Promise<typeof import('dids')>);
-  return module.DID;
-}
-
-export async function getGetResolver() {
-  const module = await (eval(`import('key-did-resolver')`) as Promise<typeof import('key-did-resolver')>);
-  return module.getResolver;
-}
-
-export async function getFromString() {
-  const module = await (eval(`import('uint8arrays/from-string')`) as Promise<typeof import('uint8arrays/from-string')>);
-  return module.fromString;
-}
-
 
 export class ceramicApiKit {
-  private composeClient: ComposeClient;
+  private composeClient: any;
   private privateKey: string;
   private ceramicUrl: string;
 
@@ -42,17 +14,19 @@ export class ceramicApiKit {
 
   async connect() {
     try {
-      const ComposeClient = await getComposeClient();
+      const { ComposeClient } = await import('@composedb/client');
       const composeClient = new ComposeClient({
         ceramic: this.ceramicUrl,
-        definition: definition as RuntimeCompositeDefinition,
+        //cannot import type from ESM only module in nest.js
+        // @ts-ignore
+        definition: definition,
       });
-      const fromString = await getFromString();
+      const { fromString } = await import('uint8arrays/from-string');
       const seedArray = fromString(this.privateKey, "base16");
-      const Ed25519Provider = await getEd25519Provider();
+      const { Ed25519Provider } = await import('key-did-provider-ed25519');
       const provider = new Ed25519Provider(new Uint8Array(seedArray));
-      const DID = await getDID();
-      const getResolver = await getGetResolver();
+      const { DID } = await import('dids');
+      const { getResolver } = await import('key-did-resolver');
       const did = new DID({ provider, resolver: getResolver() });
       await did.authenticate();
       composeClient.setDID(did);
