@@ -1,6 +1,7 @@
 import { SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
 import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/safeTransactionServiceTypes";
 import { definition } from "./ceramicModels";
+import { ethers } from "ethers";
 
 interface ConfirmationNode {
   owner: string;
@@ -17,7 +18,7 @@ interface ConfirmationEdge {
 }
 
 interface ConfirmationIndexData {
-  data:{
+  data: {
     confirmationIndex: {
       edges: ConfirmationEdge[];
     };
@@ -66,7 +67,7 @@ export class ceramicApiKit {
                              senderAddress,
                              senderSignature,
                              origin
-                           }: ProposeTransactionProps, threshold: number): Promise<void> {
+                           }: ProposeTransactionProps, threshold: number, nonce: number): Promise<void> {
     if (!this.composeClient) {
       await this.connect();
     }
@@ -97,7 +98,7 @@ export class ceramicApiKit {
                       to: "${safeTransactionData.to}"
                       data: "${safeTransactionData.data}"
                       safe: "${safeAddress}"
-                      nonce: 1
+                      nonce: ${nonce}
                       value: "${safeTransactionData.value}"
                       proposer: "${senderAddress}"
                       operation: 0
@@ -173,7 +174,18 @@ export class ceramicApiKit {
                 }
             }
         `) as ConfirmationIndexData;
-      const confirmations = confirmationsIndex.data.confirmationIndex.edges.map((edge) => edge.node);
+      const confirmations = confirmationsIndex.data.confirmationIndex.edges.map((edge) => edge.node).filter((confirmation) => {
+        const { signature } = confirmation;
+        const r = signature.slice(0, 66);
+        const s = `0x${signature.slice(66, 130)}`;
+        let v = parseInt(signature.slice(130, 132), 16);
+        if (v !== 27 && v !== 28) {
+          v = 27;
+        }
+        // normalize signature
+        const normalizedSignature = r + s.slice(2) + (v).toString(16).padStart(2, '0');
+        return ethers.verifyMessage(ethers.getBytes(safeTxHash), normalizedSignature).toLowerCase() === confirmation.owner.toLowerCase();
+      })
       return {
         ...transactionIndex.data.transactionIndex.edges[0].node,
         confirmations

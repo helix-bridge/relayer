@@ -119,7 +119,8 @@ export class CeramicSafeWallet {
       senderSignature: senderSignature.data,
     };
     const threshold = await this.safeSdk.getThreshold();
-    await this.ceramicService.proposeTransaction(proposeTransactionProps, threshold);
+    const nonce = await this.safeSdk.getNonce();
+    await this.ceramicService.proposeTransaction(proposeTransactionProps, threshold, nonce);
     return {
       readyExecute: false,
       safeTxHash: safeTxHash,
