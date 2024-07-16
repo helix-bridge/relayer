@@ -1,11 +1,8 @@
-import {
-  SafeMultisigTransactionResponse,
-  SafeMultisigConfirmationResponse,
-  MetaTransactionData,
-} from "@safe-global/safe-core-sdk-types";
+import { MetaTransactionData } from "@safe-global/safe-core-sdk-types";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { ceramicApiKit } from "./ceramicApiKit";
+import { concatSignatures, isTransactionSignedByAddress } from "./wallet";
 
 export interface TransactionPropose {
   to: string;
@@ -45,41 +42,6 @@ export class CeramicSafeWallet {
     });
   }
 
-  private isTransactionSignedByAddress(
-    tx: SafeMultisigTransactionResponse
-  ): boolean {
-    const confirmation = tx.confirmations.find(
-      (confirmation) => confirmation.owner === this.signer.address
-    );
-    return !!confirmation;
-  }
-
-  private concatSignatures(tx: SafeMultisigTransactionResponse): string | null {
-    if (tx.confirmations.length < tx.confirmationsRequired) {
-      return null;
-    }
-    // must sort by address
-    tx.confirmations.sort(
-      (
-        left: SafeMultisigConfirmationResponse,
-        right: SafeMultisigConfirmationResponse
-      ) => {
-        const leftAddress = left.owner.toLowerCase();
-        const rightAddress = right.owner.toLowerCase();
-        if (leftAddress < rightAddress) {
-          return -1;
-        } else {
-          return 1;
-        }
-      }
-    );
-    var signatures = "0x";
-    for (const confirmation of tx.confirmations) {
-      signatures += confirmation.signature.substring(2);
-    }
-    return signatures;
-  }
-
   async proposeTransaction(
     transactions: MetaTransactionData[],
     isProposor: boolean,
@@ -90,8 +52,8 @@ export class CeramicSafeWallet {
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
       const transaction = await this.ceramicService.getTransaction(safeTxHash);
-      var signatures = this.concatSignatures(transaction);
-      const hasBeenSigned = this.isTransactionSignedByAddress(transaction);
+      var signatures = concatSignatures(transaction);
+      const hasBeenSigned = isTransactionSignedByAddress(transaction);
       if (hasBeenSigned || signatures !== null) {
         //const isValidTx = await this.safeSdk.isValidTransaction(transaction);
         return {
@@ -110,7 +72,13 @@ export class CeramicSafeWallet {
         return null;
       }
     }
-    const senderSignature = await this.safeSdk.signTransactionHash(safeTxHash);
+
+    const [senderSignature, threshold, nonce] = await Promise.all([
+      this.safeSdk.signTransactionHash(safeTxHash),
+      this.safeSdk.getThreshold(),
+      this.safeSdk.getNonce(),
+    ]);
+
     const proposeTransactionProps = {
       safeAddress: this.address,
       safeTransactionData: tx.data,
@@ -118,9 +86,9 @@ export class CeramicSafeWallet {
       senderAddress: this.signer.address,
       senderSignature: senderSignature.data,
     };
-    const threshold = await this.safeSdk.getThreshold();
-    const nonce = await this.safeSdk.getNonce();
+
     await this.ceramicService.proposeTransaction(proposeTransactionProps, threshold, nonce);
+
     return {
       readyExecute: false,
       safeTxHash: safeTxHash,
