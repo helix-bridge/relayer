@@ -3,13 +3,13 @@ export const definition = {
     "Confirmation": {
       "interface": false,
       "implements": [],
-      "id": "kjzl6hvfrbw6c9dz6u3ycfrkes43ibb9ujxbe1ershkafssuwd3pw0dmliai76r",
+      "id": "kjzl6hvfrbw6cbd87wdwscxbajupc2ul3yee40mhnip6izbxskdqh7znvt2bcya",
       "accountRelation": { "type": "list" }
     },
     "Transaction": {
       "interface": false,
       "implements": [],
-      "id": "kjzl6hvfrbw6ca4lzh797fc94s8xv0lp3huv2tu9qmjgi19a50r0xwa2vfunr3n",
+      "id": "kjzl6hvfrbw6caqxlpaxusea8rpej37yk2hz18rcf06s8eta2m27jotvhca80x3",
       "accountRelation": { "type": "list" }
     }
   },

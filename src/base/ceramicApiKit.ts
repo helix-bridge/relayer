@@ -2,6 +2,28 @@ import { SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-type
 import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/safeTransactionServiceTypes";
 import { definition } from "./ceramicModels";
 
+interface ConfirmationNode {
+  owner: string;
+  id: string;
+  signature: string;
+  signatureType: string;
+  submissionDate: string;
+  transactionHash: string;
+  confirmationType: string;
+}
+
+interface ConfirmationEdge {
+  node: ConfirmationNode;
+}
+
+interface ConfirmationIndexData {
+  data:{
+    confirmationIndex: {
+      edges: ConfirmationEdge[];
+    };
+  }
+}
+
 export class ceramicApiKit {
   private composeClient: any;
   private privateKey: string;
@@ -60,7 +82,7 @@ export class ceramicApiKit {
                             transactionHash: "${safeTxHash}"
                             confirmationType: "approve"
                         }
-                        clientMutationId: "${(new Date()).toISOString()}"
+                        clientMutationId: null
                     }
                 ) {
                     clientMutationId
@@ -73,36 +95,19 @@ export class ceramicApiKit {
               input: {
                   content: {
                       to: "${safeTransactionData.to}"
-                      fee: " "
                       data: "${safeTransactionData.data}"
                       safe: "${safeAddress}"
                       nonce: 1
                       value: "${safeTransactionData.value}"
-                      origin: "${origin}"
-                      baseGas: 1
-                      gasUsed: 1
-                      trusted: true
-                      executor: " "
-                      gasPrice: " "
-                      gasToken: " "
-                      modified: " "
                       proposer: "${senderAddress}"
                       operation: 0
-                      safeTxGas: 1
-                      isExecuted: false
                       safeTxHash: "${safeTxHash}"
                       signatures: "${senderSignature}"
-                      blockNumber: 1
-                      dataDecoded: " "
-                      ethGasPrice: " "
-                      isSuccessful: false
-                      executionDate: "0000-00-00T00:00:0.000Z"
-                      refundReceiver: " "
                       submissionDate: "${(new Date()).toISOString()}"
                       transactionHash: "${safeTxHash}"
                       confirmationsRequired: ${threshold}
                   }
-                  clientMutationId: "${(new Date()).toISOString()}"
+                  clientMutationId: null
               }
           ) {
               clientMutationId
@@ -131,31 +136,14 @@ export class ceramicApiKit {
                       node {
                           id
                           to
-                          fee
                           data
                           safe
                           nonce
                           value
-                          origin
-                          baseGas
-                          gasUsed
-                          trusted
-                          executor
-                          gasPrice
-                          gasToken
-                          modified
                           proposer
                           operation
-                          safeTxGas
-                          isExecuted
                           safeTxHash
                           signatures
-                          blockNumber
-                          dataDecoded
-                          ethGasPrice
-                          isSuccessful
-                          executionDate
-                          refundReceiver
                           submissionDate
                           transactionHash
                           confirmationsRequired
@@ -165,7 +153,7 @@ export class ceramicApiKit {
           }
         `);
 
-      const confirmationsIndex = await this.composeClient.executeQuery(`
+      const confirmationsIndex: ConfirmationIndexData = await this.composeClient.executeQuery(`
             query ConfirmationIndex {
                 confirmationIndex(
                     first: 10
@@ -184,11 +172,9 @@ export class ceramicApiKit {
                     }
                 }
             }
-        `);
-      // @ts-ignore
+        `) as ConfirmationIndexData;
       const confirmations = confirmationsIndex.data.confirmationIndex.edges.map((edge) => edge.node);
       return {
-        // @ts-ignore
         ...transactionIndex.data.transactionIndex.edges[0].node,
         confirmations
       } as SafeMultisigTransactionResponse;
