@@ -51,9 +51,17 @@ export class CeramicSafeWallet {
     const nonce = await this.safeSdk.getNonce();
     const tx = await this.safeSdk.createTransaction({ transactions, options: { nonce } });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
+    const owners = await this.safeSdk.getOwners();
+    const uniqueOwners = new Set();
     try {
       const transaction = await this.ceramicService.getTransaction(safeTxHash);
-      var signatures = concatSignatures(transaction);
+      const filteredConfirmations = transaction.confirmations.filter(confirmation => {
+        if (!owners.includes(confirmation.owner)) return false;
+        if (uniqueOwners.has(confirmation.owner)) return false;
+        uniqueOwners.add(confirmation.owner);
+        return true;
+      });
+      var signatures = concatSignatures({ ...transaction, confirmations: filteredConfirmations });
       const hasBeenSigned = isTransactionSignedByAddress(transaction);
       if (hasBeenSigned || signatures !== null) {
         //const isValidTx = await this.safeSdk.isValidTransaction(transaction);
