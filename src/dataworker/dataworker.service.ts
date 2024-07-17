@@ -341,6 +341,8 @@ export class DataworkerService implements OnModuleInit {
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
     reorgThreshold: number,
+    microReorgThreshold: number,
+    microThreshold: bigint,
     notSupport1559: boolean,
     wallet
   ): Promise<ValidInfo> {
@@ -348,7 +350,15 @@ export class DataworkerService implements OnModuleInit {
     const transactionInfo = await fromProvider.checkPendingTransaction(
       record.requestTxHash
     );
-    if (!transactionInfo || transactionInfo.confirmedBlock < reorgThreshold) {
+    const satisfyMicroThreshold =
+      microReorgThreshold <= transactionInfo.confirmedBlock &&
+      BigInt(record.sendAmount) < microThreshold;
+    const satisfyLargeThreshold =
+      reorgThreshold < transactionInfo.confirmedBlock;
+    if (
+      !transactionInfo ||
+      (!satisfyMicroThreshold && !satisfyLargeThreshold)
+    ) {
       const confirmedBlock = transactionInfo
         ? transactionInfo.confirmedBlock
         : 0;
@@ -403,7 +413,10 @@ export class DataworkerService implements OnModuleInit {
     // 4. get current fee
     let gasPrice = await toProvider.feeData(1, notSupport1559);
     let feeUsed = this.relayFee(gasPrice);
-    this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
+    let microHint = satisfyMicroThreshold
+      ? `isMicro, send: ${record.sendAmount}, threshold: ${microThreshold}`
+      : "notMicro";
+    this.logger.log(`fee check passed, feeUsed ${feeUsed}, ${microHint}`);
     return {
       gasPrice,
       feeUsed,

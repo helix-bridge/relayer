@@ -50,6 +50,7 @@ export class BridgeConnectInfo {
 export class LnProviderInfo {
   relayer: string;
   swapRate: number;
+  microThreshold: number;
   fromAddress: string;
   toAddress: string;
   fromToken: Erc20Contract;
@@ -67,6 +68,7 @@ export class LnBridge {
   maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
+  microReorgThreshold: number;
   bridgeType: string;
   lnProviders: LnProviderInfo[];
   heartBeatTime: number;
@@ -319,6 +321,7 @@ export class RelayerService implements OnModuleInit {
               ),
               relayer: toSafeWallet?.address ?? toWallet.address,
               swapRate: token.swapRate,
+              microThreshold: token.microThreshold ?? 0,
               withdrawLiquidityAmountThreshold:
                 token.withdrawLiquidityAmountThreshold,
               withdrawLiquidityCountThreshold:
@@ -334,6 +337,8 @@ export class RelayerService implements OnModuleInit {
           maxProfit: config.maxProfit,
           feeLimit: config.feeLimit,
           reorgThreshold: config.reorgThreshold,
+          microReorgThreshold:
+            config.microReorgThreshold ?? config.reorgThreshold,
           bridgeType: config.bridgeType,
           fromBridge: fromConnectInfo,
           toBridge: toConnectInfo,
@@ -734,6 +739,10 @@ export class RelayerService implements OnModuleInit {
     let nativeFeeUsed = BigInt(0);
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
+      let srcDecimals = 18;
+      if (lnProvider.fromAddress !== zeroAddress) {
+        srcDecimals = await lnProvider.fromToken.decimals();
+      }
       if (lnProvider.useDynamicBaseFee && needUpdateDynamicFee) {
         if (nativeFeeUsed <= 0) {
           let gasPrice = await toChainInfo.provider.feeData(
@@ -744,10 +753,6 @@ export class RelayerService implements OnModuleInit {
         }
         const dynamicBaseFee = nativeFeeUsed * BigInt(lnProvider.swapRate);
 
-        let srcDecimals = 18;
-        if (lnProvider.fromAddress !== zeroAddress) {
-          srcDecimals = await lnProvider.fromToken.decimals();
-        }
         // native fee decimals = 10**18
         function nativeFeeToToken(fee: bigint): bigint {
           return (
@@ -789,10 +794,6 @@ export class RelayerService implements OnModuleInit {
       }
       if (bridge.bridgeType === "lnv3" && needWithdrawLiqudity) {
         try {
-          let srcDecimals = 18;
-          if (lnProvider.fromAddress !== zeroAddress) {
-            srcDecimals = await lnProvider.fromToken.decimals();
-          }
           const needWithdrawRecords =
             await this.dataworkerService.queryLiquidity(
               this.configureService.indexer,
@@ -906,6 +907,8 @@ export class RelayerService implements OnModuleInit {
         fromChainInfo.provider,
         toChainInfo.provider,
         bridge.reorgThreshold,
+        bridge.microReorgThreshold,
+        new Any(lnProvider.microThreshold, srcDecimals).Number,
         toChainInfo.notSupport1559,
         bridge.toWallet
       );
