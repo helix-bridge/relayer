@@ -72,6 +72,7 @@ export interface RpcNode {
 
 export interface TokenInfo {
   symbol: string;
+  microThreshold: number | undefined;
   swapRate: number;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
@@ -84,6 +85,7 @@ export interface BridgeInfo {
   feeLimit: number;
   bridgeType: string;
   reorgThreshold: number;
+  microReorgThreshold: number | undefined;
   safeWalletAddress: string | undefined;
   safeWalletUrl: string | undefined;
   safeWalletRole: string | undefined;
