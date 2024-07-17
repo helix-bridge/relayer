@@ -67,7 +67,7 @@ export class ceramicApiKit {
                              senderAddress,
                              senderSignature,
                              origin
-                           }: ProposeTransactionProps, threshold: number, nonce: number): Promise<void> {
+                           }: ProposeTransactionProps, threshold: number): Promise<void> {
     if (!this.composeClient) {
       await this.connect();
     }
@@ -98,7 +98,7 @@ export class ceramicApiKit {
                       to: "${safeTransactionData.to}"
                       data: "${safeTransactionData.data}"
                       safe: "${safeAddress}"
-                      nonce: ${nonce}
+                      nonce: ${safeTransactionData.nonce}
                       value: "${safeTransactionData.value}"
                       proposer: "${senderAddress}"
                       operation: 0

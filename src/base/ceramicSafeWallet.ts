@@ -48,8 +48,7 @@ export class CeramicSafeWallet {
     chainId: bigint
   ): Promise<TransactionPropose | null> {
     this.safeSdk ?? (await this.connect(chainId));
-    const nonce = await this.safeSdk.getNonce();
-    const tx = await this.safeSdk.createTransaction({ transactions, options: { nonce } });
+    const tx = await this.safeSdk.createTransaction({ transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     const owners = await this.safeSdk.getOwners();
     const uniqueOwners = new Set();
@@ -95,7 +94,7 @@ export class CeramicSafeWallet {
       senderSignature: senderSignature.data,
     };
 
-    await this.ceramicService.proposeTransaction(proposeTransactionProps, threshold, nonce);
+    await this.ceramicService.proposeTransaction(proposeTransactionProps, threshold);
 
     return {
       readyExecute: false,
