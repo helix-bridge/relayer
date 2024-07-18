@@ -2,7 +2,7 @@ import { MetaTransactionData, SafeMultisigTransactionResponse } from "@safe-glob
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { ceramicApiKit } from "./ceramicApiKit";
-import { concatSignatures, isTransactionSignedByAddress, TransactionPropose } from "./wallet";
+import { concatSignatures, isTransactionSignedByAddress, SAFE_TRANSACTION_EMPTY, TransactionPropose } from "./wallet";
 
 export class CeramicSafeWallet {
   public address: string;
@@ -90,13 +90,8 @@ export class CeramicSafeWallet {
     await this.ceramicService.proposeTransaction(proposeTransactionProps, threshold);
 
     return {
-      readyExecute: false,
+      ...SAFE_TRANSACTION_EMPTY,
       safeTxHash: safeTxHash,
-      txData: "",
-      to: "",
-      value: BigInt(0),
-      operation: 0,
-      signatures: "",
     };
   }
 }
