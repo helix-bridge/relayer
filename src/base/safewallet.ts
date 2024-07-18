@@ -72,7 +72,7 @@ export class SafeWallet {
     try {
       const transaction = await this.safeService.getTransaction(safeTxHash);
       var signatures = concatSignatures(transaction);
-      const hasBeenSigned = isTransactionSignedByAddress(transaction);
+      const hasBeenSigned = isTransactionSignedByAddress(transaction.confirmations, this.signer.address);
       if (hasBeenSigned || signatures !== null) {
         //const isValidTx = await this.safeSdk.isValidTransaction(transaction);
         return {

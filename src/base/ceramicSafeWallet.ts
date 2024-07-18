@@ -1,4 +1,4 @@
-import { MetaTransactionData } from "@safe-global/safe-core-sdk-types";
+import { MetaTransactionData, SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { ceramicApiKit } from "./ceramicApiKit";
@@ -48,30 +48,36 @@ export class CeramicSafeWallet {
     chainId: bigint
   ): Promise<TransactionPropose | null> {
     this.safeSdk ?? (await this.connect(chainId));
-    const tx = await this.safeSdk.createTransaction({ transactions });
-    const safeTxHash = await this.safeSdk.getTransactionHash(tx);
-    const owners = await this.safeSdk.getOwners();
+    const safeTransaction = await this.safeSdk.createTransaction({ transactions });
+    const [safeTxHash, owners, threshold] = await Promise.all([
+      this.safeSdk.getTransactionHash(safeTransaction),
+      this.safeSdk.getOwners(),
+      this.safeSdk.getThreshold(),
+    ]);
     const uniqueOwners = new Set();
     try {
-      const transaction = await this.ceramicService.getTransaction(safeTxHash);
-      const filteredConfirmations = transaction.confirmations.filter(confirmation => {
+      const confirmations = await this.ceramicService.getTransactionioConfirmations(safeTxHash);
+      const filteredConfirmations = confirmations.filter(confirmation => {
         if (!owners.includes(confirmation.owner)) return false;
         if (uniqueOwners.has(confirmation.owner)) return false;
         uniqueOwners.add(confirmation.owner);
         return true;
       });
-      var signatures = concatSignatures({ ...transaction, confirmations: filteredConfirmations });
-      const hasBeenSigned = isTransactionSignedByAddress(transaction);
+      var signatures = concatSignatures({
+        confirmationsRequired: threshold,
+        confirmations: filteredConfirmations
+      } as SafeMultisigTransactionResponse);
+      const hasBeenSigned = isTransactionSignedByAddress(confirmations, this.signer.address);
       if (hasBeenSigned || signatures !== null) {
         //const isValidTx = await this.safeSdk.isValidTransaction(transaction);
         return {
           //readyExecute: signatureEnough && isValidTx,
           readyExecute: signatures !== null,
           safeTxHash: safeTxHash,
-          txData: transaction.data,
-          to: transaction.to,
-          value: BigInt(transaction.value),
-          operation: transaction.operation,
+          txData: safeTransaction.data.data,
+          to: safeTransaction.data.to,
+          value: BigInt(safeTransaction.data.value),
+          operation: safeTransaction.data.operation,
           signatures,
         };
       }
@@ -81,14 +87,11 @@ export class CeramicSafeWallet {
       }
     }
 
-    const [senderSignature, threshold] = await Promise.all([
-      this.safeSdk.signTransactionHash(safeTxHash),
-      this.safeSdk.getThreshold(),
-    ]);
+    const senderSignature = await this.safeSdk.signTransactionHash(safeTxHash);
 
     const proposeTransactionProps = {
       safeAddress: this.address,
-      safeTransactionData: tx.data,
+      safeTransactionData: safeTransaction.data,
       safeTxHash,
       senderAddress: this.signer.address,
       senderSignature: senderSignature.data,

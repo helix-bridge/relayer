@@ -9,6 +9,7 @@ enum PrivateKeyType {
 
 export class EthereumWallet {
   private wallet: Wallet | HDNodeWallet;
+
   constructor(keyType: PrivateKeyType, privateKey: string) {
     if (keyType === PrivateKeyType.PRIVATE_KEY) {
       this.wallet = new Wallet(privateKey);
@@ -24,6 +25,7 @@ export class EthereumWallet {
 
 export class EthereumConnectedWallet {
   public wallet: Wallet | HDNodeWallet;
+
   constructor(privateKey: string, provider: EthereumProvider) {
     this.wallet = new Wallet(privateKey, provider.provider);
   }
@@ -34,10 +36,11 @@ export class EthereumConnectedWallet {
 }
 
 export function isTransactionSignedByAddress(
-  tx: SafeMultisigTransactionResponse
+  confirmations: SafeMultisigConfirmationResponse[],
+  signerAddress: string
 ): boolean {
-  const confirmation = tx.confirmations.find(
-    (confirmation) => confirmation.owner === this.signer.address
+  const confirmation = confirmations.find(
+    (confirmation) => confirmation.owner === signerAddress
   );
   return !!confirmation;
 }
