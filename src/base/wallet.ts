@@ -1,6 +1,7 @@
-import { Wallet, HDNodeWallet } from "ethers";
+import { ethers, HDNodeWallet, Wallet } from "ethers";
 import { EthereumProvider } from "./provider";
 import { SafeMultisigConfirmationResponse, SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
+import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 
 enum PrivateKeyType {
   PRIVATE_KEY,
@@ -89,4 +90,19 @@ export function concatSignatures(tx: SafeMultisigTransactionResponse): string | 
     signatures += confirmation.signature.substring(2);
   }
   return signatures;
+}
+
+export async function connectSafeWalletSDK(
+  address: string,
+  signer: Wallet | HDNodeWallet
+): Promise<Safe> {
+  const ethAdapter = new EthersAdapter({
+    ethers,
+    signerOrProvider: signer,
+  });
+
+  return await Safe.create({
+    ethAdapter: ethAdapter,
+    safeAddress: address,
+  });
 }

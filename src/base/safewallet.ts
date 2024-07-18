@@ -1,10 +1,16 @@
 import {
   MetaTransactionData,
 } from "@safe-global/safe-core-sdk-types";
-import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
+import Safe from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
-import { ethers, Wallet, HDNodeWallet } from "ethers";
-import { concatSignatures, isTransactionSignedByAddress, SAFE_TRANSACTION_EMPTY, TransactionPropose } from "./wallet";
+import { Wallet, HDNodeWallet } from "ethers";
+import {
+  concatSignatures,
+  connectSafeWalletSDK,
+  isTransactionSignedByAddress,
+  SAFE_TRANSACTION_EMPTY,
+  TransactionPropose
+} from "./wallet";
 
 type Opts = {
   allowedDomains?: RegExp[];
@@ -35,15 +41,7 @@ export class SafeWallet {
   }
 
   async connect(chainId: bigint) {
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: this.signer,
-    });
-
-    this.safeSdk = await Safe.create({
-      ethAdapter: ethAdapter,
-      safeAddress: this.address,
-    });
+    this.safeSdk = await connectSafeWalletSDK(this.address, this.signer);
     this.safeService = new SafeApiKit({
       txServiceUrl: this.apiService,
       chainId,

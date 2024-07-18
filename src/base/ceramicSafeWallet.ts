@@ -1,8 +1,14 @@
 import { MetaTransactionData, SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
-import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
-import { ethers, Wallet, HDNodeWallet } from "ethers";
+import Safe from "@safe-global/protocol-kit";
+import { Wallet, HDNodeWallet } from "ethers";
 import { ceramicApiKit } from "./ceramicApiKit";
-import { concatSignatures, isTransactionSignedByAddress, SAFE_TRANSACTION_EMPTY, TransactionPropose } from "./wallet";
+import {
+  concatSignatures,
+  connectSafeWalletSDK,
+  isTransactionSignedByAddress,
+  SAFE_TRANSACTION_EMPTY,
+  TransactionPropose
+} from "./wallet";
 
 export class CeramicSafeWallet {
   public address: string;
@@ -21,15 +27,7 @@ export class CeramicSafeWallet {
   }
 
   async connect(chainId: bigint) {
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: this.signer,
-    });
-
-    this.safeSdk = await Safe.create({
-      ethAdapter: ethAdapter,
-      safeAddress: this.address,
-    });
+    this.safeSdk = await connectSafeWalletSDK(this.address, this.signer);
   }
 
   async proposeTransaction(
