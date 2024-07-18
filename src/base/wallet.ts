@@ -7,6 +7,26 @@ enum PrivateKeyType {
   MNEMONIC,
 }
 
+export const SAFE_TRANSACTION_EMPTY = {
+  readyExecute: false,
+  safeTxHash: "",
+  txData: "",
+  to: "",
+  value: BigInt(0),
+  operation: 0,
+  signatures: "",
+}
+
+export interface TransactionPropose {
+  to: string;
+  value: bigint;
+  readyExecute: boolean;
+  safeTxHash: string;
+  txData: string;
+  operation: number;
+  signatures: string | null;
+}
+
 export class EthereumWallet {
   private wallet: Wallet | HDNodeWallet;
 

@@ -4,22 +4,12 @@ import {
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
-import { concatSignatures, isTransactionSignedByAddress } from "./wallet";
+import { concatSignatures, isTransactionSignedByAddress, SAFE_TRANSACTION_EMPTY, TransactionPropose } from "./wallet";
 
 type Opts = {
   allowedDomains?: RegExp[];
   debug?: boolean;
 };
-
-export interface TransactionPropose {
-  to: string;
-  value: bigint;
-  readyExecute: boolean;
-  safeTxHash: string;
-  txData: string;
-  operation: number;
-  signatures: string | null;
-}
 
 export interface ProposalCalls {
   address: string;
@@ -101,13 +91,8 @@ export class SafeWallet {
     };
     await this.safeService.proposeTransaction(proposeTransactionProps);
     return {
-      readyExecute: false,
-      safeTxHash: safeTxHash,
-      txData: "",
-      to: "",
-      value: BigInt(0),
-      operation: 0,
-      signatures: "",
+      ...SAFE_TRANSACTION_EMPTY,
+      safeTxHash,
     };
   }
 }

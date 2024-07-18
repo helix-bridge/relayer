@@ -2,17 +2,7 @@ import { MetaTransactionData, SafeMultisigTransactionResponse } from "@safe-glob
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { ceramicApiKit } from "./ceramicApiKit";
-import { concatSignatures, isTransactionSignedByAddress } from "./wallet";
-
-export interface TransactionPropose {
-  to: string;
-  value: bigint;
-  readyExecute: boolean;
-  safeTxHash: string;
-  txData: string;
-  operation: number;
-  signatures: string | null;
-}
+import { concatSignatures, isTransactionSignedByAddress, TransactionPropose } from "./wallet";
 
 export class CeramicSafeWallet {
   public address: string;

@@ -1,4 +1,4 @@
-import { SafeMultisigConfirmationResponse, SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
+import { SafeMultisigConfirmationResponse } from "@safe-global/safe-core-sdk-types";
 import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/safeTransactionServiceTypes";
 import { definition } from "./ceramicModels";
 import { ethers } from "ethers";
@@ -90,31 +90,6 @@ export class ceramicApiKit {
                 }
             }
         `);
-
-    const transaction = await this.composeClient.executeQuery(`mutation CreateTransaction {
-          createTransaction(
-              input: {
-                  content: {
-                      to: "${safeTransactionData.to}"
-                      data: "${safeTransactionData.data}"
-                      safe: "${safeAddress}"
-                      nonce: ${safeTransactionData.nonce}
-                      value: "${safeTransactionData.value}"
-                      proposer: "${senderAddress}"
-                      operation: 0
-                      safeTxHash: "${safeTxHash}"
-                      signatures: "${senderSignature}"
-                      submissionDate: "${(new Date()).toISOString()}"
-                      transactionHash: "${safeTxHash}"
-                      confirmationsRequired: ${threshold}
-                  }
-                  clientMutationId: null
-              }
-          ) {
-              clientMutationId
-          }
-      }
-    `);
 
 
     return Promise.resolve();
