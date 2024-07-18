@@ -226,7 +226,9 @@ export class RelayerService implements OnModuleInit {
           return null;
         }
 
+        const isCeramic = config.safeWalletType === 'Ceramic' && config.encryptedCeramicKey;
         const privateKey = e.decrypt(config.encryptedPrivateKey);
+        const ceramicKey = isCeramic ? e.decrypt(config.encryptedCeramicKey) : "";
         let toWallet = new EthereumConnectedWallet(
           privateKey,
           toChainInfo.provider
@@ -248,7 +250,7 @@ export class RelayerService implements OnModuleInit {
             toSafeWallet = new CeramicSafeWallet(
               config.safeWalletAddress,
               toWallet.wallet,
-              new ceramicApiKit(privateKey, config.safeWalletUrl)
+              new ceramicApiKit(ceramicKey, config.safeWalletUrl)
             );
           } else {
           toSafeWallet = new SafeWallet(

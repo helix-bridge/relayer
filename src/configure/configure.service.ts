@@ -81,6 +81,7 @@ export interface TokenInfo {
 export interface BridgeInfo {
   direction: string;
   encryptedPrivateKey: string;
+  encryptedCeramicKey: string | undefined;
   feeLimit: number;
   bridgeType: string;
   reorgThreshold: number;
