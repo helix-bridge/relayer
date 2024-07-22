@@ -94,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
                 token: \"${token.toLowerCase()}\",
                 order: "${firstPendingOrderBy}",
                 notsubmited: true
-            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce, nonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
