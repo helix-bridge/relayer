@@ -127,8 +127,8 @@ export class ceramicApiKit {
         const r = signature.slice(0, 66);
         const s = `0x${signature.slice(66, 130)}`;
         let v = parseInt(signature.slice(130, 132), 16);
-        if (v !== 27 && v !== 28) {
-          v = 27;
+        if (v === 31 || v === 32) {
+          v -= 4;
         }
         // normalize signature
         const normalizedSignature = r + s.slice(2) + (v).toString(16).padStart(2, '0');
