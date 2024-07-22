@@ -26,6 +26,7 @@
   },
   "bin": "dist/main.js",
   "dependencies": {
+    "@helixbridge/helixconf": "0.0.8",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",

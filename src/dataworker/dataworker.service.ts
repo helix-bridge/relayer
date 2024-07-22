@@ -371,7 +371,10 @@ export class DataworkerService implements OnModuleInit {
           ? 0
           : Number(record.confirmedBlocks.split("/")[0]);
       if (confirmedBlock > previousConfirmedBlock) {
-        const reorgShown = BigInt(record.sendAmount) < microThreshold ? microReorgThreshold : reorgThreshold;
+        const reorgShown =
+          BigInt(record.sendAmount) < microThreshold
+            ? microReorgThreshold
+            : reorgThreshold;
         await this.updateConfirmedBlock(
           url,
           record.id,

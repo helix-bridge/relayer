@@ -1,11 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import {
-  Chain,
-  MessagerInfo,
-  BaseConfigure,
-  BaseConfigService,
-} from "./base.service";
+import { HelixChainConf } from "@helixbridge/helixconf";
+import { MessagerInfo, BaseConfigure, BaseConfigService } from "./base.service";
 import * as fs from "fs";
 
 /*
@@ -122,17 +118,18 @@ export class ConfigureService {
     );
   }
 
-  public getChainInfo(name: string): Chain | null {
-    return this.baseConfig.chains.find((chain) => chain.name === name);
+  public getChainInfo(name: string): HelixChainConf | null {
+    return this.baseConfig.chains.find((chain) => chain.code === name);
   }
 
   public getMessagerAddress(
     chainName: string,
     channelName: string
-  ): MessagerInfo | null {
+  ): string | null {
     const chain = this.getChainInfo(chainName);
     if (chain === null) return null;
-    return chain.messagers.find((messager) => messager.name === channelName);
+    return chain.messagers.find((messager) => messager.name === channelName)
+      ?.address;
   }
 
   get indexer(): string {
