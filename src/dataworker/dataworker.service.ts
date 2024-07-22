@@ -122,7 +122,7 @@ export class DataworkerService implements OnModuleInit {
             bridge: \"${bridgeType}\",
             relayer: \"${relayer.toLowerCase()}\",
             token: \"${token.toLowerCase()}\",
-            nonce: ${Number(pendingRecord.nonce) - 1}
+            nonce: ${Number(pendingRecord.nonce)}
         ) {id}}`;
 
     const previousRecord = await axios
