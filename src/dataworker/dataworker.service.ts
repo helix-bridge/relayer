@@ -94,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
                 token: \"${token.toLowerCase()}\",
                 order: "${firstPendingOrderBy}",
                 notsubmited: true
-            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce, nonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -114,30 +114,28 @@ export class DataworkerService implements OnModuleInit {
       };
     }
 
-    // query the first successed record
+    // query the previous transfer record
     query = `query {
-            firstHistoryRecord(
-                fromChain: \"${fromChain}\",
-                toChain: \"${toChain}\",
-                bridge: \"${bridgeType}\",
-                results: [${this.statusSuccess}, ${this.statusRefund}, ${
-      this.pendingToConfirmRefund
-    }],
-                relayer: \"${relayer.toLowerCase()}\",
-                token: \"${token.toLowerCase()}\",
-                order: "${lastSuccessOrderBy}"
-            ) {id}}`;
-    const lastRecord = await axios
+        previousHistoryRecord(
+            fromChain: \"${fromChain}\",
+            toChain: \"${toChain}\",
+            bridge: \"${bridgeType}\",
+            relayer: \"${relayer.toLowerCase()}\",
+            token: \"${token.toLowerCase()}\",
+            nonce: ${Number(pendingRecord.nonce)}
+        ) {id}}`;
+
+    const previousRecord = await axios
       .post(url, {
         query,
         variables: null,
       })
-      .then((res) => res.data.data.firstHistoryRecord);
+      .then((res) => res.data.data.previousHistoryRecord);
 
-    const lastTransferId =
-      lastRecord === null ? zeroTransferId : last(lastRecord.id.split("-"));
+    const previousTransferId =
+      previousRecord === null ? zeroTransferId : last(previousRecord.id.split("-"));
     return {
-      lastTransferId: lastTransferId,
+      lastTransferId: previousTransferId,
       record: pendingRecord,
     };
   }
