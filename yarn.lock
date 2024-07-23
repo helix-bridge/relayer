@@ -571,6 +571,11 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@helixbridge/helixconf@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@helixbridge/helixconf/-/helixconf-1.0.2.tgz#0dfc85a88ba538f23f1a8021dab43684f5e68de2"
+  integrity sha512-FW1eZYy9YGibZxcjF9MzzyPHH8G2A8Fy6MP8vdsuNwb4E9sffz1xYa1ruoyAFZKea5LHRRqVhSRiD+CYLMWuig==
+
 "@humanwhocodes/config-array@^0.11.8":
   version "0.11.8"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.8.tgz#03595ac2075a4dc0f191cc2131de14fbd7d410b9"
