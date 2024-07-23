@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HelixChainConf } from "@helixbridge/helixconf";
-import { MessagerInfo, BaseConfigure, BaseConfigService } from "./base.service";
+import { BaseConfigure, BaseConfigService } from "./base.service";
 import * as fs from "fs";
 
 /*

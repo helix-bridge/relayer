@@ -1,32 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { HelixChain, HelixChainConf } from "@helixbridge/helixconf";
 
-// lnv2 default address
-// lnv2 opposite address
-// lnv3 address
-// token symbol => token address
-// indexer address
-// chainName => chainId
-export interface TokenInfo {
-  symbol: string;
-  address: string;
-}
-
-export interface Chain {
-  name: string;
-  id: number;
-  lnv2DefaultAddress: string | undefined | null;
-  lnv2OppositeAddress: string | undefined | null;
-  lnv3Address: string | undefined | null;
-  messagers: MessagerInfo[];
-  tokens: TokenInfo[];
-}
-
-export interface MessagerInfo {
-  name: string;
-  address: string;
-}
-
 export interface BaseConfigure {
   indexer: string;
   chains: HelixChainConf[];
