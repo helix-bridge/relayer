@@ -1,11 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import {
-  Chain,
-  MessagerInfo,
-  BaseConfigure,
-  BaseConfigService,
-} from "./base.service";
+import { HelixChainConf } from "@helixbridge/helixconf";
+import { BaseConfigure, BaseConfigService } from "./base.service";
 import * as fs from "fs";
 
 /*
@@ -72,6 +68,7 @@ export interface RpcNode {
 
 export interface TokenInfo {
   symbol: string;
+  microThreshold: number | undefined;
   swapRate: number;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
@@ -81,9 +78,11 @@ export interface TokenInfo {
 export interface BridgeInfo {
   direction: string;
   encryptedPrivateKey: string;
+  encryptedCeramicKey: string;
   feeLimit: number;
   bridgeType: string;
   reorgThreshold: number;
+  microReorgThreshold: number | undefined;
   safeWalletAddress: string | undefined;
   safeWalletUrl: string | undefined;
   safeWalletRole: string | undefined;
@@ -118,17 +117,18 @@ export class ConfigureService {
     this.baseConfig = this.baseService.baseConfigure(this.config.env === "test");
   }
 
-  public getChainInfo(name: string): Chain | null {
-    return this.baseConfig.chains.find((chain) => chain.name === name);
+  public getChainInfo(name: string): HelixChainConf | null {
+    return this.baseConfig.chains.find((chain) => chain.code === name);
   }
 
   public getMessagerAddress(
     chainName: string,
     channelName: string
-  ): MessagerInfo | null {
+  ): string | null {
     const chain = this.getChainInfo(chainName);
     if (chain === null) return null;
-    return chain.messagers.find((messager) => messager.name === channelName);
+    return chain.messagers.find((messager) => messager.name === channelName)
+      ?.address;
   }
 
   get indexer(): string {

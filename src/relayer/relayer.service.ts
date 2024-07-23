@@ -52,10 +52,14 @@ export class BridgeConnectInfo {
 export class LnProviderInfo {
   relayer: string;
   swapRate: number;
+  microThreshold: number;
   fromAddress: string;
   toAddress: string;
-  fromToken: Erc20Contract;
-  toToken: Erc20Contract;
+  // cache the decimals to decrease request from chain
+  fromTokenDecimals: number;
+  toTokenDecimals: number;
+  fromToken: Erc20Contract | null;
+  toToken: Erc20Contract | null;
   withdrawLiquidityAmountThreshold: number;
   withdrawLiquidityCountThreshold: number;
   useDynamicBaseFee: boolean;
@@ -69,6 +73,7 @@ export class LnBridge {
   maxProfit: number;
   feeLimit: number;
   reorgThreshold: number;
+  microReorgThreshold: number;
   bridgeType: string;
   lnProviders: LnProviderInfo[];
   heartBeatTime: number;
@@ -100,7 +105,7 @@ export class RelayerService implements OnModuleInit {
   // the target chain should not be conflict
   async onModuleInit() {
     this.logger.log("relayer service start");
-    this.initConfigure();
+    await this.initConfigure();
     this.store = new Store(this.configureService.storePath);
     this.chainInfos.forEach((value, key) => {
       this.timer.set(key, {
@@ -157,7 +162,7 @@ export class RelayerService implements OnModuleInit {
     });
   }
 
-  initConfigure() {
+  async initConfigure() {
     const e = new Encrypto();
     e.readPasswd();
 
@@ -196,9 +201,9 @@ export class RelayerService implements OnModuleInit {
             provider: provider,
             fixedGasPrice: rpcnode.fixedGasPrice,
             notSupport1559: rpcnode.notSupport1559,
-            lnv2DefaultAddress: chainInfo.lnv2DefaultAddress,
-            lnv2OppositeAddress: chainInfo.lnv2OppositeAddress,
-            lnv3Address: chainInfo.lnv3Address,
+            lnv2DefaultAddress: chainInfo.protocol["lnv2-default"],
+            lnv2OppositeAddress: chainInfo.protocol["lnv2-opposite"],
+            lnv3Address: chainInfo.protocol.lnv3,
             tokens: chainInfo.tokens,
             txHashCache: "",
             checkTimes: 0,
@@ -207,152 +212,180 @@ export class RelayerService implements OnModuleInit {
         ];
       })
     );
-    this.lnBridges = this.configureService.config.bridges
-      .map((config) => {
-        const direction = config.direction?.split("->");
-        if (direction?.length !== 2) {
-          this.logger.error(`bridge direction invalid ${config.direction}`);
-          return;
-        }
-        var [fromChain, toChain] = direction;
-        let fromChainInfo = this.chainInfos.get(direction[0]);
-        if (!fromChainInfo) {
-          this.logger.error(`from chain is not invalid ${direction[0]}`);
-          return null;
-        }
-        let toChainInfo = this.chainInfos.get(direction[1]);
-        if (!toChainInfo) {
-          this.logger.error(`to chain is not invalid ${direction[1]}`);
-          return null;
-        }
-
-        const privateKey = e.decrypt(config.encryptedPrivateKey);
-        let toWallet = new EthereumConnectedWallet(
-          privateKey,
-          toChainInfo.provider
-        );
-
-        let toBridge =
-          config.bridgeType == "lnv3"
-            ? new Lnv3BridgeContract(toChainInfo.lnv3Address, toWallet.wallet)
-            : new LnBridgeContract(
-                config.bridgeType === "lnv2-default"
-                  ? toChainInfo.lnv2DefaultAddress
-                  : toChainInfo.lnv2OppositeAddress,
-                toWallet.wallet,
-                config.bridgeType
-              );
-        var toSafeWallet: SafeWallet | CeramicSafeWallet;
-        if (config.safeWalletRole !== undefined) {
-          if (config.safeWalletType === "Ceramic") {
-            toSafeWallet = new CeramicSafeWallet(
-              config.safeWalletAddress,
-              toWallet.wallet,
-              new ceramicApiKit(privateKey, config.safeWalletUrl)
-            );
-          } else {
-          toSafeWallet = new SafeWallet(
-            config.safeWalletAddress,
-            config.safeWalletUrl,
-            toWallet.wallet
-          );
+    this.lnBridges = await Promise.all(
+      this.configureService.config.bridges
+        .map(async (config) => {
+          const direction = config.direction?.split("->");
+          if (direction?.length !== 2) {
+            this.logger.error(`bridge direction invalid ${config.direction}`);
+            return;
           }
-        }
-        //toSafeWallet.connect();
-        let toConnectInfo = {
-          chainInfo: toChainInfo,
-          bridge: toBridge,
-          safeWallet: toSafeWallet,
-        };
-        let fromWallet = new EthereumConnectedWallet(
-          privateKey,
-          fromChainInfo.provider
-        );
-        let fromBridge =
-          config.bridgeType == "lnv3"
-            ? new Lnv3BridgeContract(
-                fromChainInfo.lnv3Address,
-                fromWallet.wallet
-              )
-            : new LnBridgeContract(
-                config.bridgeType === "lnv2-default"
-                  ? fromChainInfo.lnv2DefaultAddress
-                  : fromChainInfo.lnv2OppositeAddress,
-                fromWallet.wallet,
-                config.bridgeType
-              );
-        let fromConnectInfo = {
-          chainInfo: fromChainInfo,
-          bridge: fromBridge,
-          safeWallet: undefined,
-        };
-        let lnProviders = config.tokens
-          .map((token) => {
-            const symbols = token.symbol.split("->");
-            if (symbols.length !== 2) {
-              this.logger.error(`invalid token symbols ${token.symbol}`);
-              return null;
-            }
-            const fromToken = fromChainInfo.tokens.find(
-              (item) => item.symbol === symbols[0]
-            );
-            if (!fromToken) {
-              this.logger.error(
-                `[${fromChainInfo.chainName}]token not support ${
-                  symbols[0]
-                }, only support ${fromChainInfo.tokens.map(
-                  (item) => item.symbol
-                )}`
-              );
-              return null;
-            }
-            const toToken = toChainInfo.tokens.find(
-              (item) => item.symbol === symbols[1]
-            );
-            if (!toToken) {
-              this.logger.error(
-                `[${toChainInfo.chainName}]token not support ${
-                  symbols[1]
-                }, only support ${toChainInfo.tokens.map(
-                  (item) => item.symbol
-                )}`
-              );
-              return null;
-            }
-            return {
-              fromAddress: fromToken.address,
-              toAddress: toToken.address,
-              toToken: new Erc20Contract(toToken.address, toWallet.wallet),
-              fromToken: new Erc20Contract(
-                fromToken.address,
-                fromWallet.wallet
-              ),
-              relayer: toSafeWallet?.address ?? toWallet.address,
-              swapRate: token.swapRate,
-              withdrawLiquidityAmountThreshold:
-                token.withdrawLiquidityAmountThreshold,
-              withdrawLiquidityCountThreshold:
-                token.withdrawLiquidityCountThreshold,
-              useDynamicBaseFee: token.useDynamicBaseFee,
-            };
-          })
-          .filter((item) => item !== null);
+          var [fromChain, toChain] = direction;
+          let fromChainInfo = this.chainInfos.get(direction[0]);
+          if (!fromChainInfo) {
+            this.logger.error(`from chain is not invalid ${direction[0]}`);
+            return null;
+          }
+          let toChainInfo = this.chainInfos.get(direction[1]);
+          if (!toChainInfo) {
+            this.logger.error(`to chain is not invalid ${direction[1]}`);
+            return null;
+          }
 
-        return {
-          safeWalletRole: config.safeWalletRole,
-          minProfit: config.minProfit,
-          maxProfit: config.maxProfit,
-          feeLimit: config.feeLimit,
-          reorgThreshold: config.reorgThreshold,
-          bridgeType: config.bridgeType,
-          fromBridge: fromConnectInfo,
-          toBridge: toConnectInfo,
-          lnProviders: lnProviders,
-          heartBeatTime: this.heartBeatInterval,
-          toWallet: toWallet,
-        };
-      })
-      .filter((item) => item !== null);
+          const isCeramic = config.safeWalletType === 'Ceramic' && config.encryptedCeramicKey;
+          const privateKey = e.decrypt(config.encryptedPrivateKey);
+          const ceramicKey = isCeramic ? e.decrypt(config.encryptedCeramicKey) : "";
+          let toWallet = new EthereumConnectedWallet(
+            privateKey,
+            toChainInfo.provider
+          );
+
+          let toBridge =
+            config.bridgeType == "lnv3"
+              ? new Lnv3BridgeContract(toChainInfo.lnv3Address, toWallet.wallet)
+              : new LnBridgeContract(
+                  config.bridgeType === "lnv2-default"
+                    ? toChainInfo.lnv2DefaultAddress
+                    : toChainInfo.lnv2OppositeAddress,
+                  toWallet.wallet,
+                  config.bridgeType
+                );
+          var toSafeWallet: SafeWallet | CeramicSafeWallet;
+          if (config.safeWalletRole !== undefined) {
+            if (config.safeWalletType === "Ceramic") {
+              toSafeWallet = new CeramicSafeWallet(
+                config.safeWalletAddress,
+                toWallet.wallet,
+                new ceramicApiKit(ceramicKey, config.safeWalletUrl)
+              );
+            } else {
+              toSafeWallet = new SafeWallet(
+                config.safeWalletAddress,
+                config.safeWalletUrl,
+                toWallet.wallet
+              );
+            }
+          }
+          //toSafeWallet.connect();
+          let toConnectInfo = {
+            chainInfo: toChainInfo,
+            bridge: toBridge,
+            safeWallet: toSafeWallet,
+          };
+          let fromWallet = new EthereumConnectedWallet(
+            privateKey,
+            fromChainInfo.provider
+          );
+          let fromBridge =
+            config.bridgeType == "lnv3"
+              ? new Lnv3BridgeContract(
+                  fromChainInfo.lnv3Address,
+                  fromWallet.wallet
+                )
+              : new LnBridgeContract(
+                  config.bridgeType === "lnv2-default"
+                    ? fromChainInfo.lnv2DefaultAddress
+                    : fromChainInfo.lnv2OppositeAddress,
+                  fromWallet.wallet,
+                  config.bridgeType
+                );
+          let fromConnectInfo = {
+            chainInfo: fromChainInfo,
+            bridge: fromBridge,
+            safeWallet: undefined,
+          };
+          let lnProviders = await Promise.all(
+            config.tokens
+              .map(async (token) => {
+                const symbols = token.symbol.split("->");
+                if (symbols.length !== 2) {
+                  this.logger.error(`invalid token symbols ${token.symbol}`);
+                  return null;
+                }
+                const fromToken = fromChainInfo.tokens.find(
+                  (item) =>
+                    item.symbol.toLowerCase() === symbols[0].toLowerCase()
+                );
+                if (!fromToken) {
+                  this.logger.error(
+                    `[${fromChainInfo.chainName}]token not support ${
+                      symbols[0]
+                    }, only support ${fromChainInfo.tokens.map(
+                      (item) => item.symbol
+                    )}`
+                  );
+                  return null;
+                }
+                const toToken = toChainInfo.tokens.find(
+                  (item) =>
+                    item.symbol.toLowerCase() === symbols[1].toLowerCase()
+                );
+                if (!toToken) {
+                  this.logger.error(
+                    `[${toChainInfo.chainName}]token not support ${
+                      symbols[1]
+                    }, only support ${toChainInfo.tokens.map(
+                      (item) => item.symbol
+                    )}`
+                  );
+                  return null;
+                }
+                var fromTokenContract,
+                  toTokenContract = null;
+                var fromTokenDecimals,
+                  toTokenDecimals = 18;
+                if (fromToken.address !== zeroAddress) {
+                  fromTokenContract = new Erc20Contract(
+                    fromToken.address,
+                    fromWallet.wallet
+                  );
+                  fromTokenDecimals = await fromTokenContract.decimals();
+                }
+                if (toToken.address !== zeroAddress) {
+                  toTokenContract = new Erc20Contract(
+                    toToken.address,
+                    toWallet.wallet
+                  );
+                  toTokenDecimals = await toTokenContract.decimals();
+                }
+                return {
+                  fromAddress: fromToken.address,
+                  toAddress: toToken.address,
+                  fromTokenDecimals: fromTokenDecimals,
+                  toTokenDecimals: toTokenDecimals,
+                  fromToken: fromTokenContract,
+                  toToken: toTokenContract,
+                  relayer: toSafeWallet?.address ?? toWallet.address,
+                  swapRate: token.swapRate,
+                  microThreshold: token.microThreshold ?? 0,
+                  withdrawLiquidityAmountThreshold:
+                    token.withdrawLiquidityAmountThreshold,
+                  withdrawLiquidityCountThreshold:
+                    token.withdrawLiquidityCountThreshold,
+                  useDynamicBaseFee: token.useDynamicBaseFee,
+                };
+              })
+              .filter((item) => item !== null)
+          );
+
+          return {
+            safeWalletRole: config.safeWalletRole,
+            minProfit: config.minProfit,
+            maxProfit: config.maxProfit,
+            feeLimit: config.feeLimit,
+            reorgThreshold: config.reorgThreshold,
+            microReorgThreshold:
+              config.microReorgThreshold ?? config.reorgThreshold,
+            bridgeType: config.bridgeType,
+            fromBridge: fromConnectInfo,
+            toBridge: toConnectInfo,
+            lnProviders: lnProviders,
+            heartBeatTime: this.heartBeatInterval,
+            toWallet: toWallet,
+          };
+        })
+        .filter((item) => item !== null)
+    );
   }
 
   async gasPrice(chainInfo: ChainInfo) {
@@ -380,10 +413,7 @@ export class RelayerService implements OnModuleInit {
     if (!lnBridge.minProfit || !lnBridge.maxProfit) return;
     if (fromChainInfo.adjustingFee) return;
     if (lnProviderInfo.swapRate < 0.01) return;
-    let srcDecimals = 18;
-    if (lnProviderInfo.fromAddress !== zeroAddress) {
-      srcDecimals = await lnProviderInfo.fromToken.decimals();
-    }
+    let srcDecimals = lnProviderInfo.fromTokenDecimals;
     // native fee decimals = 10**18
     function nativeFeeToToken(fee: bigint): bigint {
       return (
@@ -744,6 +774,7 @@ export class RelayerService implements OnModuleInit {
     let nativeFeeUsed = BigInt(0);
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
+      let srcDecimals = lnProvider.fromTokenDecimals;
       if (lnProvider.useDynamicBaseFee && needUpdateDynamicFee) {
         if (nativeFeeUsed <= 0) {
           let gasPrice = await toChainInfo.provider.feeData(
@@ -754,10 +785,6 @@ export class RelayerService implements OnModuleInit {
         }
         const dynamicBaseFee = nativeFeeUsed * BigInt(lnProvider.swapRate);
 
-        let srcDecimals = 18;
-        if (lnProvider.fromAddress !== zeroAddress) {
-          srcDecimals = await lnProvider.fromToken.decimals();
-        }
         // native fee decimals = 10**18
         function nativeFeeToToken(fee: bigint): bigint {
           return (
@@ -799,10 +826,6 @@ export class RelayerService implements OnModuleInit {
       }
       if (bridge.bridgeType === "lnv3" && needWithdrawLiqudity) {
         try {
-          let srcDecimals = 18;
-          if (lnProvider.fromAddress !== zeroAddress) {
-            srcDecimals = await lnProvider.fromToken.decimals();
-          }
           const needWithdrawRecords =
             await this.dataworkerService.queryLiquidity(
               this.configureService.indexer,
@@ -817,17 +840,17 @@ export class RelayerService implements OnModuleInit {
           if (needWithdrawRecords != null) {
             // token transfer direction fromChain -> toChain
             // withdrawLiquidity message direction toChain -> fromChain
-            const fromChannel = this.configureService.getMessagerAddress(
+            const fromChannelAddress = this.configureService.getMessagerAddress(
               fromChainInfo.chainName,
               needWithdrawRecords.channel
             );
-            const toChannel = this.configureService.getMessagerAddress(
+            const toChannelAddress = this.configureService.getMessagerAddress(
               toChainInfo.chainName,
               needWithdrawRecords.channel
             );
             const messager = messagerInstance(
               needWithdrawRecords.channel,
-              toChannel.address,
+              toChannelAddress,
               bridge.toWallet.wallet
             );
             const lnv3Contract = toBridgeContract as Lnv3BridgeContract;
@@ -845,7 +868,7 @@ export class RelayerService implements OnModuleInit {
             const params = await messager.params(
               toChainInfo.chainId,
               fromChainInfo.chainId,
-              fromChannel.address,
+              fromChannelAddress,
               payload,
               lnProvider.relayer
             );
@@ -916,6 +939,8 @@ export class RelayerService implements OnModuleInit {
         fromChainInfo.provider,
         toChainInfo.provider,
         bridge.reorgThreshold,
+        bridge.microReorgThreshold,
+        new Any(lnProvider.microThreshold, srcDecimals).Number,
         toChainInfo.notSupport1559,
         bridge.toWallet
       );

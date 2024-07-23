@@ -94,7 +94,7 @@ export class DataworkerService implements OnModuleInit {
                 token: \"${token.toLowerCase()}\",
                 order: "${firstPendingOrderBy}",
                 notsubmited: true
-            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce}}`;
+            ) {id, startTime, sendTokenAddress, recvToken, sender, relayer, recipient, sendAmount, recvAmount, fromChain, toChain, reason, fee, requestTxHash, confirmedBlocks, messageNonce, nonce}}`;
     const pendingRecord = await axios
       .post(url, {
         query,
@@ -114,30 +114,28 @@ export class DataworkerService implements OnModuleInit {
       };
     }
 
-    // query the first successed record
+    // query the previous transfer record
     query = `query {
-            firstHistoryRecord(
-                fromChain: \"${fromChain}\",
-                toChain: \"${toChain}\",
-                bridge: \"${bridgeType}\",
-                results: [${this.statusSuccess}, ${this.statusRefund}, ${
-      this.pendingToConfirmRefund
-    }],
-                relayer: \"${relayer.toLowerCase()}\",
-                token: \"${token.toLowerCase()}\",
-                order: "${lastSuccessOrderBy}"
-            ) {id}}`;
-    const lastRecord = await axios
+        previousHistoryRecord(
+            fromChain: \"${fromChain}\",
+            toChain: \"${toChain}\",
+            bridge: \"${bridgeType}\",
+            relayer: \"${relayer.toLowerCase()}\",
+            token: \"${token.toLowerCase()}\",
+            nonce: ${Number(pendingRecord.nonce)}
+        ) {id}}`;
+
+    const previousRecord = await axios
       .post(url, {
         query,
         variables: null,
       })
-      .then((res) => res.data.data.firstHistoryRecord);
+      .then((res) => res.data.data.previousHistoryRecord);
 
-    const lastTransferId:string  =
-      lastRecord === null ? zeroTransferId : last(lastRecord.id.split("-"));
+    const previousTransferId:string =
+      previousRecord === null ? zeroTransferId : last(previousRecord.id.split("-"));
     return {
-      lastTransferId: lastTransferId,
+      lastTransferId: previousTransferId,
       record: pendingRecord,
     };
   }
@@ -341,6 +339,8 @@ export class DataworkerService implements OnModuleInit {
     fromProvider: EthereumProvider,
     toProvider: EthereumProvider,
     reorgThreshold: number,
+    microReorgThreshold: number,
+    microThreshold: bigint,
     notSupport1559: boolean,
     wallet
   ): Promise<ValidInfo> {
@@ -348,7 +348,15 @@ export class DataworkerService implements OnModuleInit {
     const transactionInfo = await fromProvider.checkPendingTransaction(
       record.requestTxHash
     );
-    if (!transactionInfo || transactionInfo.confirmedBlock < reorgThreshold) {
+    const satisfyMicroThreshold =
+      microReorgThreshold <= transactionInfo.confirmedBlock &&
+      BigInt(record.sendAmount) < microThreshold;
+    const satisfyLargeThreshold =
+      reorgThreshold < transactionInfo.confirmedBlock;
+    if (
+      !transactionInfo ||
+      (!satisfyMicroThreshold && !satisfyLargeThreshold)
+    ) {
       const confirmedBlock = transactionInfo
         ? transactionInfo.confirmedBlock
         : 0;
@@ -361,11 +369,15 @@ export class DataworkerService implements OnModuleInit {
           ? 0
           : Number(record.confirmedBlocks.split("/")[0]);
       if (confirmedBlock > previousConfirmedBlock) {
+        const reorgShown =
+          BigInt(record.sendAmount) < microThreshold
+            ? microReorgThreshold
+            : reorgThreshold;
         await this.updateConfirmedBlock(
           url,
           record.id,
           record.relayer,
-          `${confirmedBlock}/${reorgThreshold}`,
+          `${confirmedBlock}/${reorgShown}`,
           wallet
         );
       }
@@ -403,7 +415,10 @@ export class DataworkerService implements OnModuleInit {
     // 4. get current fee
     let gasPrice = await toProvider.feeData(1, notSupport1559);
     let feeUsed = this.relayFee(gasPrice);
-    this.logger.log(`fee check passed, feeUsed ${feeUsed}`);
+    let microHint = satisfyMicroThreshold
+      ? `isMicro, send: ${record.sendAmount}, threshold: ${microThreshold}`
+      : "notMicro";
+    this.logger.log(`fee check passed, feeUsed ${feeUsed}, ${microHint}`);
     return {
       gasPrice,
       feeUsed,
