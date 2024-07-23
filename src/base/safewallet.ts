@@ -1,25 +1,21 @@
 import {
   MetaTransactionData,
 } from "@safe-global/safe-core-sdk-types";
-import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
+import Safe from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
-import { ethers, Wallet, HDNodeWallet } from "ethers";
-import { concatSignatures, isTransactionSignedByAddress } from "./wallet";
+import { Wallet, HDNodeWallet } from "ethers";
+import {
+  concatSignatures,
+  connectSafeWalletSDK,
+  isTransactionSignedByAddress,
+  SAFE_TRANSACTION_EMPTY,
+  TransactionPropose
+} from "./wallet";
 
 type Opts = {
   allowedDomains?: RegExp[];
   debug?: boolean;
 };
-
-export interface TransactionPropose {
-  to: string;
-  value: bigint;
-  readyExecute: boolean;
-  safeTxHash: string;
-  txData: string;
-  operation: number;
-  signatures: string | null;
-}
 
 export interface ProposalCalls {
   address: string;
@@ -45,15 +41,7 @@ export class SafeWallet {
   }
 
   async connect(chainId: bigint) {
-    const ethAdapter = new EthersAdapter({
-      ethers,
-      signerOrProvider: this.signer,
-    });
-
-    this.safeSdk = await Safe.create({
-      ethAdapter: ethAdapter,
-      safeAddress: this.address,
-    });
+    this.safeSdk = await connectSafeWalletSDK(this.address, this.signer);
     this.safeService = new SafeApiKit({
       txServiceUrl: this.apiService,
       chainId,
@@ -72,7 +60,7 @@ export class SafeWallet {
     try {
       const transaction = await this.safeService.getTransaction(safeTxHash);
       var signatures = concatSignatures(transaction);
-      const hasBeenSigned = isTransactionSignedByAddress(transaction);
+      const hasBeenSigned = isTransactionSignedByAddress(transaction.confirmations, this.signer.address);
       if (hasBeenSigned || signatures !== null) {
         //const isValidTx = await this.safeSdk.isValidTransaction(transaction);
         return {
@@ -101,13 +89,8 @@ export class SafeWallet {
     };
     await this.safeService.proposeTransaction(proposeTransactionProps);
     return {
-      readyExecute: false,
-      safeTxHash: safeTxHash,
-      txData: "",
-      to: "",
-      value: BigInt(0),
-      operation: 0,
-      signatures: "",
+      ...SAFE_TRANSACTION_EMPTY,
+      safeTxHash,
     };
   }
 }

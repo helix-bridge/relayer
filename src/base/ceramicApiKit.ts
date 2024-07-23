@@ -1,4 +1,4 @@
-import { SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
+import { SafeMultisigConfirmationResponse } from "@safe-global/safe-core-sdk-types";
 import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/safeTransactionServiceTypes";
 import { definition } from "./ceramicModels";
 import { ethers } from "ethers";
@@ -67,7 +67,7 @@ export class ceramicApiKit {
                              senderAddress,
                              senderSignature,
                              origin
-                           }: ProposeTransactionProps, threshold: number, nonce: number): Promise<void> {
+                           }: ProposeTransactionProps, threshold: number): Promise<void> {
     if (!this.composeClient) {
       await this.connect();
     }
@@ -91,73 +91,21 @@ export class ceramicApiKit {
             }
         `);
 
-    const transaction = await this.composeClient.executeQuery(`mutation CreateTransaction {
-          createTransaction(
-              input: {
-                  content: {
-                      to: "${safeTransactionData.to}"
-                      data: "${safeTransactionData.data}"
-                      safe: "${safeAddress}"
-                      nonce: ${nonce}
-                      value: "${safeTransactionData.value}"
-                      proposer: "${senderAddress}"
-                      operation: 0
-                      safeTxHash: "${safeTxHash}"
-                      signatures: "${senderSignature}"
-                      submissionDate: "${(new Date()).toISOString()}"
-                      transactionHash: "${safeTxHash}"
-                      confirmationsRequired: ${threshold}
-                  }
-                  clientMutationId: null
-              }
-          ) {
-              clientMutationId
-          }
-      }
-    `);
-
 
     return Promise.resolve();
   }
 
-  async getTransaction(safeTxHash: string): Promise<SafeMultisigTransactionResponse> {
+  async getTransactionioConfirmations(safeTxHash: string): Promise<SafeMultisigConfirmationResponse[]> {
 
     try {
       if (!this.composeClient) {
         await this.connect();
       }
-      const transactionIndex = await this.composeClient.executeQuery(`
-          query TransactionIndex {
-              transactionIndex(
-                  first: 1
-                  filters: { where: { safeTxHash: { equalTo: "${safeTxHash}" } } }
-              ) {
-                  edges {
-                      cursor
-                      node {
-                          id
-                          to
-                          data
-                          safe
-                          nonce
-                          value
-                          proposer
-                          operation
-                          safeTxHash
-                          signatures
-                          submissionDate
-                          transactionHash
-                          confirmationsRequired
-                      }
-                  }
-              }
-          }
-        `);
 
       const confirmationsIndex: ConfirmationIndexData = await this.composeClient.executeQuery(`
             query ConfirmationIndex {
                 confirmationIndex(
-                    first: 10
+                    first: 99
                     filters: { where: { transactionHash: { equalTo: "${safeTxHash}" } } }
                 ) {
                     edges {
@@ -179,17 +127,14 @@ export class ceramicApiKit {
         const r = signature.slice(0, 66);
         const s = `0x${signature.slice(66, 130)}`;
         let v = parseInt(signature.slice(130, 132), 16);
-        if (v !== 27 && v !== 28) {
-          v = 27;
+        if (v === 31 || v === 32) {
+          v -= 4;
         }
         // normalize signature
         const normalizedSignature = r + s.slice(2) + (v).toString(16).padStart(2, '0');
         return ethers.verifyMessage(ethers.getBytes(safeTxHash), normalizedSignature).toLowerCase() === confirmation.owner.toLowerCase();
       })
-      return {
-        ...transactionIndex.data.transactionIndex.edges[0].node,
-        confirmations
-      } as SafeMultisigTransactionResponse;
+      return confirmations as SafeMultisigConfirmationResponse[];
     } catch (error) {
       // console.error('Error fetching transaction:', error);
     }

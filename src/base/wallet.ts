@@ -1,14 +1,36 @@
-import { Wallet, HDNodeWallet } from "ethers";
+import { ethers, HDNodeWallet, Wallet } from "ethers";
 import { EthereumProvider } from "./provider";
 import { SafeMultisigConfirmationResponse, SafeMultisigTransactionResponse } from "@safe-global/safe-core-sdk-types";
+import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 
 enum PrivateKeyType {
   PRIVATE_KEY,
   MNEMONIC,
 }
 
+export const SAFE_TRANSACTION_EMPTY = {
+  readyExecute: false,
+  safeTxHash: "",
+  txData: "",
+  to: "",
+  value: BigInt(0),
+  operation: 0,
+  signatures: "",
+}
+
+export interface TransactionPropose {
+  to: string;
+  value: bigint;
+  readyExecute: boolean;
+  safeTxHash: string;
+  txData: string;
+  operation: number;
+  signatures: string | null;
+}
+
 export class EthereumWallet {
   private wallet: Wallet | HDNodeWallet;
+
   constructor(keyType: PrivateKeyType, privateKey: string) {
     if (keyType === PrivateKeyType.PRIVATE_KEY) {
       this.wallet = new Wallet(privateKey);
@@ -24,6 +46,7 @@ export class EthereumWallet {
 
 export class EthereumConnectedWallet {
   public wallet: Wallet | HDNodeWallet;
+
   constructor(privateKey: string, provider: EthereumProvider) {
     this.wallet = new Wallet(privateKey, provider.provider);
   }
@@ -34,10 +57,11 @@ export class EthereumConnectedWallet {
 }
 
 export function isTransactionSignedByAddress(
-  tx: SafeMultisigTransactionResponse
+  confirmations: SafeMultisigConfirmationResponse[],
+  signerAddress: string
 ): boolean {
-  const confirmation = tx.confirmations.find(
-    (confirmation) => confirmation.owner === this.signer.address
+  const confirmation = confirmations.find(
+    (confirmation) => confirmation.owner === signerAddress
   );
   return !!confirmation;
 }
@@ -66,4 +90,19 @@ export function concatSignatures(tx: SafeMultisigTransactionResponse): string | 
     signatures += confirmation.signature.substring(2);
   }
   return signatures;
+}
+
+export async function connectSafeWalletSDK(
+  address: string,
+  signer: Wallet | HDNodeWallet
+): Promise<Safe> {
+  const ethAdapter = new EthersAdapter({
+    ethers,
+    signerOrProvider: signer,
+  });
+
+  return await Safe.create({
+    ethAdapter: ethAdapter,
+    safeAddress: address,
+  });
 }
