@@ -1,6 +1,7 @@
 import { SafeMultisigConfirmationResponse } from "@safe-global/safe-core-sdk-types";
-import { ProposeTransactionProps } from "@safe-global/api-kit/dist/src/types/safeTransactionServiceTypes";
-import { definition } from "./ceramicModels";
+import { ProposeTransactionProps } from '@safe-global/api-kit';
+import { SafeService } from "./safe.service";
+import { definition } from "./ceramic.models";
 import { ethers } from "ethers";
 
 interface ConfirmationNode {
@@ -25,21 +26,20 @@ interface ConfirmationIndexData {
   }
 }
 
-export class ceramicApiKit {
+export class CeramicService extends SafeService {
   private composeClient: any;
   private privateKey: string;
-  private ceramicUrl: string;
 
   constructor(privateKey: string, ceramicUrl: string) {
+    super('ceramic', ceramicUrl);
     this.privateKey = privateKey;
-    this.ceramicUrl = ceramicUrl;
   }
 
-  async connect() {
+  async init() {
     try {
       const { ComposeClient } = await import('@composedb/client');
       const composeClient = new ComposeClient({
-        ceramic: this.ceramicUrl,
+        ceramic: this.url,
         //cannot import type from ESM only module in nest.js
         // @ts-ignore
         definition: definition,
@@ -67,9 +67,9 @@ export class ceramicApiKit {
                              senderAddress,
                              senderSignature,
                              origin
-                           }: ProposeTransactionProps, threshold: number): Promise<void> {
+                           }: ProposeTransactionProps): Promise<void> {
     if (!this.composeClient) {
-      await this.connect();
+      await this.init();
     }
     const confirmation = await this.composeClient.executeQuery(`
             mutation CreateConfirmation {
@@ -95,13 +95,12 @@ export class ceramicApiKit {
     return Promise.resolve();
   }
 
-  async getTransactionioConfirmations(safeTxHash: string): Promise<SafeMultisigConfirmationResponse[]> {
+  async getTransactionConfirmations(safeTxHash: string): Promise<SafeMultisigConfirmationResponse[]> {
+    if (!this.composeClient) {
+      await this.init();
+    }
 
     try {
-      if (!this.composeClient) {
-        await this.connect();
-      }
-
       const confirmationsIndex: ConfirmationIndexData = await this.composeClient.executeQuery(`
             query ConfirmationIndex {
                 confirmationIndex(
@@ -124,16 +123,15 @@ export class ceramicApiKit {
         `) as ConfirmationIndexData;
       const confirmations = confirmationsIndex.data.confirmationIndex.edges.map((edge) => edge.node).filter((confirmation) => {
         const { signature } = confirmation;
-        const r = signature.slice(0, 66);
-        const s = `0x${signature.slice(66, 130)}`;
-        let v = parseInt(signature.slice(130, 132), 16);
-        if (v === 31 || v === 32) {
-          v -= 4;
+        let signatureV: number = parseInt(signature.slice(-2), 16);
+        // must be signed by with prefix, otherwise, we can't verify this message
+        if (signatureV !== 31 && signatureV !== 32) {
+          return false;
         }
-        // normalize signature
-        const normalizedSignature = r + s.slice(2) + (v).toString(16).padStart(2, '0');
+        signatureV -= 4;
+        const normalizedSignature = signature.slice(0, -2) + (signatureV).toString(16)
         return ethers.verifyMessage(ethers.getBytes(safeTxHash), normalizedSignature).toLowerCase() === confirmation.owner.toLowerCase();
-      })
+      });
       return confirmations as SafeMultisigConfirmationResponse[];
     } catch (error) {
       // console.error('Error fetching transaction:', error);

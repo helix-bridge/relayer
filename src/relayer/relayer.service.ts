@@ -28,8 +28,9 @@ import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
 import { Aave } from "../liquidity/lend/aave";
 import { LendMarket } from "../liquidity/lend/market";
-import { CeramicSafeWallet } from "../base/ceramicSafeWallet";
-import { ceramicApiKit } from "../base/ceramicApiKit";
+import { CeramicService } from "../base/safe-service/ceramic.service";
+import { SafeGlobalService } from "../base/safe-service/safeglobal.service";
+import { SafeService } from "../base/safe-service/safe.service";
 
 export class ChainInfo {
   chainName: string;
@@ -46,7 +47,7 @@ export class ChainInfo {
 export class BridgeConnectInfo {
   chainInfo: ChainInfo;
   bridge: LnBridgeContract | Lnv3BridgeContract;
-  safeWallet: SafeWallet | CeramicSafeWallet;
+  safeWallet: SafeWallet;
 }
 
 export class LnProviderInfo {
@@ -250,28 +251,15 @@ export class RelayerService implements OnModuleInit {
                   toWallet.wallet,
                   config.bridgeType
                 );
-          var toSafeWallet: SafeWallet | CeramicSafeWallet;
-          if (config.safeWalletRole !== undefined) {
-            if (config.safeWalletType === "Ceramic") {
-              toSafeWallet = new CeramicSafeWallet(
-                config.safeWalletAddress,
-                toWallet.wallet,
-                new ceramicApiKit(ceramicKey, config.safeWalletUrl)
-              );
-            } else {
-              toSafeWallet = new SafeWallet(
-                config.safeWalletAddress,
-                config.safeWalletUrl,
-                toWallet.wallet
-              );
-            }
-          }
-          //toSafeWallet.connect();
           let toConnectInfo = {
             chainInfo: toChainInfo,
             bridge: toBridge,
-            safeWallet: toSafeWallet,
+            safeWallet: undefined,
           };
+          if (config.safeWalletRole !== undefined) {
+            let safeService: SafeService = config.safeWalletType === "Ceramic" ? new CeramicService(ceramicKey, config.safeWalletUrl) : new SafeGlobalService(config.safeWalletUrl, toChainInfo.chainId);
+            toConnectInfo.safeWallet = new SafeWallet(config.safeWalletAddress, toWallet.wallet, safeService);
+          }
           let fromWallet = new EthereumConnectedWallet(
             privateKey,
             fromChainInfo.provider
@@ -355,7 +343,7 @@ export class RelayerService implements OnModuleInit {
                   toTokenDecimals: toTokenDecimals,
                   fromToken: fromTokenContract,
                   toToken: toTokenContract,
-                  relayer: toSafeWallet?.address ?? toWallet.address,
+                  relayer: toConnectInfo.safeWallet?.address ?? toWallet.address,
                   swapRate: token.swapRate,
                   microThreshold: token.microThreshold ?? 0,
                   withdrawLiquidityAmountThreshold:
