@@ -25,7 +25,7 @@ export class SafeWallet {
   public threshold: number;
   private safeSdk: Safe;
   private safeService: SafeService;
-  private readonly logger = new Logger("dataworker");
+  private readonly logger = new Logger("safewallet");
 
   constructor(
     address: string,
@@ -139,7 +139,7 @@ export class SafeWallet {
     };
     await this.safeService.proposeTransaction(proposeTransactionProps);
     this.logger.log(
-      `finish to propose transaction ${safeTxHash} on chain ${chainId}`
+      `finish to propose transaction ${safeTxHash} using ${this.safeService.name} on chain ${chainId}`
     );
     return {
       readyExecute: false,

@@ -72,24 +72,24 @@ export class CeramicService extends SafeService {
       await this.init();
     }
     const confirmation = await this.composeClient.executeQuery(`
-            mutation CreateConfirmation {
-                createConfirmation(
-                    input: {
-                        content: {
-                            owner: "${senderAddress}"
-                            signature: "${senderSignature}"
-                            signatureType: "ECDSA"
-                            submissionDate: "${new Date().toISOString()}"
-                            transactionHash: "${safeTxHash}"
-                            confirmationType: "approve"
-                        }
-                        clientMutationId: null
+        mutation CreateConfirmation {
+            createConfirmation(
+                input: {
+                    content: {
+                        owner: "${senderAddress}"
+                        signature: "${senderSignature}"
+                        signatureType: "ECDSA"
+                        submissionDate: "${new Date().toISOString()}"
+                        transactionHash: "${safeTxHash}"
+                        confirmationType: "approve"
                     }
-                ) {
-                    clientMutationId
+                    clientMutationId: null
                 }
+            ) {
+                clientMutationId
             }
-        `);
+        }
+    `);
 
     return Promise.resolve();
   }

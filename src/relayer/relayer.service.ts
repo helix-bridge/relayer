@@ -29,6 +29,7 @@ import { messagerInstance } from "../base/messager";
 import { Aave } from "../liquidity/lend/aave";
 import { LendMarket } from "../liquidity/lend/market";
 import { CeramicService } from "../base/safe-service/ceramic.service";
+import { SingleService } from "../base/safe-service/single.service";
 import { SafeGlobalService } from "../base/safe-service/safeglobal.service";
 import { SafeService } from "../base/safe-service/safe.service";
 
@@ -234,7 +235,7 @@ export class RelayerService implements OnModuleInit {
           }
 
           const isCeramic =
-            config.safeWalletType === "Ceramic" && config.encryptedCeramicKey;
+            config.safeWalletType === "ceramic" && config.encryptedCeramicKey;
           const privateKey = e.decrypt(config.encryptedPrivateKey);
           const ceramicKey = isCeramic
             ? e.decrypt(config.encryptedCeramicKey)
@@ -261,8 +262,10 @@ export class RelayerService implements OnModuleInit {
           };
           if (config.safeWalletRole !== undefined) {
             let safeService: SafeService =
-              config.safeWalletType === "Ceramic"
+              config.safeWalletType === "ceramic"
                 ? new CeramicService(ceramicKey, config.safeWalletUrl)
+                : config.safeWalletType === "single"
+                ? new SingleService()
                 : new SafeGlobalService(
                     config.safeWalletUrl,
                     toChainInfo.chainId
