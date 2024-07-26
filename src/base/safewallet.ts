@@ -51,7 +51,9 @@ export class SafeWallet {
     this.threshold = await this.safeSdk.getThreshold();
   }
 
-  private concatSignatures(confirmations: SafeMultisigConfirmationResponse[]): string | null {
+  private concatSignatures(
+    confirmations: SafeMultisigConfirmationResponse[]
+  ): string | null {
     if (confirmations.length < this.threshold) {
       return null;
     }
@@ -74,7 +76,10 @@ export class SafeWallet {
     const uniqueOwners = [];
     for (const confirmation of confirmations) {
       signatures += confirmation.signature.substring(2);
-      if (uniqueOwners.includes(confirmation.owner) || !this.owners.includes(confirmation.owner)) {
+      if (
+        uniqueOwners.includes(confirmation.owner) ||
+        !this.owners.includes(confirmation.owner)
+      ) {
         continue;
       }
       uniqueOwners.push(confirmation.owner);
@@ -85,7 +90,9 @@ export class SafeWallet {
     return signatures;
   }
 
-  private isTransactionSignedByAddress(confirmations: SafeMultisigConfirmationResponse[]): boolean {
+  private isTransactionSignedByAddress(
+    confirmations: SafeMultisigConfirmationResponse[]
+  ): boolean {
     const confirmation = confirmations.find(
       (confirmation) => confirmation.owner === this.signer.address
     );
@@ -101,7 +108,9 @@ export class SafeWallet {
     const tx = await this.safeSdk.createTransaction({ transactions });
     const safeTxHash = await this.safeSdk.getTransactionHash(tx);
     try {
-      const confirmations = await this.safeService.getTransactionConfirmations(safeTxHash);
+      const confirmations = await this.safeService.getTransactionConfirmations(
+        safeTxHash
+      );
       var signatures = this.concatSignatures(confirmations);
       const hasBeenSigned = this.isTransactionSignedByAddress(confirmations);
       if (hasBeenSigned || signatures !== null) {
@@ -129,7 +138,9 @@ export class SafeWallet {
       senderSignature: senderSignature.data,
     };
     await this.safeService.proposeTransaction(proposeTransactionProps);
-    this.logger.log(`finish to propose transaction ${safeTxHash} on chain ${chainId}`);
+    this.logger.log(
+      `finish to propose transaction ${safeTxHash} on chain ${chainId}`
+    );
     return {
       readyExecute: false,
       safeTxHash: "",

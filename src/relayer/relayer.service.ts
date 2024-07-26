@@ -233,9 +233,12 @@ export class RelayerService implements OnModuleInit {
             return null;
           }
 
-          const isCeramic = config.safeWalletType === 'Ceramic' && config.encryptedCeramicKey;
+          const isCeramic =
+            config.safeWalletType === "Ceramic" && config.encryptedCeramicKey;
           const privateKey = e.decrypt(config.encryptedPrivateKey);
-          const ceramicKey = isCeramic ? e.decrypt(config.encryptedCeramicKey) : "";
+          const ceramicKey = isCeramic
+            ? e.decrypt(config.encryptedCeramicKey)
+            : "";
           let toWallet = new EthereumConnectedWallet(
             privateKey,
             toChainInfo.provider
@@ -257,8 +260,18 @@ export class RelayerService implements OnModuleInit {
             safeWallet: undefined,
           };
           if (config.safeWalletRole !== undefined) {
-            let safeService: SafeService = config.safeWalletType === "Ceramic" ? new CeramicService(ceramicKey, config.safeWalletUrl) : new SafeGlobalService(config.safeWalletUrl, toChainInfo.chainId);
-            toConnectInfo.safeWallet = new SafeWallet(config.safeWalletAddress, toWallet.wallet, safeService);
+            let safeService: SafeService =
+              config.safeWalletType === "Ceramic"
+                ? new CeramicService(ceramicKey, config.safeWalletUrl)
+                : new SafeGlobalService(
+                    config.safeWalletUrl,
+                    toChainInfo.chainId
+                  );
+            toConnectInfo.safeWallet = new SafeWallet(
+              config.safeWalletAddress,
+              toWallet.wallet,
+              safeService
+            );
           }
           let fromWallet = new EthereumConnectedWallet(
             privateKey,
@@ -343,7 +356,8 @@ export class RelayerService implements OnModuleInit {
                   toTokenDecimals: toTokenDecimals,
                   fromToken: fromTokenContract,
                   toToken: toTokenContract,
-                  relayer: toConnectInfo.safeWallet?.address ?? toWallet.address,
+                  relayer:
+                    toConnectInfo.safeWallet?.address ?? toWallet.address,
                   swapRate: token.swapRate,
                   microThreshold: token.microThreshold ?? 0,
                   withdrawLiquidityAmountThreshold:

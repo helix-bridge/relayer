@@ -33,4 +33,3 @@ export class EthereumConnectedWallet {
     return this.wallet.address;
   }
 }
-

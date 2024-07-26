@@ -1,5 +1,5 @@
 import { SafeMultisigConfirmationResponse } from "@safe-global/safe-core-sdk-types";
-import { ProposeTransactionProps } from '@safe-global/api-kit';
+import { ProposeTransactionProps } from "@safe-global/api-kit";
 
 export abstract class SafeService {
   public name: string;
@@ -8,7 +8,8 @@ export abstract class SafeService {
     this.name = name;
     this.url = url;
   }
-  abstract getTransactionConfirmations(safeTxHash: string): Promise<SafeMultisigConfirmationResponse[]>;
+  abstract getTransactionConfirmations(
+    safeTxHash: string
+  ): Promise<SafeMultisigConfirmationResponse[]>;
   abstract proposeTransaction(prop: ProposeTransactionProps): Promise<void>;
 }
- 
