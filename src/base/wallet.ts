@@ -1,4 +1,4 @@
-import { Wallet, HDNodeWallet } from "ethers";
+import { HDNodeWallet, Wallet } from "ethers";
 import { EthereumProvider } from "./provider";
 
 enum PrivateKeyType {
@@ -8,6 +8,7 @@ enum PrivateKeyType {
 
 export class EthereumWallet {
   private wallet: Wallet | HDNodeWallet;
+
   constructor(keyType: PrivateKeyType, privateKey: string) {
     if (keyType === PrivateKeyType.PRIVATE_KEY) {
       this.wallet = new Wallet(privateKey);
@@ -23,6 +24,7 @@ export class EthereumWallet {
 
 export class EthereumConnectedWallet {
   public wallet: Wallet | HDNodeWallet;
+
   constructor(privateKey: string, provider: EthereumProvider) {
     this.wallet = new Wallet(privateKey, provider.provider);
   }

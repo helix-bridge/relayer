@@ -292,7 +292,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
             decimals: 6,
             isNativeWrapped: false,
-          }
+          },
         ],
       },
       {
