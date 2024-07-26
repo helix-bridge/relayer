@@ -26,8 +26,8 @@
   },
   "bin": "dist/main.js",
   "dependencies": {
-    "@composedb/client": "^0.7.1",
-    "@composedb/types": "^0.7.1",
+    "@composedb/client": "0.5.0",
+    "@composedb/types": "0.5.0",
     "@helixbridge/helixconf": "1.0.3",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",

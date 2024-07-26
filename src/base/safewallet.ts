@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import {
   MetaTransactionData,
   SafeMultisigConfirmationResponse,
@@ -24,6 +25,7 @@ export class SafeWallet {
   public threshold: number;
   private safeSdk: Safe;
   private safeService: SafeService;
+  private readonly logger = new Logger("dataworker");
 
   constructor(
     address: string,
@@ -127,6 +129,7 @@ export class SafeWallet {
       senderSignature: senderSignature.data,
     };
     await this.safeService.proposeTransaction(proposeTransactionProps);
+    this.logger.log(`finish to propose transaction ${safeTxHash} on chain ${chainId}`);
     return {
       readyExecute: false,
       safeTxHash: "",
