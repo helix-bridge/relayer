@@ -18,13 +18,15 @@ export class SingleService extends SafeService {
     if (safeTxHash !== this.props?.safeTxHash) {
       return [];
     }
-    return [{
-      owner: this.props.senderAddress,
-      signature: this.props.senderSignature,
-      signatureType: "ECDSA",
-      transactionHash: safeTxHash,
-      submissionDate: new Date().toISOString(),
-      confirmationType: "approve"
-    }];
+    return [
+      {
+        owner: this.props.senderAddress,
+        signature: this.props.senderSignature,
+        signatureType: "ECDSA",
+        transactionHash: safeTxHash,
+        submissionDate: new Date().toISOString(),
+        confirmationType: "approve",
+      },
+    ];
   }
 }

@@ -666,6 +666,31 @@ export class Lnv3BridgeContract extends EthereumContract {
     );
   }
 
+  encodeUpdateFee(
+    remoteChainId: number,
+    sourceToken: string,
+    targetToken: string,
+    baseFee: bigint,
+    liquidityFeeRate: number,
+    transferLimit: bigint
+  ): string {
+    return this.interface.encodeFunctionData("registerLnProvider", [
+      remoteChainId,
+      sourceToken,
+      targetToken,
+      baseFee,
+      liquidityFeeRate,
+      transferLimit,
+    ]);
+  }
+
+  encodeDepositPenaltyReserve(sourceToken: string, amount: bigint): string {
+    return this.interface.encodeFunctionData("depositPenaltyReserve", [
+      sourceToken,
+      amount,
+    ]);
+  }
+
   async transferIdExist(transferId: string): Promise<[boolean, any]> {
     const lockInfo = await this.contract.lockInfos(transferId);
     return [lockInfo.status == LNV3_STATUS_LOCKED, lockInfo];

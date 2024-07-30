@@ -28,7 +28,7 @@
   "dependencies": {
     "@composedb/client": "0.5.0",
     "@composedb/types": "0.5.0",
-    "@helixbridge/helixconf": "1.0.3",
+    "@helixbridge/helixconf": "1.1.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
