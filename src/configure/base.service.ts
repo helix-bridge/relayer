@@ -38,6 +38,7 @@ export class BaseConfigService {
       HelixChain.bera,
       HelixChain.morph,
       HelixChain.baseSepolia,
+      HelixChain.zircuit,
     ],
   };
 
