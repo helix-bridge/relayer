@@ -936,28 +936,26 @@ export class RelayerService implements OnModuleInit {
         continue;
       }
       const record = needRelayRecord.record;
-      const validInfo = await this.dataworkerService.checkValid(
+      const txValid = await this.dataworkerService.checkValid(
         this.configureService.indexer,
         record,
         fromBridgeContract,
         toBridgeContract,
         fromChainInfo.provider,
-        toChainInfo.provider,
         bridge.reorgThreshold,
         bridge.microReorgThreshold,
         new Any(lnProvider.microThreshold, srcDecimals).Number,
-        toChainInfo.notSupport1559,
         bridge.toWallet
       );
 
-      if (!validInfo.isValid) {
+      if (!txValid) {
         continue;
       }
 
-      if (validInfo.feeUsed > new Ether(bridge.feeLimit).Number) {
-        this.logger.log(
-          `fee is exceed limit, please check, fee ${validInfo.feeUsed}`
-        );
+      let gasPrice = await this.gasPrice(toChainInfo);
+      let feeUsed = this.dataworkerService.relayFee(gasPrice);
+      if (feeUsed > new Ether(bridge.feeLimit).Number) {
+        this.logger.log(`fee is exceed limit, please check, fee ${feeUsed}`);
         continue;
       }
       let nonce: number | null = null;
@@ -1097,7 +1095,7 @@ export class RelayerService implements OnModuleInit {
               txInfo.value,
               txInfo.operation,
               txInfo.signatures,
-              validInfo.gasPrice
+              gasPrice
             );
             await this.store.savePendingTransaction(
               toChainInfo.chainName,
@@ -1132,7 +1130,7 @@ export class RelayerService implements OnModuleInit {
         // relay and return
         const tx = await toBridgeContract.relay(
           args,
-          validInfo.gasPrice,
+          gasPrice,
           nonce,
           relayGasLimit
         );

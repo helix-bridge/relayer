@@ -31,12 +31,6 @@ export interface HistoryRecord {
   messageNonce: number;
 }
 
-export interface ValidInfo {
-  gasPrice: GasPrice | null;
-  feeUsed: bigint | null;
-  isValid: boolean;
-}
-
 export interface TransferRecord {
   lastTransferId: string;
   record: HistoryRecord;
@@ -339,13 +333,11 @@ export class DataworkerService implements OnModuleInit {
     fromBridge: LnBridgeContract | Lnv3BridgeContract,
     toBridge: LnBridgeContract | Lnv3BridgeContract,
     fromProvider: EthereumProvider,
-    toProvider: EthereumProvider,
     reorgThreshold: number,
     microReorgThreshold: number,
     microThreshold: bigint,
-    notSupport1559: boolean,
     wallet
-  ): Promise<ValidInfo> {
+  ): Promise<boolean> {
     // 1. tx must be finalized
     const transactionInfo = await fromProvider.checkPendingTransaction(
       record.requestTxHash
@@ -383,11 +375,7 @@ export class DataworkerService implements OnModuleInit {
           wallet
         );
       }
-      return {
-        gasPrice: null,
-        feeUsed: null,
-        isValid: false,
-      };
+      return false;
     }
     // 2. tx is not relayed
     const transferId = this.getTransferId(record.id);
@@ -396,35 +384,16 @@ export class DataworkerService implements OnModuleInit {
       this.logger.log(
         `[${record.fromChain}>>${record.toChain}]tx has been relayed, waiting for sync, id ${transferId}, txHash ${record.requestTxHash}`
       );
-      return {
-        gasPrice: null,
-        feeUsed: null,
-        isValid: false,
-      };
+      return false;
     }
     // 3. the lock info verify
     const existInfo = await fromBridge.transferIdExist(transferId);
     if (!existInfo[0]) {
       this.logger.log(`lock info not exist, maybe reorged, id ${transferId}`);
-      return {
-        gasPrice: null,
-        feeUsed: null,
-        isValid: false,
-      };
+      return false;
     } else {
       this.logger.log(`transfer locked success, info ${existInfo[1]}`);
     }
-    // 4. get current fee
-    let gasPrice = await toProvider.feeData(1, notSupport1559);
-    let feeUsed = this.relayFee(gasPrice);
-    let microHint = satisfyMicroThreshold
-      ? `isMicro, send: ${record.sendAmount}, threshold: ${microThreshold}`
-      : "notMicro";
-    this.logger.log(`fee check passed, feeUsed ${feeUsed}, ${microHint}`);
-    return {
-      gasPrice,
-      feeUsed,
-      isValid: true,
-    };
+    return true;
   }
 }
