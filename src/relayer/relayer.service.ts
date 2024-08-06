@@ -177,7 +177,7 @@ export class RelayerService implements OnModuleInit {
           );
           return null;
         }
-        const provider = new EthereumProvider(rpcnode.rpc);
+        const provider = new EthereumProvider(rpcnode.rpc ?? chainInfo.rpc);
         const lendMarket = rpcnode.lendMarket?.map((market) => {
           switch (market.protocol) {
             // currently only support aave
@@ -198,7 +198,7 @@ export class RelayerService implements OnModuleInit {
           rpcnode.name,
           {
             chainName: rpcnode.name,
-            rpc: rpcnode.rpc,
+            rpc: rpcnode.rpc ?? chainInfo.rpc,
             chainId: chainInfo.id,
             provider: provider,
             fixedGasPrice: rpcnode.fixedGasPrice,
