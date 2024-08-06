@@ -60,7 +60,7 @@ export interface LendInfo {
 
 export interface RpcNode {
   name: string;
-  rpc: string;
+  rpc?: string;
   fixedGasPrice: number;
   notSupport1559: boolean;
   lendMarket: LendInfo[];
@@ -138,6 +138,6 @@ export class ConfigureService {
   }
 
   get supportedChains(): string[] {
-    return this.baseConfig.chains.map((item) => item.name);
+    return this.baseConfig.chains.map((item) => item.code);
   }
 }
