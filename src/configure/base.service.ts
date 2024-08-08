@@ -26,6 +26,8 @@ export class BaseConfigService {
       HelixChain.blast,
       HelixChain.astarZkevm,
       HelixChain.moonbeam,
+      HelixChain.base,
+      HelixChain.avalanche,
     ],
   };
   testConfigure: BaseConfigure = {
