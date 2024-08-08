@@ -1,14 +1,12 @@
-FROM node:20-alpine as builder
-RUN mkdir -p /opt/build
-WORKDIR /opt/build
-COPY . ./
+FROM node:21-alpine as builder
+COPY . /app
+WORKDIR /app
 RUN yarn install && yarn build
 
-FROM node:14.21.0-alpine
-RUN mkdir -p /opt/data
-COPY --from=builder /opt/build/dist /opt/relayer/dist
-WORKDIR /opt/relayer
-COPY .env.docker .env
-COPY package.json package.json
-RUN yarn install --production 
-CMD [ "node", "dist/main" ]
+FROM node:21-alpine
+COPY --from=builder /app/dist /app
+COPY .env.docker /app/.env
+COPY package.json /app/package.json
+WORKDIR /app
+RUN yarn install --production
+CMD [ "node", "src/main.js" ]
