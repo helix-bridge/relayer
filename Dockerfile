@@ -1,9 +1,9 @@
-FROM node:21-alpine as builder
+FROM node:18-alpine as builder
 COPY . /app
 WORKDIR /app
 RUN yarn install && yarn build
 
-FROM node:21-alpine
+FROM node:18-alpine
 COPY --from=builder /app/dist /app
 COPY .env.docker /app/.env
 COPY package.json /app/package.json
