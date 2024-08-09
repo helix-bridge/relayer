@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "prebuild": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prebuild": "rm -rf dist && tsc -p tsconfig.build.json && yarn patch:config",
     "build": "nest build",
     "build-wp": "nest build --webpack --webpackPath=./webpack.config.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -22,13 +22,14 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "pkg:mac": "pkg . -t node14-mac-x64 --debug",
     "pkg:linux": "pkg . -t node14-linux-x64 --debug",
-    "crypto": "ts-node encrypto.ts"
+    "crypto": "ts-node encrypto.ts",
+    "patch:config": "sh patch-config.sh"
   },
   "bin": "dist/main.js",
   "dependencies": {
     "@composedb/client": "0.5.0",
     "@composedb/types": "0.5.0",
-    "@helixbridge/helixconf": "1.1.10",
+    "@helixbridge/helixconf": "1.1.11",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
