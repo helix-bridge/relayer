@@ -233,14 +233,14 @@ export class AddressBookConfigure {
       },
       {
         name: "polygon",
-        l2Pool: "0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf",
-        oracle: "0x0229F777B0fAb107F9591a41d5F02E4e98dB6f2d",
+        l2Pool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+        oracle: "0xb023e699F5a33916Ea823A16485e259257cA8Bd1",
         multicall: "0xcA11bde05977b3631167028862bE2a173976CA11",
         debtTokens: [
           {
             symbol: "usdc.e",
-            aToken: "0x1a13F4Ca1d028320A707D99520AbFefca3998b7F",
-            vToken: "0x248960A9d75EdFa3de94F7193eae3161Eb349a12",
+            aToken: "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
+            vToken: "0xFCCf3cAbbe80101232d343252614b6A3eE81C989",
             underlyingToken: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
             decimals: 6,
             isNativeWrapped: false,
@@ -255,8 +255,8 @@ export class AddressBookConfigure {
           },
           {
             symbol: "usdt",
-            aToken: "0x60D55F02A771d515e077c9C2403a1ef324885CeC",
-            vToken: "0x8038857FD47108A07d1f6Bf652ef1cBeC279A2f3",
+            aToken: "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
+            vToken: "0xfb00AC187a8Eb5AFAE4eACE434F493Eb62672df7",
             underlyingToken: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
             decimals: 6,
             isNativeWrapped: false,
