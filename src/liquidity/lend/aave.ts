@@ -414,7 +414,7 @@ export class AddressBookConfigure {
             isNativeWrapped: false,
           },
           {
-            symbol: "dai",
+            symbol: "xdai",
             aToken: "0xd0Dd6cEF72143E22cCED4867eb0d5F2328715533",
             vToken: "0x281963D7471eCdC3A2Bd4503e24e89691cfe420D",
             underlyingToken: "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d",
