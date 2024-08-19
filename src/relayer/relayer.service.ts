@@ -343,14 +343,24 @@ export class RelayerService implements OnModuleInit {
                     fromToken.address,
                     fromWallet.wallet
                   );
-                  fromTokenDecimals = await fromTokenContract.decimals();
+                  try {
+                    fromTokenDecimals = await fromTokenContract.decimals();
+                  } catch (err) {
+                    this.logger.warn(`[${fromChainInfo.chainName}]get token decimals failed, err ${err}`);
+                    fromTokenDecimals = -1;
+                  }
                 }
                 if (toToken.address !== zeroAddress) {
                   toTokenContract = new Erc20Contract(
                     toToken.address,
                     toWallet.wallet
                   );
-                  toTokenDecimals = await toTokenContract.decimals();
+                  try {
+                    toTokenDecimals = await toTokenContract.decimals();
+                  } catch (err) {
+                    this.logger.warn(`[${toChainInfo.chainName}]get token decimals failed, err ${err}`);
+                    toTokenDecimals = -1;
+                  }
                 }
                 return {
                   fromAddress: fromToken.address,
@@ -418,6 +428,9 @@ export class RelayerService implements OnModuleInit {
     if (!lnBridge.minProfit || !lnBridge.maxProfit) return;
     if (fromChainInfo.adjustingFee) return;
     if (lnProviderInfo.swapRate < 0.01) return;
+    if (lnProviderInfo.fromTokenDecimals === -1) {
+      lnProviderInfo.fromTokenDecimals = await lnProviderInfo.fromToken.decimals();
+    }
     let srcDecimals = lnProviderInfo.fromTokenDecimals;
     // native fee decimals = 10**18
     function nativeFeeToToken(fee: bigint): bigint {
@@ -779,6 +792,9 @@ export class RelayerService implements OnModuleInit {
     let nativeFeeUsed = BigInt(0);
     // relay for each token configured
     for (const lnProvider of bridge.lnProviders) {
+      if (lnProvider.fromTokenDecimals === -1) {
+        lnProvider.fromTokenDecimals = await lnProvider.fromToken.decimals();
+      }
       let srcDecimals = lnProvider.fromTokenDecimals;
       if (lnProvider.useDynamicBaseFee && needUpdateDynamicFee) {
         if (nativeFeeUsed <= 0) {
