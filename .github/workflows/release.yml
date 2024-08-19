@@ -42,3 +42,6 @@ jobs:
           docker tag ${IMAGE_TAG_HASH}:sha-${{ env.SHA }} ${IMAGE_TAG_HASH}:${{ env.GIT_TAG_NAME }}
           docker push ${IMAGE_TAG_HASH}:${{ env.GIT_TAG_NAME }}
             
+      - name: Release
+        uses: softprops/action-gh-release@v2
+
