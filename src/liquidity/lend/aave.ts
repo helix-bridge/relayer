@@ -492,12 +492,15 @@ export class Aave extends LendMarket {
     }
     // refresh status from chain when start
     if (!tokens) {
-      throw new Error(`[Lend]Chain ${chainName} tokens empty`);
+      throw new Error(`[Lend] Chain ${chainName} tokens empty`);
     }
     this.debtTokens = tokens.map((token) => {
       const tokenInfo = bookInfo.debtTokens.find(
         (dt) => dt.symbol == token.symbol
       );
+      if (tokenInfo === undefined) {
+          throw new Error(`[Lend] DebtToken not exist symbol ${token.symbol}, chain ${chainName}`);
+      }
       //const collateralInfo = collaterals.find((c) => c.symbol === token.symbol);
       return {
         address: tokenInfo.vToken,
