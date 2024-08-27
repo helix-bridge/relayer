@@ -198,17 +198,17 @@ export class DataworkerService implements OnModuleInit {
       totalWithdrawAmount += BigInt(record.sendAmount);
       transferIds.push(last(record.id.split("-")));
     }
-    totalWithdrawAmount /= new Any(1, decimals).Number;
+    const withdrawAmountAvailable = Number(totalWithdrawAmount) / (10 ** decimals);
 
     if (transferIds.length === 0) return null;
 
     if (!countThreshold && amountThreshold) {
-      if (totalWithdrawAmount < amountThreshold) return null;
+      if (withdrawAmountAvailable < amountThreshold) return null;
     } else if (countThreshold && !amountThreshold) {
       if (transferIds.length < countThreshold) return null;
     } else {
       if (
-        totalWithdrawAmount < amountThreshold &&
+        withdrawAmountAvailable < amountThreshold &&
         transferIds.length < countThreshold
       )
         return null;
