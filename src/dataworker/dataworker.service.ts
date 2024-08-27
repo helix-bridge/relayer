@@ -198,7 +198,7 @@ export class DataworkerService implements OnModuleInit {
       totalWithdrawAmount += BigInt(record.sendAmount);
       transferIds.push(last(record.id.split("-")));
     }
-    const withdrawAmountAvailable = Number(totalWithdrawAmount) / (10 ** decimals);
+    const withdrawAmountAvailable = Number(totalWithdrawAmount) / Number((new Any(1, decimals)).Number);
 
     if (transferIds.length === 0) return null;
 
