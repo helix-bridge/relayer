@@ -20,6 +20,11 @@ export interface SoftLimitAmount {
   allowance: bigint;
 }
 
+export interface MulticallArgs {
+  address: string;
+  data: string;
+}
+
 export class EthereumContract {
   protected contract: Contract;
   public address: string;
@@ -856,6 +861,17 @@ export class MulticallContract extends EthereumContract {
     for (const balance of balances) {
       result.push(BigInt(balance));
     }
+    return result;
+  }
+
+  async aggregate(args: MulticallArgs[]): Promise<string> {
+    const aggregateArgs = args.map((arg) => [arg.address, arg.data]);
+    let result = await this.staticCall(
+      "aggregate",
+      [aggregateArgs],
+      true,
+      null
+    );
     return result;
   }
 }

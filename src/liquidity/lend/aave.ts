@@ -1,13 +1,20 @@
 import { Logger } from "@nestjs/common";
 import { Wallet, HDNodeWallet, ethers } from "ethers";
-import { AaveOracle, AaveL2Pool } from "./contract";
+import { AaveOracle, AaveL2Pool } from "./aave.contract";
 import {
   MulticallContract,
   zeroAddress,
   WETHContract,
   Erc20Contract,
 } from "../../base/contract";
-import { LendMarket, TxInfo, WithdrawBorrowBalance } from "./market";
+import {
+  LendMarket,
+  TxInfo,
+  WithdrawBorrowBalance,
+  DebtStatus,
+  CollateralStatus,
+  maxU256,
+} from "./market";
 import {
   LendTokenInfo,
   CollateralInfo,
@@ -66,20 +73,6 @@ export interface AddressBook {
   version: string;
   chains: ChainInfo[];
 }
-
-export enum DebtStatus {
-  HasDebt,
-  NoDebt,
-}
-
-export enum CollateralStatus {
-  CollateralFull,
-  CollateralLack,
-}
-
-export const maxU256: bigint = BigInt(
-  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-);
 
 export class AddressBookConfigure {
   formalConfigure: AddressBook = {
@@ -499,7 +492,9 @@ export class Aave extends LendMarket {
         (dt) => dt.symbol == token.symbol
       );
       if (tokenInfo === undefined) {
-          throw new Error(`[Lend] DebtToken not exist symbol ${token.symbol}, chain ${chainName}`);
+        throw new Error(
+          `[Lend] DebtToken not exist symbol ${token.symbol}, chain ${chainName}`
+        );
       }
       //const collateralInfo = collaterals.find((c) => c.symbol === token.symbol);
       return {
@@ -928,9 +923,5 @@ export class Aave extends LendMarket {
       }
     }
     return txs;
-  }
-
-  address(): string {
-    return this.poolContract.address;
   }
 }

@@ -9,6 +9,20 @@ export interface WithdrawBorrowBalance {
   borrow: bigint;
 }
 
+export enum DebtStatus {
+  HasDebt,
+  NoDebt,
+}
+
+export enum CollateralStatus {
+  CollateralFull,
+  CollateralLack,
+}
+
+export const maxU256: bigint = BigInt(
+  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+);
+
 export abstract class LendMarket {
   public name: string;
   public wrappedToken: string;
@@ -16,7 +30,6 @@ export abstract class LendMarket {
     this.name = name;
     this.wrappedToken = wtoken;
   }
-  abstract address(): string;
   abstract lendingFromPoolTxs(
     token: string,
     amount: bigint,
