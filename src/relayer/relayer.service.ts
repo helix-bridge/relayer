@@ -27,6 +27,7 @@ import { ethers } from "ethers";
 import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
 import { Aave } from "../liquidity/lend/aave";
+import { Moonwell } from "../liquidity/lend/moonwell";
 import { LendMarket } from "../liquidity/lend/market";
 import { CeramicService } from "../base/safe-service/ceramic.service";
 import { SingleService } from "../base/safe-service/single.service";
@@ -190,6 +191,15 @@ export class RelayerService implements OnModuleInit {
                 market.tokens,
                 provider.provider
               );
+            case "moonwell":
+              return new Moonwell(
+                rpcnode.name,
+                this.configureService.config.env === "test",
+                market.healthFactorLimit ?? 0.5,
+                market.collaterals,
+                market.tokens,
+                provider.provider
+              );
             default:
               return null;
           }
@@ -346,7 +356,9 @@ export class RelayerService implements OnModuleInit {
                   try {
                     fromTokenDecimals = await fromTokenContract.decimals();
                   } catch (err) {
-                    this.logger.warn(`[${fromChainInfo.chainName}]get token decimals failed, err ${err}`);
+                    this.logger.warn(
+                      `[${fromChainInfo.chainName}]get token decimals failed, err ${err}`
+                    );
                     fromTokenDecimals = -1;
                   }
                 }
@@ -358,7 +370,9 @@ export class RelayerService implements OnModuleInit {
                   try {
                     toTokenDecimals = await toTokenContract.decimals();
                   } catch (err) {
-                    this.logger.warn(`[${toChainInfo.chainName}]get token decimals failed, err ${err}`);
+                    this.logger.warn(
+                      `[${toChainInfo.chainName}]get token decimals failed, err ${err}`
+                    );
                     toTokenDecimals = -1;
                   }
                 }
@@ -429,7 +443,8 @@ export class RelayerService implements OnModuleInit {
     if (fromChainInfo.adjustingFee) return;
     if (lnProviderInfo.swapRate < 0.01) return;
     if (lnProviderInfo.fromTokenDecimals === -1) {
-      lnProviderInfo.fromTokenDecimals = await lnProviderInfo.fromToken.decimals();
+      lnProviderInfo.fromTokenDecimals =
+        await lnProviderInfo.fromToken.decimals();
     }
     let srcDecimals = lnProviderInfo.fromTokenDecimals;
     // native fee decimals = 10**18
