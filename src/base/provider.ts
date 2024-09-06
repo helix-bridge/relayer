@@ -61,6 +61,7 @@ export class EthereumProvider {
   public urls: string[];
   public urlIndex: number = 0;
   private readonly logger = new Logger("provider");
+  private updateTimestamp: number = 0;
 
   constructor(urls: string[]) {
     this.urls = urls;
@@ -68,9 +69,11 @@ export class EthereumProvider {
   }
 
   tryNextUrl() {
-    if (this.urls.length <= 1) {
+    const now = Date.now();
+    if (this.urls.length <= 1 || this.updateTimestamp + 60000 > now) {
       return;
     }
+    this.updateTimestamp = now;
     this.urlIndex += 1;
     const url = this.urls[this.urlIndex % this.urls.length];
     this.logger.log(`try to use next url ${url}`);
