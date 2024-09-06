@@ -4,6 +4,8 @@ import { aaveL2Pool } from "../../abi/aaveL2Pool";
 import { aaveOracle } from "../../abi/aaveOracle";
 import { GasPrice } from "../../base/provider";
 import { EthereumContract } from "../../base/contract";
+import { EthereumConnectedWallet } from "../../base/wallet";
+import { EthereumProvider, rpcCallIfError } from "../../base/provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
 export const zeroTransferId: string =
@@ -24,12 +26,13 @@ const VariableRate: number = 2;
 export class AaveOracle extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, aaveOracle, signer);
   }
 
   // the decimals is 8
+  @rpcCallIfError
   async getAssetPrice(address: string): Promise<bigint> {
     return await this.contract.getAssetPrice(address);
   }
@@ -38,12 +41,13 @@ export class AaveOracle extends EthereumContract {
 export class AaveL2Pool extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, aaveL2Pool, signer);
   }
 
   // view
+  @rpcCallIfError
   async getUserAccountData(account: string): Promise<AccountData> {
     return await this.contract.getUserAccountData(account);
   }

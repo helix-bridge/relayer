@@ -7,6 +7,7 @@ import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
 import SafeApiKit from "@safe-global/api-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { SafeService } from "./safe-service/safe.service";
+import { EthereumConnectedWallet } from "./wallet";
 
 export interface TransactionPropose {
   to: string;
@@ -26,7 +27,7 @@ export interface SignatureInfo {
 
 export class SafeWallet {
   public address: string;
-  public signer: Wallet | HDNodeWallet;
+  public wallet: EthereumConnectedWallet;
   public owners: string[];
   public threshold: number;
   private safeSdk: Safe;
@@ -35,18 +36,22 @@ export class SafeWallet {
 
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet,
+    wallet: EthereumConnectedWallet,
     safeService: SafeService
   ) {
     this.address = address;
-    this.signer = signer;
+    this.wallet = wallet;
     this.safeService = safeService;
+
+    wallet.registerUrlUpdateHandler(() => {
+      this.safeSdk = undefined;
+    });
   }
 
   async connect(chainId: bigint) {
     const ethAdapter = new EthersAdapter({
       ethers,
-      signerOrProvider: this.signer,
+      signerOrProvider: this.wallet.SignerOrProvider,
     });
 
     this.safeSdk = await Safe.create({
@@ -90,7 +95,9 @@ export class SafeWallet {
     return {
       size: uniqueOwners.length,
       signatures: signatures,
-      selfSigned: uniqueOwners.includes(this.signer.address.toLowerCase()),
+      selfSigned: uniqueOwners.includes(
+        this.wallet.wallet.address.toLowerCase()
+      ),
     };
   }
 
@@ -146,7 +153,7 @@ export class SafeWallet {
               safeAddress: this.address,
               safeTransactionData: tx.data,
               safeTxHash,
-              senderAddress: this.signer.address,
+              senderAddress: this.wallet.wallet.address,
               senderSignature: signature.data,
             };
             try {

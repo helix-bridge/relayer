@@ -25,6 +25,8 @@ import {
   maxU256,
 } from "./market";
 import { Any } from "../../base/bignumber";
+import { EthereumConnectedWallet } from "../../base/wallet";
+import { EthereumProvider } from "../../base/provider";
 
 export interface DebtToken {
   decimals: number;
@@ -176,7 +178,7 @@ export class Moonwell extends LendMarket {
     healthFactorLimit: number,
     collaterals: CollateralInfo[],
     tokens: LendTokenInfo[],
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     const addressBook = new AddressBookConfigure().addressBook(isTest);
     const bookInfo = addressBook.chains.find((e) => e.name == chainName);

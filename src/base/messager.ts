@@ -3,6 +3,8 @@ import { Wallet, HDNodeWallet, ethers, AbiCoder } from "ethers";
 import { EthereumContract } from "./contract";
 import { layerzeroMessager } from "../abi/layerzeroMessager";
 import { msgportMessager } from "../abi/msgportMessager";
+import { EthereumConnectedWallet } from "./wallet";
+import { EthereumProvider } from "./provider";
 
 export interface MessageParams {
   fee: bigint;
@@ -31,7 +33,7 @@ export class MessagePortMessager extends Messager {
 
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, msgportMessager, signer);
   }
@@ -69,7 +71,7 @@ export class MessagePortMessager extends Messager {
 export class LayerzeroMessager extends Messager {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, layerzeroMessager, signer);
   }
@@ -104,7 +106,7 @@ export class LayerzeroMessager extends Messager {
 export function messagerInstance(
   channel: string,
   address: string,
-  signer: Wallet | HDNodeWallet | ethers.Provider
+  signer: EthereumConnectedWallet | EthereumProvider
 ): Messager {
   if (channel === "layerzero") {
     return new LayerzeroMessager(address, signer);

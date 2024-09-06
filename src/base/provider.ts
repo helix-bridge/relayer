@@ -1,4 +1,5 @@
-import { ethers } from "ethers";
+import { Logger } from "@nestjs/common";
+import { Wallet, HDNodeWallet, ethers } from "ethers";
 import { GWei } from "./bignumber";
 
 export interface EIP1559Fee {
@@ -38,21 +39,67 @@ export function scaleBigger(
   }
 }
 
+export function rpcCallIfError(
+  target: any,
+  propertyKey: string,
+  descriptor: PropertyDescriptor
+) {
+  const method = descriptor.value;
+  descriptor.value = async function (...args: any[]) {
+    try {
+      return await method.apply(this, args);
+    } catch (err) {
+      this.tryNextUrl();
+      throw err;
+    }
+  };
+}
+
 export class EthereumProvider {
   public provider: ethers.JsonRpcProvider;
+  public onUrlUpdatedHandlers: (() => void)[] = [];
+  public urls: string[];
+  public urlIndex: number = 0;
+  private readonly logger = new Logger("provider");
 
-  constructor(url: string) {
-    this.provider = new ethers.JsonRpcProvider(url);
+  constructor(urls: string[]) {
+    this.urls = urls;
+    this.provider = new ethers.JsonRpcProvider(urls[0]);
   }
 
+  tryNextUrl() {
+    if (this.urls.length <= 1) {
+      return;
+    }
+    this.urlIndex += 1;
+    const url = this.urls[this.urlIndex % this.urls.length];
+    this.logger.log(`try to use next url ${url}`);
+    this.provider.destroy();
+    this.provider = new ethers.JsonRpcProvider(url);
+    for (const handler of this.onUrlUpdatedHandlers) {
+      handler();
+    }
+  }
+
+  registerUrlUpdateHandler(handler: () => void) {
+    this.onUrlUpdatedHandlers.push(handler);
+  }
+
+  get SignerOrProvider(): Wallet | HDNodeWallet | ethers.Provider {
+    return this.provider;
+  }
+
+  @rpcCallIfError
   async currentBlocknumber() {
     return await this.provider.getBlockNumber();
   }
 
+  @rpcCallIfError
   async balanceOf(address: string): Promise<bigint> {
     return await this.provider.getBalance(address);
   }
 
+  @rpcCallIfError
   async feeData(
     scale: number,
     notSupport1559: boolean = false
@@ -85,6 +132,7 @@ export class EthereumProvider {
     }
   }
 
+  @rpcCallIfError
   async checkPendingTransaction(hash: string): Promise<TransactionInfo> | null {
     const transaction = await this.provider.getTransaction(hash);
     if (!transaction) {
