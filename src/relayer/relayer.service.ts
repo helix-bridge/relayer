@@ -343,41 +343,23 @@ export class RelayerService implements OnModuleInit {
                 }
                 var fromTokenContract,
                   toTokenContract = null;
-                var fromTokenDecimals,
-                  toTokenDecimals = 18;
                 if (fromToken.address !== zeroAddress) {
                   fromTokenContract = new Erc20Contract(
                     fromToken.address,
                     fromWallet
                   );
-                  try {
-                    fromTokenDecimals = await fromTokenContract.decimals();
-                  } catch (err) {
-                    this.logger.warn(
-                      `[${fromChainInfo.chainName}]get token decimals failed, err ${err}`
-                    );
-                    fromTokenDecimals = -1;
-                  }
                 }
                 if (toToken.address !== zeroAddress) {
                   toTokenContract = new Erc20Contract(
                     toToken.address,
                     toWallet
                   );
-                  try {
-                    toTokenDecimals = await toTokenContract.decimals();
-                  } catch (err) {
-                    this.logger.warn(
-                      `[${toChainInfo.chainName}]get token decimals failed, err ${err}`
-                    );
-                    toTokenDecimals = -1;
-                  }
                 }
                 return {
                   fromAddress: fromToken.address,
                   toAddress: toToken.address,
-                  fromTokenDecimals: fromTokenDecimals,
-                  toTokenDecimals: toTokenDecimals,
+                  fromTokenDecimals: -1,
+                  toTokenDecimals: -1,
                   fromToken: fromTokenContract,
                   toToken: toTokenContract,
                   relayer:
