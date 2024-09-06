@@ -8,6 +8,8 @@ import { abiSafe } from "../abi/abiSafe";
 import { multicall3 } from "../abi/multicall3";
 import { weth } from "../abi/weth";
 import { GasPrice } from "../base/provider";
+import { EthereumConnectedWallet } from "./wallet";
+import { EthereumProvider, rpcCallIfError } from "./provider";
 
 export const zeroAddress: string = "0x0000000000000000000000000000000000000000";
 export const zeroTransferId: string =
@@ -28,25 +30,34 @@ export interface MulticallArgs {
 export class EthereumContract {
   protected contract: Contract;
   public address: string;
+  public tryNextUrl: () => void;
   constructor(
     address: string,
     abi: InterfaceAbi,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
-    this.contract = new Contract(address, abi, signer);
+    this.contract = new Contract(address, abi, signer.SignerOrProvider);
     this.address = address;
+    this.tryNextUrl = () => {
+      signer.tryNextUrl();
+    };
+    signer.registerUrlUpdateHandler(() => {
+      this.contract = new Contract(address, abi, signer.SignerOrProvider);
+    });
   }
 
   get interface() {
     return this.contract.interface;
   }
 
+  @rpcCallIfError
   async getSoftTransferLimit(
     relayer: string,
     targetToken: string,
-    provider: ethers.Provider
+    signer: EthereumProvider
   ): Promise<SoftLimitAmount> {
     // native token
+    const provider = signer.SignerOrProvider as ethers.Provider;
     if (targetToken === zeroAddress) {
       const balance =
         ((await provider.getBalance(relayer)) * BigInt(9)) / BigInt(10);
@@ -55,7 +66,7 @@ export class EthereumContract {
         allowance: balance,
       };
     } else {
-      const targetTokenContract = new Erc20Contract(targetToken, provider);
+      const targetTokenContract = new Erc20Contract(targetToken, signer);
       const balance = await targetTokenContract.balanceOf(relayer);
       const allowance = await targetTokenContract.allowance(
         relayer,
@@ -68,6 +79,7 @@ export class EthereumContract {
     }
   }
 
+  @rpcCallIfError
   async call(
     method: string,
     args: any,
@@ -86,6 +98,7 @@ export class EthereumContract {
     return await this.contract[method](...args, txConfig);
   }
 
+  @rpcCallIfError
   async staticCall(
     method: string,
     args: any,
@@ -120,28 +133,33 @@ export class EthereumContract {
 export class Erc20Contract extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, erc20, signer);
   }
 
   // view
+  @rpcCallIfError
   async symbol(): Promise<string> {
     return await this.contract.symbol();
   }
 
+  @rpcCallIfError
   async name(): Promise<string> {
     return await this.contract.name();
   }
 
+  @rpcCallIfError
   async decimals(): Promise<number> {
     return await this.contract.decimals();
   }
 
+  @rpcCallIfError
   async balanceOf(address: string): Promise<bigint> {
     return await this.contract.balanceOf(address);
   }
 
+  @rpcCallIfError
   async allowance(owner: string, spender: string): Promise<bigint> {
     return await this.contract.allowance(owner, spender);
   }
@@ -152,7 +170,7 @@ export class Erc20Contract extends EthereumContract {
     amount: bigint,
     gas: GasPrice
   ): Promise<TransactionResponse> {
-    return this.call("approve", [address, amount], gas, null, null, null);
+    return await this.call("approve", [address, amount], gas, null, null, null);
   }
 
   approveRawData(spender: string, amount: bigint): string {
@@ -206,7 +224,7 @@ export interface RelayRawData {
 export class SafeContract extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, abiSafe, signer);
   }
@@ -275,7 +293,7 @@ export class LnBridgeContract extends EthereumContract {
   private bridgeType: string;
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider,
+    signer: EthereumConnectedWallet | EthereumProvider,
     bridgeType: string
   ) {
     if (bridgeType === "lnv2-default") {
@@ -299,6 +317,7 @@ export class LnBridgeContract extends EthereumContract {
     return ethers.keccak256(encode);
   }
 
+  @rpcCallIfError
   async getLnProviderInfo(
     remoteChainId: number,
     relayer: string,
@@ -383,11 +402,13 @@ export class LnBridgeContract extends EthereumContract {
     }
   }
 
+  @rpcCallIfError
   async transferIdExist(transferId: string): Promise<[boolean, any]> {
     const lockInfo = await this.contract.lockInfos(transferId);
     return [lockInfo.timestamp > 0, lockInfo];
   }
 
+  @rpcCallIfError
   async transferHasFilled(transferId: string): Promise<boolean> {
     const fillInfo = await this.contract.fillTransfers(transferId);
     if (this.bridgeType === "lnv2-default") {
@@ -397,6 +418,7 @@ export class LnBridgeContract extends EthereumContract {
     }
   }
 
+  @rpcCallIfError
   async fillTransfers(transferId: string): Promise<any> {
     return await this.contract.fillTransfers(transferId);
   }
@@ -493,7 +515,7 @@ export class LnBridgeContract extends EthereumContract {
 export class Lnv3BridgeContract extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, lnv3Bridge, signer);
   }
@@ -531,6 +553,7 @@ export class Lnv3BridgeContract extends EthereumContract {
     return ethers.keccak256(encode);
   }
 
+  @rpcCallIfError
   async getLnProviderInfo(
     remoteChainId: number,
     relayer: string,
@@ -551,6 +574,7 @@ export class Lnv3BridgeContract extends EthereumContract {
     };
   }
 
+  @rpcCallIfError
   async getLnProviderPenalty(
     relayer: string,
     sourceToken: string
@@ -559,6 +583,7 @@ export class Lnv3BridgeContract extends EthereumContract {
     return await this.contract.penaltyReserves(providerStateKey);
   }
 
+  @rpcCallIfError
   async getTokenBasePenalty(
     remoteChainId: number,
     sourceToken: string,
@@ -696,16 +721,19 @@ export class Lnv3BridgeContract extends EthereumContract {
     ]);
   }
 
+  @rpcCallIfError
   async transferIdExist(transferId: string): Promise<[boolean, any]> {
     const lockInfo = await this.contract.lockInfos(transferId);
     return [lockInfo.status == LNV3_STATUS_LOCKED, lockInfo];
   }
 
+  @rpcCallIfError
   async transferHasFilled(transferId: string): Promise<boolean> {
     const fillInfo = await this.contract.fillTransfers(transferId);
     return fillInfo.timestamp > 0;
   }
 
+  @rpcCallIfError
   async fillTransfers(transferId: string): Promise<any> {
     return await this.contract.fillTransfers(transferId);
   }
@@ -817,7 +845,7 @@ export class Lnv3BridgeContract extends EthereumContract {
 export class WETHContract extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, weth, signer);
   }
@@ -834,7 +862,7 @@ export class WETHContract extends EthereumContract {
 export class MulticallContract extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, multicall3, signer);
   }

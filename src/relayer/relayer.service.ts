@@ -9,7 +9,6 @@ import {
   Lnv3BridgeContract,
   SafeContract,
   zeroAddress,
-  WETHContract,
 } from "../base/contract";
 import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
@@ -36,7 +35,7 @@ import { SafeService } from "../base/safe-service/safe.service";
 
 export class ChainInfo {
   chainName: string;
-  rpc: string;
+  rpcs: string[];
   chainId: number;
   provider: EthereumProvider;
   fixedGasPrice: number;
@@ -178,7 +177,8 @@ export class RelayerService implements OnModuleInit {
           );
           return null;
         }
-        const provider = new EthereumProvider(rpcnode.rpc ?? chainInfo.rpc);
+        const rpcs = [...rpcnode.rpcs, chainInfo.rpc];
+        const provider = new EthereumProvider(rpcs);
         const lendMarket = rpcnode.lendMarket?.map((market) => {
           switch (market.protocol) {
             // currently only support aave
@@ -189,7 +189,7 @@ export class RelayerService implements OnModuleInit {
                 market.healthFactorLimit ?? 3.0,
                 market.collaterals,
                 market.tokens,
-                provider.provider
+                provider
               );
             case "moonwell":
               return new Moonwell(
@@ -198,7 +198,7 @@ export class RelayerService implements OnModuleInit {
                 market.healthFactorLimit ?? 0.5,
                 market.collaterals,
                 market.tokens,
-                provider.provider
+                provider
               );
             default:
               return null;
@@ -208,7 +208,7 @@ export class RelayerService implements OnModuleInit {
           rpcnode.name,
           {
             chainName: rpcnode.name,
-            rpc: rpcnode.rpc ?? chainInfo.rpc,
+            rpcs: rpcs,
             chainId: chainInfo.id,
             provider: provider,
             fixedGasPrice: rpcnode.fixedGasPrice,
@@ -257,12 +257,12 @@ export class RelayerService implements OnModuleInit {
 
           let toBridge =
             config.bridgeType == "lnv3"
-              ? new Lnv3BridgeContract(toChainInfo.lnv3Address, toWallet.wallet)
+              ? new Lnv3BridgeContract(toChainInfo.lnv3Address, toWallet)
               : new LnBridgeContract(
                   config.bridgeType === "lnv2-default"
                     ? toChainInfo.lnv2DefaultAddress
                     : toChainInfo.lnv2OppositeAddress,
-                  toWallet.wallet,
+                  toWallet,
                   config.bridgeType
                 );
           let toConnectInfo = {
@@ -282,7 +282,7 @@ export class RelayerService implements OnModuleInit {
                   );
             toConnectInfo.safeWallet = new SafeWallet(
               config.safeWalletAddress,
-              toWallet.wallet,
+              toWallet,
               safeService
             );
           }
@@ -292,15 +292,12 @@ export class RelayerService implements OnModuleInit {
           );
           let fromBridge =
             config.bridgeType == "lnv3"
-              ? new Lnv3BridgeContract(
-                  fromChainInfo.lnv3Address,
-                  fromWallet.wallet
-                )
+              ? new Lnv3BridgeContract(fromChainInfo.lnv3Address, fromWallet)
               : new LnBridgeContract(
                   config.bridgeType === "lnv2-default"
                     ? fromChainInfo.lnv2DefaultAddress
                     : fromChainInfo.lnv2OppositeAddress,
-                  fromWallet.wallet,
+                  fromWallet,
                   config.bridgeType
                 );
           let fromConnectInfo = {
@@ -351,30 +348,16 @@ export class RelayerService implements OnModuleInit {
                 if (fromToken.address !== zeroAddress) {
                   fromTokenContract = new Erc20Contract(
                     fromToken.address,
-                    fromWallet.wallet
+                    fromWallet
                   );
-                  try {
-                    fromTokenDecimals = await fromTokenContract.decimals();
-                  } catch (err) {
-                    this.logger.warn(
-                      `[${fromChainInfo.chainName}]get token decimals failed, err ${err}`
-                    );
-                    fromTokenDecimals = -1;
-                  }
+                  fromTokenDecimals = -1;
                 }
                 if (toToken.address !== zeroAddress) {
                   toTokenContract = new Erc20Contract(
                     toToken.address,
-                    toWallet.wallet
+                    toWallet
                   );
-                  try {
-                    toTokenDecimals = await toTokenContract.decimals();
-                  } catch (err) {
-                    this.logger.warn(
-                      `[${toChainInfo.chainName}]get token decimals failed, err ${err}`
-                    );
-                    toTokenDecimals = -1;
-                  }
+                  toTokenDecimals = -1;
                 }
                 return {
                   fromAddress: fromToken.address,
@@ -654,7 +637,7 @@ export class RelayerService implements OnModuleInit {
         if (txInfo !== null && txInfo.readyExecute && relayer.isExecutor) {
           const safeContract = new SafeContract(
             relayer.safeWallet.address,
-            relayer.safeWallet.signer
+            relayer.safeWallet
           );
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
@@ -732,7 +715,7 @@ export class RelayerService implements OnModuleInit {
             const softLimitInfo = await toBridgeContract.getSoftTransferLimit(
               lnProvider.relayer,
               lnProvider.toAddress,
-              toChainInfo.provider.provider
+              toChainInfo.provider
             );
             if (bridge.safeWalletRole === undefined) {
               softTransferLimit =
@@ -887,7 +870,7 @@ export class RelayerService implements OnModuleInit {
             const messager = messagerInstance(
               needWithdrawRecords.channel,
               toChannelAddress,
-              bridge.toWallet.wallet
+              bridge.toWallet
             );
             const lnv3Contract = toBridgeContract as Lnv3BridgeContract;
             const appPayload = lnv3Contract.encodeWithdrawLiquidity(
@@ -1102,7 +1085,7 @@ export class RelayerService implements OnModuleInit {
         if (txInfo !== null && txInfo.readyExecute && isExecutor) {
           const safeContract = new SafeContract(
             bridge.toBridge.safeWallet.address,
-            bridge.toBridge.safeWallet.signer
+            bridge.toBridge.safeWallet.wallet
           );
           const err = await safeContract.tryExecTransaction(
             txInfo.to,

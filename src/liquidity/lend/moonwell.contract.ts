@@ -5,15 +5,18 @@ import { moonwellComptroller } from "../../abi/moonwellComptroller";
 import { moonwellMToken } from "../../abi/moonwellMToken";
 import { GasPrice } from "../../base/provider";
 import { EthereumContract } from "../../base/contract";
+import { EthereumConnectedWallet } from "../../base/wallet";
+import { EthereumProvider, rpcCallIfError } from "../../base/provider";
 
 export class MoonwellOracle extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, moonwellOracle, signer);
   }
 
+  @rpcCallIfError
   async getUnderlyingPrice(address: string): Promise<bigint> {
     return await this.contract.getUnderlyingPrice(address);
   }
@@ -26,15 +29,17 @@ export class MoonwellOracle extends EthereumContract {
 export class MoonwellComptroller extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, moonwellComptroller, signer);
   }
 
+  @rpcCallIfError
   async getAssetsIn(account: string): Promise<string[]> {
     return await this.contract.getAssetsIn(account);
   }
 
+  @rpcCallIfError
   async markets(account: string): Promise<string> {
     return await this.contract.markets(account);
   }
@@ -51,11 +56,12 @@ export class MoonwellComptroller extends EthereumContract {
 export class MoonwellMToken extends EthereumContract {
   constructor(
     address: string,
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     super(address, moonwellMToken, signer);
   }
 
+  @rpcCallIfError
   async getAccountSnapshot(account: string): Promise<bigint[]> {
     return await this.contract.getAccountSnapshot(account);
   }

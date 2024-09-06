@@ -20,6 +20,8 @@ import {
   CollateralInfo,
 } from "../../configure/configure.service";
 import { Any } from "../../base/bignumber";
+import { EthereumConnectedWallet } from "../../base/wallet";
+import { EthereumProvider } from "../../base/provider";
 
 export interface DebtToken {
   address: string;
@@ -466,7 +468,7 @@ export class Aave extends LendMarket {
     healthFactorLimit: number,
     collaterals: CollateralInfo[],
     tokens: LendTokenInfo[],
-    signer: Wallet | HDNodeWallet | ethers.Provider
+    signer: EthereumConnectedWallet | EthereumProvider
   ) {
     const addressBook = new AddressBookConfigure().addressBook(isTest);
     const bookInfo = addressBook.chains.find((e) => e.name == chainName);

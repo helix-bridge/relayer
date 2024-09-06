@@ -60,7 +60,7 @@ export interface LendInfo {
 
 export interface RpcNode {
   name: string;
-  rpc?: string;
+  rpcs: string[];
   fixedGasPrice: number;
   notSupport1559: boolean;
   lendMarket: LendInfo[];
