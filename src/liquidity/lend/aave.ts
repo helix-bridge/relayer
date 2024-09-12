@@ -580,8 +580,8 @@ export class Aave extends LendMarket {
       }
       //const collateralInfo = collaterals.find((c) => c.symbol === token.symbol);
       return {
-        address: tokenInfo.vToken,
-        underlyingAddress: tokenInfo.underlyingToken,
+        address: tokenInfo.vToken.toLowerCase(),
+        underlyingAddress: tokenInfo.underlyingToken.toLowerCase(),
         underlyTokenContract: new Erc20Contract(
           tokenInfo.underlyingToken,
           signer
@@ -605,7 +605,7 @@ export class Aave extends LendMarket {
       return {
         symbol: token.symbol,
         decimals: tokenInfo.decimals,
-        underlyingAddress: tokenInfo.underlyingToken,
+        underlyingAddress: tokenInfo.underlyingToken.toLowerCase(),
         underlyTokenContract: new Erc20Contract(
           tokenInfo.underlyingToken,
           signer
@@ -635,6 +635,7 @@ export class Aave extends LendMarket {
 
   // suppose the pool is big enough
   async borrowAvailable(account: string, asset: string): Promise<bigint> {
+    asset = asset.toLowerCase();
     if (asset == zeroAddress && !this.wrappedToken) {
       return BigInt(0);
     }
@@ -668,6 +669,7 @@ export class Aave extends LendMarket {
     account: string,
     asset: string
   ): Promise<WithdrawBorrowBalance> {
+    asset = asset.toLowerCase();
     if (asset == zeroAddress && !this.wrappedToken) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
