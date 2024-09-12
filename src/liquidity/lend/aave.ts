@@ -523,7 +523,7 @@ export class AddressBookConfigure {
         aave: this.aaveTestConfigure,
       }
     };
-    const configure = isTest ? configures.formalConfigure : configures.testConfigure;
+    const configure = isTest ? configures.testConfigure : configures.formalConfigure;
     return configure[name];
   }
 }
