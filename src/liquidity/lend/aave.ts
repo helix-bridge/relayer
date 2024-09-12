@@ -42,6 +42,7 @@ export interface CollateralToken {
   underlyTokenContract: Erc20Contract;
   aTokenContract: Erc20Contract;
   autosupplyAmount: bigint;
+  index: number;
 }
 
 export interface WaitingRepayInfo {
@@ -61,6 +62,7 @@ export interface DebtTokenBook {
   vToken: string;
   underlyingToken: string;
   isNativeWrapped: boolean;
+  index: number;
 }
 
 export interface ChainInfo {
@@ -76,8 +78,9 @@ export interface AddressBook {
   chains: ChainInfo[];
 }
 
+//the index can be queried by getReserveData of l2Pool contract
 export class AddressBookConfigure {
-  formalConfigure: AddressBook = {
+  aaveFormalConfigure: AddressBook = {
     version: "v3",
     chains: [
       {
@@ -94,6 +97,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
             decimals: 6,
             isNativeWrapped: false,
+            index: 5,
           },
           {
             symbol: "usdc.e",
@@ -102,6 +106,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
             decimals: 6,
             isNativeWrapped: false,
+            index: 2,
           },
           {
             symbol: "usdc",
@@ -110,8 +115,8 @@ export class AddressBookConfigure {
             underlyingToken: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
             decimals: 6,
             isNativeWrapped: false,
+            index: 12,
           },
-
           {
             symbol: "eth",
             aToken: "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
@@ -119,6 +124,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
             decimals: 18,
             isNativeWrapped: true,
+            index: 4,
           },
           {
             symbol: "wbtc",
@@ -127,6 +133,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
             decimals: 8,
             isNativeWrapped: false,
+            index: 3,
           },
           {
             symbol: "dai",
@@ -135,6 +142,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
             decimals: 18,
             isNativeWrapped: false,
+            index: 0,
           },
           {
             symbol: "link",
@@ -143,6 +151,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4",
             decimals: 18,
             isNativeWrapped: false,
+            index: 1,
           },
         ],
       },
@@ -159,6 +168,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
             decimals: 6,
             isNativeWrapped: false,
+            index: 5,
           },
           {
             symbol: "usdc.e",
@@ -167,6 +177,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
             decimals: 6,
             isNativeWrapped: false,
+            index: 2,
           },
           {
             symbol: "usdc",
@@ -175,6 +186,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
             decimals: 6,
             isNativeWrapped: false,
+            index: 13,
           },
           {
             symbol: "eth",
@@ -183,6 +195,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x4200000000000000000000000000000000000006",
             decimals: 18,
             isNativeWrapped: true,
+            index: 4,
           },
           {
             symbol: "wbtc",
@@ -191,6 +204,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
             decimals: 8,
             isNativeWrapped: false,
+            index: 3,
           },
           {
             symbol: "dai",
@@ -199,6 +213,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
             decimals: 18,
             isNativeWrapped: false,
+            index: 0,
           },
           {
             symbol: "link",
@@ -207,6 +222,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6",
             decimals: 18,
             isNativeWrapped: false,
+            index: 1,
           },
         ],
       },
@@ -223,6 +239,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x06eFdBFf2a14a7c8E15944D1F4A48F9F95F663A4",
             decimals: 6,
             isNativeWrapped: false,
+            index: 1,
           },
           {
             symbol: "eth",
@@ -231,6 +248,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x5300000000000000000000000000000000000004",
             decimals: 18,
             isNativeWrapped: true,
+            index: 0,
           },
         ],
       },
@@ -247,6 +265,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
             decimals: 6,
             isNativeWrapped: false,
+            index: 4,
           },
           {
             symbol: "eth",
@@ -255,6 +274,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x4200000000000000000000000000000000000006",
             decimals: 18,
             isNativeWrapped: true,
+            index: 0,
           },
         ],
       },
@@ -271,6 +291,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
             decimals: 6,
             isNativeWrapped: false,
+            index: 2,
           },
           {
             symbol: "usdc",
@@ -279,6 +300,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
             decimals: 6,
             isNativeWrapped: false,
+            index: 20,
           },
           {
             symbol: "usdt",
@@ -287,6 +309,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
             decimals: 6,
             isNativeWrapped: false,
+            index: 5,
           },
           {
             symbol: "wbtc",
@@ -295,6 +318,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
             decimals: 8,
             isNativeWrapped: false,
+            index: 3,
           },
           {
             symbol: "dai",
@@ -303,6 +327,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
             decimals: 18,
             isNativeWrapped: false,
+            index: 0,
           },
           {
             symbol: "link",
@@ -311,6 +336,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39",
             decimals: 18,
             isNativeWrapped: false,
+            index: 1,
           },
         ],
       },
@@ -327,6 +353,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
             decimals: 18,
             isNativeWrapped: false,
+            index: 4,
           },
           {
             symbol: "usdt",
@@ -335,6 +362,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x55d398326f99059fF775485246999027B3197955",
             decimals: 18,
             isNativeWrapped: false,
+            index: 5,
           },
           {
             symbol: "wbtc",
@@ -343,6 +371,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
             decimals: 18,
             isNativeWrapped: false,
+            index: 2,
           },
         ],
       },
@@ -359,6 +388,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
             decimals: 6,
             isNativeWrapped: false,
+            index: 2,
           },
           {
             symbol: "usdt",
@@ -367,6 +397,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
             decimals: 6,
             isNativeWrapped: false,
+            index: 5,
           },
           {
             symbol: "wbtc",
@@ -375,6 +406,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x152b9d0FdC40C096757F570A51E494bd4b943E50",
             decimals: 8,
             isNativeWrapped: false,
+            index: 11,
           },
           {
             symbol: "dai",
@@ -383,6 +415,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xd586E7F844cEa2F87f50152665BCbc2C279D8d70",
             decimals: 18,
             isNativeWrapped: false,
+            index: 0,
           },
           {
             symbol: "link",
@@ -391,6 +424,7 @@ export class AddressBookConfigure {
             underlyingToken: "0x5947BB275c521040051D82396192181b413227A3",
             decimals: 18,
             isNativeWrapped: false,
+            index: 1,
           },
         ],
       },
@@ -407,6 +441,7 @@ export class AddressBookConfigure {
             underlyingToken: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
             decimals: 6,
             isNativeWrapped: false,
+            index: 3,
           },
           {
             symbol: "xdai",
@@ -415,13 +450,46 @@ export class AddressBookConfigure {
             underlyingToken: "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d",
             decimals: 18,
             isNativeWrapped: true,
+            index: 4,
           },
         ],
       },
     ],
   };
 
-  testConfigure: AddressBook = {
+  sparkFormalConfigure: AddressBook = {
+    version: "v3",
+    chains: [
+      {
+        name: "gnosis",
+        l2Pool: "0x2Dae5307c5E3FD1CF5A72Cb6F698f915860607e0",
+        oracle: "0x8105f69D9C41644c6A0803fDA7D03Aa70996cFD9",
+        multicall: "0xcA11bde05977b3631167028862bE2a173976CA11",
+        debtTokens: [
+          {
+            symbol: "usdt",
+            aToken: "0x08B0cAebE352c3613302774Cd9B82D08afd7bDC4",
+            vToken: "0x3A98aBC6F46CA2Fc6c7d06eD02184D63C55e19B2",
+            underlyingToken: "0x4ECaBa5870353805a9F068101A40E0f32ed605C6",
+            decimals: 6,
+            isNativeWrapped: false,
+            index: 6,
+          },
+          {
+            symbol: "usdc",
+            aToken: "0x5850D127a04ed0B4F1FCDFb051b3409FB9Fe6B90",
+            vToken: "0xBC4f20DAf4E05c17E93676D2CeC39769506b8219",
+            underlyingToken: "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83",
+            decimals: 6,
+            isNativeWrapped: false,
+            index: 5,
+          },
+        ]
+      }
+    ]
+  };
+
+  aaveTestConfigure: AddressBook = {
     version: "v3",
     chains: [
       {
@@ -438,14 +506,25 @@ export class AddressBookConfigure {
             underlyingToken: "0x4200000000000000000000000000000000000006",
             decimals: 18,
             isNativeWrapped: true,
+            index: 1,
           },
         ],
       },
     ],
   };
 
-  public addressBook(isTest: boolean): AddressBook {
-    return isTest ? this.testConfigure : this.formalConfigure;
+  public addressBook(isTest: boolean, name: string): AddressBook {
+    const configures = {
+      formalConfigure: {
+        aave: this.aaveFormalConfigure,
+        spark: this.sparkFormalConfigure
+      },
+      testConfigure: {
+        aave: this.aaveTestConfigure,
+      }
+    };
+    const configure = isTest ? configures.formalConfigure : configures.testConfigure;
+    return configure[name];
   }
 }
 
@@ -465,18 +544,19 @@ export class Aave extends LendMarket {
   constructor(
     chainName: string,
     isTest: boolean,
+    marketName: string,
     healthFactorLimit: number,
     collaterals: CollateralInfo[],
     tokens: LendTokenInfo[],
     signer: EthereumConnectedWallet | EthereumProvider
   ) {
-    const addressBook = new AddressBookConfigure().addressBook(isTest);
-    const bookInfo = addressBook.chains.find((e) => e.name == chainName);
+    const addressBook = new AddressBookConfigure().addressBook(isTest, marketName);
+    const bookInfo = addressBook?.chains.find((e) => e.name == chainName);
     if (!bookInfo) {
-      throw new Error(`[Lend]Chain ${chainName} Not Support`);
+      throw new Error(`[Lend-${marketName}]Chain ${chainName} Not Support`);
     }
     const wtoken = bookInfo.debtTokens.find((dt) => dt.isNativeWrapped);
-    super(`aave-${chainName}`, wtoken?.underlyingToken);
+    super(`${marketName}-${chainName}`, wtoken?.underlyingToken);
 
     this.healthFactorLimit = healthFactorLimit;
     this.poolContract = new AaveL2Pool(bookInfo.l2Pool, signer);
@@ -535,6 +615,7 @@ export class Aave extends LendMarket {
           token.autosupplyAmount ?? 0,
           tokenInfo.decimals
         ).Number,
+        index: tokenInfo.index,
       };
     });
   }
@@ -545,6 +626,11 @@ export class Aave extends LendMarket {
 
   public enableCollateralLack(account: string) {
     this.collateralStatus.set(account, CollateralStatus.CollateralLack);
+  }
+
+  // https://github.com/aave/aave-v3-core/blob/v1.19.4/contracts/protocol/libraries/types/DataTypes.sol#L65-L67
+  public isCollateral(userConfig: bigint, token: CollateralToken): boolean {
+    return Number((userConfig >> BigInt(token.index * 2 + 1)) & BigInt(1)) === 1;
   }
 
   // suppose the pool is big enough
@@ -577,6 +663,7 @@ export class Aave extends LendMarket {
     return (availableBase * new Any(1, dtToken.decimals).Number) / price;
   }
 
+  // TODO: can't return zero if it's not collateral token
   async withdrawAndBorrowAvailable(
     account: string,
     asset: string
@@ -592,6 +679,23 @@ export class Aave extends LendMarket {
     if (this.healthFactorLimit <= 1 || !collateralToken) {
       return { withdraw: BigInt(0), borrow: BigInt(0) };
     }
+    const userConfigure = await this.poolContract.getUserConfigure(account);
+    // maybe user deposit this asset but not as collateralToken
+    const assetCollateralEnabled = this.isCollateral(userConfigure, collateralToken);
+
+    // the deposited asset
+    const aTokenBalance = await collateralToken.aTokenContract.balanceOf(
+      account
+    );
+    if (aTokenBalance === BigInt(0)) {
+      return { withdraw: BigInt(0), borrow: BigInt(0) };
+    }
+
+    if (!assetCollateralEnabled) {
+      const canBorrowed = await this.borrowAvailable(account, asset);
+      return { withdraw: aTokenBalance, borrow: canBorrowed };
+    }
+
     const accountInfo = await this.poolContract.getUserAccountData(account);
     // (totalCollateralBase - x) * ltv / BigInt(10000) / BigInt(this.healthFactorLimit) >= totalDebtBase
     // x <= totalCollateralBase - totalDebtBase * BigInt(this.healthFactorLimit) * BigInt(10000) / ltv
@@ -610,12 +714,6 @@ export class Aave extends LendMarket {
     // get aToken
     const availableAToken =
       (availableBase * new Any(1, collateralToken.decimals).Number) / price;
-    const aTokenBalance = await collateralToken.aTokenContract.balanceOf(
-      account
-    );
-    if (aTokenBalance === BigInt(0)) {
-      return { withdraw: BigInt(0), borrow: BigInt(0) };
-    }
     if (aTokenBalance > availableAToken) {
       return { withdraw: availableAToken, borrow: BigInt(0) };
     } else {

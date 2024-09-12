@@ -183,9 +183,11 @@ export class RelayerService implements OnModuleInit {
           switch (market.protocol) {
             // currently only support aave
             case "aave":
+            case "spark":
               return new Aave(
                 rpcnode.name,
                 this.configureService.config.env === "test",
+                market.protocol,
                 market.healthFactorLimit ?? 3.0,
                 market.collaterals,
                 market.tokens,

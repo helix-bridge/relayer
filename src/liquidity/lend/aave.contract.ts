@@ -52,6 +52,11 @@ export class AaveL2Pool extends EthereumContract {
     return await this.contract.getUserAccountData(account);
   }
 
+  @rpcCallIfError
+  async getUserConfigure(account: string): Promise<bigint> {
+    return await this.contract.getUserConfiguration(account);
+  }
+
   async borrow(
     token: string,
     amount: bigint,
