@@ -683,7 +683,7 @@ export class Aave extends LendMarket {
     }
     const userConfigure = await this.poolContract.getUserConfigure(account);
     // maybe user deposit this asset but not as collateralToken
-    const assetCollateralEnabled = this.isCollateral(userConfigure, collateralToken);
+    const assetCollateralEnabled = this.isCollateral(userConfigure[0], collateralToken);
 
     // the deposited asset
     const aTokenBalance = await collateralToken.aTokenContract.balanceOf(
