@@ -125,7 +125,7 @@ export class EthereumContract {
         return null;
       }
     } catch (error) {
-      return error.message;
+      return null;
     }
   }
 }
@@ -884,6 +884,9 @@ export class MulticallContract extends EthereumContract {
       }
     }
     const response = await this.staticCall("aggregate", [args], true, null);
+    if (!response) {
+      return [];
+    }
     let result: bigint[] = [];
     const balances = response[1];
     for (const balance of balances) {

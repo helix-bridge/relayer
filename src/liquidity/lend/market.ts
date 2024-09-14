@@ -28,7 +28,7 @@ export abstract class LendMarket {
   public wrappedToken: string;
   constructor(name: string, wtoken: string) {
     this.name = name;
-    this.wrappedToken = wtoken;
+    this.wrappedToken = wtoken?.toLowerCase();
   }
   abstract lendingFromPoolTxs(
     token: string,
