@@ -89,7 +89,7 @@ export class RelayerService implements OnModuleInit {
   private readonly scheduleAdjustFeeInterval = 8640; // 1day
   private readonly maxWaitingPendingTimes = 180;
   private readonly heartBeatInterval = 12; // 2 minute
-  private readonly withdrawLiqudityInterval = 2160; // 6 hour
+  private readonly withdrawLiqudityInterval = 360; // 1 hour
   private readonly updateDynamicFeeInterval = 60; // 10 min
   private readonly repayLendInterval = 60;
   private chainInfos = new Map();
