@@ -192,8 +192,10 @@ export class DataworkerService implements OnModuleInit {
       .then((res) => res.data.data.historyRecords);
     let totalWithdrawAmount = BigInt(0);
     let transferIds = [];
+    let now = Date.now() / 1000;
     for (const record of needWithdrawRecords.records) {
-      if (Number(record.lastRequestWithdraw) != 0) {
+      const lastRequestWithdraw = Number(record.lastRequestWithdraw);
+      if (lastRequestWithdraw != 0 && lastRequestWithdraw + 60 * 60 > now) {
         continue;
       }
       totalWithdrawAmount += BigInt(record.sendAmount);
