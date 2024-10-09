@@ -177,7 +177,7 @@ export class RelayerService implements OnModuleInit {
           );
           return null;
         }
-        const rpcs = [...rpcnode.rpcs, chainInfo.rpc];
+        const rpcs = [...(rpcnode.rpcs || []), ...chainInfo.rpcs];
         const provider = new EthereumProvider(rpcs);
         const lendMarket = rpcnode.lendMarket?.map((market) => {
           switch (market.protocol) {
