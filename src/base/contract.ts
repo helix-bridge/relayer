@@ -721,6 +721,10 @@ export class Lnv3BridgeContract extends EthereumContract {
     ]);
   }
 
+  encodeLockInfo(transferId: string): string {
+    return this.interface.encodeFunctionData("lockInfos", [transferId]);
+  }
+
   @rpcCallIfError
   async transferIdExist(transferId: string): Promise<[boolean, any]> {
     const lockInfo = await this.contract.lockInfos(transferId);

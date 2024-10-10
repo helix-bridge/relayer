@@ -174,7 +174,7 @@ export class DataworkerService implements OnModuleInit {
     if (!amountThreshold && !countThreshold) return null;
     let query = `{
             historyRecords(
-                row: 40,
+                row: 200,
                 relayer: \"${relayer.toLowerCase()}\",
                 recvTokenAddress: \"${token.toLowerCase()}\",
                 fromChains: [\"${fromChain}\"],
