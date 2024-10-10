@@ -108,6 +108,7 @@ export class EthereumProvider {
     notSupport1559: boolean = false
   ): Promise<GasPrice> {
     const fee = await this.provider.getFeeData();
+    const stretchScale = BigInt(Math.floor(scale * 100));
     if (!notSupport1559 && fee.maxFeePerGas && fee.maxPriorityFeePerGas) {
       const maxFeePerGas =
         fee.maxFeePerGas > fee.maxFeePerGas
@@ -116,8 +117,8 @@ export class EthereumProvider {
       const feeInfo: EIP1559Fee = {
         // maxFeePerGas is not accurate
         //maxFeePerGas: fee.maxFeePerGas,
-        maxFeePerGas: maxFeePerGas * BigInt(scale),
-        maxPriorityFeePerGas: fee.maxPriorityFeePerGas * BigInt(scale),
+        maxFeePerGas: maxFeePerGas * stretchScale / BigInt(100),
+        maxPriorityFeePerGas: fee.maxPriorityFeePerGas * stretchScale / BigInt(100),
       };
       return {
         eip1559fee: feeInfo,
@@ -128,7 +129,7 @@ export class EthereumProvider {
       return {
         isEip1559: false,
         fee: {
-          gasPrice: fee.gasPrice * BigInt(scale),
+          gasPrice: fee.gasPrice * stretchScale / BigInt(100),
         },
         eip1559fee: null,
       };
