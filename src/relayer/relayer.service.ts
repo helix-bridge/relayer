@@ -9,6 +9,8 @@ import {
   Lnv3BridgeContract,
   SafeContract,
   zeroAddress,
+  MulticallContract,
+  MulticallArgs,
 } from "../base/contract";
 import { Any, EtherBigNumber, Ether, GWei } from "../base/bignumber";
 import {
@@ -22,7 +24,7 @@ import { ConfigureService } from "../configure/configure.service";
 import { Encrypto } from "../base/encrypto";
 import { last } from "lodash";
 
-import { ethers } from "ethers";
+import { ethers, AbiCoder } from "ethers";
 import { SafeWallet } from "../base/safewallet";
 import { messagerInstance } from "../base/messager";
 import { Aave } from "../liquidity/lend/aave";
@@ -32,6 +34,11 @@ import { CeramicService } from "../base/safe-service/ceramic.service";
 import { SingleService } from "../base/safe-service/single.service";
 import { SafeGlobalService } from "../base/safe-service/safeglobal.service";
 import { SafeService } from "../base/safe-service/safe.service";
+
+const kMaxWithdrawTransferCount = 16;
+export const kMaxWithdrawTransferAmount: bigint = BigInt(
+  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+);
 
 export class ChainInfo {
   chainName: string;
@@ -43,6 +50,7 @@ export class ChainInfo {
   lnv3Address: string;
   adjustingFee: boolean;
   lendMarket: LendMarket[];
+  multicall: MulticallContract;
 }
 
 export class BridgeConnectInfo {
@@ -222,6 +230,7 @@ export class RelayerService implements OnModuleInit {
             txHashCache: "",
             checkTimes: 0,
             lendMarket: lendMarket ?? [],
+            multicall: new MulticallContract(chainInfo.additional.multicallAddress, provider),
           },
         ];
       })
@@ -859,74 +868,111 @@ export class RelayerService implements OnModuleInit {
               srcDecimals
             );
           if (needWithdrawRecords != null) {
-            // token transfer direction fromChain -> toChain
-            // withdrawLiquidity message direction toChain -> fromChain
-            const fromChannelAddress = this.configureService.getMessagerAddress(
-              fromChainInfo.chainName,
-              needWithdrawRecords.channel
-            );
-            const toChannelAddress = this.configureService.getMessagerAddress(
-              toChainInfo.chainName,
-              needWithdrawRecords.channel
-            );
-            const messager = messagerInstance(
-              needWithdrawRecords.channel,
-              toChannelAddress,
-              bridge.toWallet
-            );
-            const lnv3Contract = toBridgeContract as Lnv3BridgeContract;
-            const appPayload = lnv3Contract.encodeWithdrawLiquidity(
-              needWithdrawRecords.transferIds,
-              toChainInfo.chainId,
-              lnProvider.relayer
-            );
-            const payload = messager.encodePayload(
-              toChainInfo.chainId,
-              toChainInfo.lnv3Address,
-              fromChainInfo.lnv3Address,
-              appPayload
-            );
-            const params = await messager.params(
-              toChainInfo.chainId,
-              fromChainInfo.chainId,
-              fromChannelAddress,
-              payload,
-              lnProvider.relayer
-            );
-            const err = await lnv3Contract.tryWithdrawLiquidity(
-              fromChainInfo.chainId,
-              needWithdrawRecords.transferIds,
-              lnProvider.relayer,
-              params.extParams,
-              params.fee
-            );
-            if (err != null) {
-              this.logger.warn(
-                `try to withdraw liquidity failed, err ${err}, from ${fromChainInfo.chainId}, to ${toChainInfo.chainId}`
+            const fromLnv3Contract = fromBridgeContract as Lnv3BridgeContract;
+            const toLnv3Contract = toBridgeContract as Lnv3BridgeContract;
+            // filter unwithdrawn transferIds on chain
+            let args: MulticallArgs[] = [];
+            for (const transferId of needWithdrawRecords.transferIds) {
+              args.push({
+                address: fromLnv3Contract.address,
+                data: fromLnv3Contract.encodeLockInfo(transferId),
+              });
+            }
+            const response = await fromChainInfo.multicall.aggregate(args);
+            const lockInfos = response?.[1] ?? [];
+            let filterTransferIds = [];
+            let index = 0;
+            let totalAmount = BigInt(0);
+            for (const lockInfo of lockInfos) {
+              const [amountWithFeeAndPenalty, tokenIndex, txStatus] = AbiCoder.defaultAbiCoder().decode(
+                ["uint", "uint", "uint"],
+                lockInfo
               );
-            } else {
-              this.logger.log(
-                `withdrawLiquidity ${fromChainInfo.chainId}->${
-                  toChainInfo.chainId
-                }, info: ${JSON.stringify(needWithdrawRecords)}, fee: ${
-                  params.fee
-                }`
+              if (Number(txStatus) === 1) {
+                if (filterTransferIds.length < kMaxWithdrawTransferCount) {
+                  filterTransferIds.push(needWithdrawRecords.transferIds[index]);
+                }
+                totalAmount += amountWithFeeAndPenalty;
+              }
+              index++;
+            }
+            let countThreshold = lnProvider.withdrawLiquidityCountThreshold;
+            if (!countThreshold || countThreshold > kMaxWithdrawTransferCount) {
+              countThreshold = kMaxWithdrawTransferCount;
+            }
+            let amountThreshold = kMaxWithdrawTransferAmount;
+            if (lnProvider.withdrawLiquidityAmountThreshold) {
+              amountThreshold = BigInt(lnProvider.withdrawLiquidityAmountThreshold);
+            }
+            if (filterTransferIds.length >= countThreshold || totalAmount >= amountThreshold) {
+              // token transfer direction fromChain -> toChain
+              // withdrawLiquidity message direction toChain -> fromChain
+              const fromChannelAddress = this.configureService.getMessagerAddress(
+                fromChainInfo.chainName,
+                needWithdrawRecords.channel
               );
-              let gasPrice = await toChainInfo.provider.feeData(
-                1,
-                toChainInfo.notSupport1559
+              const toChannelAddress = this.configureService.getMessagerAddress(
+                toChainInfo.chainName,
+                needWithdrawRecords.channel
               );
-              const tx = await lnv3Contract.withdrawLiquidity(
+              const messager = messagerInstance(
+                needWithdrawRecords.channel,
+                toChannelAddress,
+                bridge.toWallet
+              );
+              const appPayload = toLnv3Contract.encodeWithdrawLiquidity(
+                filterTransferIds,
+                toChainInfo.chainId,
+                lnProvider.relayer
+              );
+              const payload = messager.encodePayload(
+                toChainInfo.chainId,
+                toChainInfo.lnv3Address,
+                fromChainInfo.lnv3Address,
+                appPayload
+              );
+              const params = await messager.params(
+                toChainInfo.chainId,
                 fromChainInfo.chainId,
-                needWithdrawRecords.transferIds,
+                fromChannelAddress,
+                payload,
+                lnProvider.relayer
+              );
+              const err = await toLnv3Contract.tryWithdrawLiquidity(
+                fromChainInfo.chainId,
+                filterTransferIds,
                 lnProvider.relayer,
                 params.extParams,
-                gasPrice,
                 params.fee
               );
-              this.logger.log(
-                `withdrawLiquidity tx ${tx.hash} on ${toChainInfo.chainId}`
-              );
+              if (err != null) {
+                this.logger.warn(
+                  `try to withdraw liquidity failed, err ${err}, from ${fromChainInfo.chainId}, to ${toChainInfo.chainId}`
+                );
+              } else {
+                this.logger.log(
+                  `withdrawLiquidity ${fromChainInfo.chainId}->${
+                    toChainInfo.chainId
+                  }, info: ${JSON.stringify(filterTransferIds)}, fee: ${
+                    params.fee
+                  }`
+                );
+                let gasPrice = await toChainInfo.provider.feeData(
+                  1.1,
+                  toChainInfo.notSupport1559
+                );
+                const tx = await toLnv3Contract.withdrawLiquidity(
+                  fromChainInfo.chainId,
+                  filterTransferIds,
+                  lnProvider.relayer,
+                  params.extParams,
+                  gasPrice,
+                  params.fee
+                );
+                this.logger.log(
+                  `withdrawLiquidity tx ${tx.hash} on ${toChainInfo.chainId}`
+                );
+              }
             }
           }
         } catch (e) {

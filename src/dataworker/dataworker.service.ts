@@ -160,7 +160,6 @@ export class DataworkerService implements OnModuleInit {
     return feeUsed;
   }
 
-  // MUST: countThreshold <= 40 ELSE invalid threshold
   async queryLiquidity(
     url: string,
     fromChain: string,
@@ -174,7 +173,7 @@ export class DataworkerService implements OnModuleInit {
     if (!amountThreshold && !countThreshold) return null;
     let query = `{
             historyRecords(
-                row: 40,
+                row: 200,
                 relayer: \"${relayer.toLowerCase()}\",
                 recvTokenAddress: \"${token.toLowerCase()}\",
                 fromChains: [\"${fromChain}\"],
