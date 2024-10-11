@@ -35,6 +35,11 @@ import { SingleService } from "../base/safe-service/single.service";
 import { SafeGlobalService } from "../base/safe-service/safeglobal.service";
 import { SafeService } from "../base/safe-service/safe.service";
 
+const kMaxWithdrawTransferCount = 16;
+export const kMaxWithdrawTransferAmount: bigint = BigInt(
+  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+);
+
 export class ChainInfo {
   chainName: string;
   rpcs: string[];
@@ -225,8 +230,7 @@ export class RelayerService implements OnModuleInit {
             txHashCache: "",
             checkTimes: 0,
             lendMarket: lendMarket ?? [],
-            //multicall: new MulticallContract(chainInfo.multicallAddress, provider),
-            multicall: new MulticallContract("0xcA11bde05977b3631167028862bE2a173976CA11", provider),
+            multicall: new MulticallContract(chainInfo.additional.multicallAddress, provider),
           },
         ];
       })
@@ -885,19 +889,22 @@ export class RelayerService implements OnModuleInit {
                 lockInfo
               );
               if (Number(txStatus) === 1) {
-                filterTransferIds.push(needWithdrawRecords.transferIds[index]);
+                if (filterTransferIds.length < kMaxWithdrawTransferCount) {
+                  filterTransferIds.push(needWithdrawRecords.transferIds[index]);
+                }
                 totalAmount += amountWithFeeAndPenalty;
               }
               index++;
-              if (filterTransferIds.length >= 16) {
-                break;
-              }
             }
             let countThreshold = lnProvider.withdrawLiquidityCountThreshold;
-            if (!countThreshold) {
-              countThreshold = 0;
+            if (!countThreshold || countThreshold > kMaxWithdrawTransferCount) {
+              countThreshold = kMaxWithdrawTransferCount;
             }
-            if (filterTransferIds.length >= countThreshold) {
+            let amountThreshold = kMaxWithdrawTransferAmount;
+            if (lnProvider.withdrawLiquidityAmountThreshold) {
+              amountThreshold = BigInt(lnProvider.withdrawLiquidityAmountThreshold);
+            }
+            if (filterTransferIds.length >= countThreshold || totalAmount >= amountThreshold) {
               // token transfer direction fromChain -> toChain
               // withdrawLiquidity message direction toChain -> fromChain
               const fromChannelAddress = this.configureService.getMessagerAddress(
@@ -946,7 +953,7 @@ export class RelayerService implements OnModuleInit {
                 this.logger.log(
                   `withdrawLiquidity ${fromChainInfo.chainId}->${
                     toChainInfo.chainId
-                  }, info: ${JSON.stringify(needWithdrawRecords)}, fee: ${
+                  }, info: ${JSON.stringify(filterTransferIds)}, fee: ${
                     params.fee
                   }`
                 );

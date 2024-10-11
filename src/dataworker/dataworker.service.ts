@@ -160,7 +160,6 @@ export class DataworkerService implements OnModuleInit {
     return feeUsed;
   }
 
-  // MUST: countThreshold <= 40 ELSE invalid threshold
   async queryLiquidity(
     url: string,
     fromChain: string,
