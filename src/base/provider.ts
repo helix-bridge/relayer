@@ -23,6 +23,14 @@ export interface TransactionInfo {
   nonce: number | null;
 }
 
+export function gasPriceToString(gasPrice: GasPrice): string {
+  if (gasPrice.isEip1559) {
+    return `{ maxFeePerGas: ${gasPrice.eip1559fee.maxFeePerGas}, maxPriorityFeePerGas: ${gasPrice.eip1559fee.maxPriorityFeePerGas}}`;
+  } else {
+    return `{gasPrice: ${gasPrice.fee.gasPrice}}`;
+  }
+}
+
 export function scaleBigger(
   left: GasPrice,
   right: GasPrice,
