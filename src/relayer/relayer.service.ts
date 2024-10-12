@@ -649,7 +649,7 @@ export class RelayerService implements OnModuleInit {
         if (txInfo !== null && txInfo.readyExecute && relayer.isExecutor) {
           const safeContract = new SafeContract(
             relayer.safeWallet.address,
-            relayer.safeWallet
+            relayer.safeWallet.wallet,
           );
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
