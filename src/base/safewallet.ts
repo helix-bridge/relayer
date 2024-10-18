@@ -181,10 +181,11 @@ export class SafeWallet {
               readyExecute ? "ready" : "waiting"
             } to execute, tx ${safeTxHash} on chain ${chainId}`
           );
+          const newSignatures = signatureInfo.size >= this.threshold ? signatureInfo.signatures : signatureInfo.signatures + signature.data.substring(2);
           return {
             ...propose,
             readyExecute: readyExecute,
-            signatures: signatureInfo.signatures + signature.data.substring(2),
+            signatures: newSignatures,
           };
         }
       }

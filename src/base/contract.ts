@@ -125,7 +125,11 @@ export class EthereumContract {
         return null;
       }
     } catch (error) {
-      return null;
+      if (hasReturnValue) {
+        return null;
+      } else {
+        return error;
+      }
     }
   }
 }
@@ -235,6 +239,7 @@ export class SafeContract extends EthereumContract {
     innervalue: bigint,
     operation: number,
     signatures: string,
+    gasLimit: bigint | null = null,
     value: bigint | null = null
   ): Promise<string> | null {
     return await this.staticCall(
@@ -252,7 +257,8 @@ export class SafeContract extends EthereumContract {
         signatures,
       ],
       false,
-      value
+      value,
+      gasLimit
     );
   }
 
