@@ -140,11 +140,11 @@ export class DataworkerService implements OnModuleInit {
     let feeUsed: bigint;
     if (gasPrice.isEip1559) {
       let maxFeePerGas = new GWei(gasPrice.eip1559fee.maxFeePerGas).mul(
-        1.05
+        1.00
       ).Number;
       const maxPriorityFeePerGas = new GWei(
         gasPrice.eip1559fee.maxPriorityFeePerGas
-      ).mul(1.1).Number;
+      ).mul(1.0).Number;
       if (maxFeePerGas < maxPriorityFeePerGas) {
         maxFeePerGas = maxPriorityFeePerGas;
       }

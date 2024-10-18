@@ -63,6 +63,8 @@ export interface RpcNode {
   rpcs: string[];
   fixedGasPrice: number;
   notSupport1559: boolean;
+  gasPriceStretching: number;
+  relayGasLimit: number;
   lendMarket: LendInfo[];
 }
 
@@ -95,7 +97,6 @@ export interface BridgeInfo {
 export interface ConfigInfo {
   env: string;
   indexer: string;
-  relayGasLimit: number;
   rpcnodes: RpcNode[];
   bridges: BridgeInfo[];
 }

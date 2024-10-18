@@ -48,6 +48,8 @@ export class ChainInfo {
   provider: EthereumProvider;
   fixedGasPrice: number;
   notSupport1559: boolean;
+  gasPriceStretching: number;
+  relayGasLimit: number;
   lnv3Address: string;
   adjustingFee: boolean;
   lendMarket: LendMarket[];
@@ -224,6 +226,8 @@ export class RelayerService implements OnModuleInit {
             provider: provider,
             fixedGasPrice: rpcnode.fixedGasPrice,
             notSupport1559: rpcnode.notSupport1559,
+            gasPriceStretching: rpcnode.gasPriceStretching ?? 1.1,
+            relayGasLimit: rpcnode.relayGasLimit,
             lnv2DefaultAddress: chainInfo.protocol["lnv2-default"],
             lnv2OppositeAddress: chainInfo.protocol["lnv2-opposite"],
             lnv3Address: chainInfo.protocol.lnv3,
@@ -405,7 +409,7 @@ export class RelayerService implements OnModuleInit {
             toBridge: toConnectInfo,
             lnProviders: lnProviders,
             heartBeatTime: this.heartBeatInterval,
-            toWallet: toWallet,
+            toWallet: toWallet
           };
         })
         .filter((item) => item !== null)
@@ -422,7 +426,7 @@ export class RelayerService implements OnModuleInit {
         eip1559fee: null,
       };
     } else {
-      return await chainInfo.provider.feeData(1, chainInfo.notSupport1559);
+      return await chainInfo.provider.feeData(chainInfo.gasPriceStretching, chainInfo.notSupport1559);
     }
   }
 
@@ -1052,7 +1056,7 @@ export class RelayerService implements OnModuleInit {
               },
               expectedTransferId: last(record.id.split("-")),
             };
-      const configuredGasLimit = this.configureService.config.relayGasLimit;
+      const configuredGasLimit = toChainInfo.relayGasLimit;
       const relayGasLimit =
         configuredGasLimit !== undefined
           ? new EtherBigNumber(configuredGasLimit).Number
@@ -1141,16 +1145,17 @@ export class RelayerService implements OnModuleInit {
             txInfo.txData,
             txInfo.value,
             txInfo.operation,
-            txInfo.signatures
+            txInfo.signatures,
+            relayGasLimit
           );
           if (err != null) {
             this.logger.warn(
-              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] try to relay using safe failed, id: ${record.id}, err ${err}`
+              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] try to relay using safe failed, id: ${record.id}, gasLimit ${relayGasLimit}, err ${err}`
             );
             continue;
           } else {
             this.logger.log(
-              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}, gasPrice: ${gasPriceToString(gasPrice)}`
+              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}, gasPrice: ${gasPriceToString(gasPrice)}, gasLimit: ${relayGasLimit}`
             );
             const tx = await safeContract.execTransaction(
               txInfo.to,
@@ -1158,7 +1163,9 @@ export class RelayerService implements OnModuleInit {
               txInfo.value,
               txInfo.operation,
               txInfo.signatures,
-              gasPrice
+              gasPrice,
+              null,
+              relayGasLimit
             );
             await this.store.savePendingTransaction(
               toChainInfo.chainName,
