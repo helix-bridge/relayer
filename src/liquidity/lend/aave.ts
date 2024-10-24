@@ -484,9 +484,9 @@ export class AddressBookConfigure {
             isNativeWrapped: false,
             index: 5,
           },
-        ]
-      }
-    ]
+        ],
+      },
+    ],
   };
 
   aaveTestConfigure: AddressBook = {
@@ -517,13 +517,15 @@ export class AddressBookConfigure {
     const configures = {
       formalConfigure: {
         aave: this.aaveFormalConfigure,
-        spark: this.sparkFormalConfigure
+        spark: this.sparkFormalConfigure,
       },
       testConfigure: {
         aave: this.aaveTestConfigure,
-      }
+      },
     };
-    const configure = isTest ? configures.testConfigure : configures.formalConfigure;
+    const configure = isTest
+      ? configures.testConfigure
+      : configures.formalConfigure;
     return configure[name];
   }
 }
@@ -550,7 +552,10 @@ export class Aave extends LendMarket {
     tokens: LendTokenInfo[],
     signer: EthereumConnectedWallet | EthereumProvider
   ) {
-    const addressBook = new AddressBookConfigure().addressBook(isTest, marketName);
+    const addressBook = new AddressBookConfigure().addressBook(
+      isTest,
+      marketName
+    );
     const bookInfo = addressBook?.chains.find((e) => e.name == chainName);
     if (!bookInfo) {
       throw new Error(`[Lend-${marketName}]Chain ${chainName} Not Support`);
@@ -630,7 +635,9 @@ export class Aave extends LendMarket {
 
   // https://github.com/aave/aave-v3-core/blob/v1.19.4/contracts/protocol/libraries/types/DataTypes.sol#L65-L67
   public isCollateral(userConfig: bigint, token: CollateralToken): boolean {
-    return Number((userConfig >> BigInt(token.index * 2 + 1)) & BigInt(1)) === 1;
+    return (
+      Number((userConfig >> BigInt(token.index * 2 + 1)) & BigInt(1)) === 1
+    );
   }
 
   // suppose the pool is big enough
@@ -683,7 +690,10 @@ export class Aave extends LendMarket {
     }
     const userConfigure = await this.poolContract.getUserConfigure(account);
     // maybe user deposit this asset but not as collateralToken
-    const assetCollateralEnabled = this.isCollateral(userConfigure[0], collateralToken);
+    const assetCollateralEnabled = this.isCollateral(
+      userConfigure[0],
+      collateralToken
+    );
 
     // the deposited asset
     const aTokenBalance = await collateralToken.aTokenContract.balanceOf(

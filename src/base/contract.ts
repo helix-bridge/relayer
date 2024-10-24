@@ -196,6 +196,7 @@ export interface RelayArgs {
   transferParameter: TransferParameter;
   remoteChainId: number;
   expectedTransferId: string;
+  relayBySelf: boolean;
 }
 
 export interface TransferParameterV3 {
@@ -212,6 +213,7 @@ export interface TransferParameterV3 {
 export interface RelayArgsV3 {
   transferParameter: TransferParameterV3;
   expectedTransferId: string;
+  relayBySelf: boolean;
 }
 
 export interface LnProviderFeeInfo {
@@ -433,6 +435,9 @@ export class LnBridgeContract extends EthereumContract {
     args: RelayArgs | RelayArgsV3,
     gasLimit: bigint | null = null
   ): Promise<string> | null {
+    if (!args.relayBySelf) {
+      throw Error("Lnv2 donot support relay by others");
+    }
     const argsV2 = args as RelayArgs;
     var value = null;
     const parameter = argsV2.transferParameter;
@@ -461,6 +466,9 @@ export class LnBridgeContract extends EthereumContract {
   }
 
   relayRawData(args: RelayArgs | RelayArgsV3): RelayRawData {
+    if (!args.relayBySelf) {
+      throw Error("Lnv2 donot support relay by others");
+    }
     var value = null;
     const argsV2 = args as RelayArgs;
     const parameter = argsV2.transferParameter;
@@ -489,6 +497,9 @@ export class LnBridgeContract extends EthereumContract {
     nonce: number | null = null,
     gasLimit: bigint | null = null
   ): Promise<TransactionResponse> {
+    if (!args.relayBySelf) {
+      throw Error("Lnv2 donot support relay by others");
+    }
     var value = null;
     const argsV2 = args as RelayArgs;
     const parameter = argsV2.transferParameter;
@@ -772,7 +783,7 @@ export class Lnv3BridgeContract extends EthereumContract {
           parameter.timestamp,
         ],
         argsV3.expectedTransferId,
-        true,
+        argsV3.relayBySelf,
       ],
       false,
       value,
@@ -799,7 +810,7 @@ export class Lnv3BridgeContract extends EthereumContract {
         parameter.timestamp,
       ],
       argsV3.expectedTransferId,
-      true,
+      argsV3.relayBySelf,
     ]);
     return { data, value };
   }
@@ -830,7 +841,7 @@ export class Lnv3BridgeContract extends EthereumContract {
           parameter.timestamp,
         ],
         argsV3.expectedTransferId,
-        true,
+        argsV3.relayBySelf,
       ],
       gas,
       value,

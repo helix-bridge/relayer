@@ -1113,10 +1113,10 @@
   resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.2.0.tgz#5f3d96ec6b2354ad6d8a28bf216a1d97b5426861"
   integrity sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==
 
-"@helixbridge/helixconf@1.1.17":
-  version "1.1.17"
-  resolved "https://registry.yarnpkg.com/@helixbridge/helixconf/-/helixconf-1.1.17.tgz#77ebf6ee15af05e570fa8a049c01f7b01e67655f"
-  integrity sha512-HyJe9BqFb2MD8s2yPeKfrpwJxDb8OKvyynkzkSFZY8duCTF+fXLwsASIOpCyFXh1mZ+tyxBuRDbwukgORTIP3A==
+"@helixbridge/helixconf@1.1.18":
+  version "1.1.18"
+  resolved "https://registry.yarnpkg.com/@helixbridge/helixconf/-/helixconf-1.1.18.tgz#d756d9394c0190e373a4f04d8e582a76bd5f20cc"
+  integrity sha512-3o4urkcBMMs5JGuDrgcnRt909LWHhlVkMpVodQU5m4tm94trETnmf1dvHhSZGA/TBGffeC/82UMdqmx/w2NnEg==
 
 "@humanwhocodes/config-array@^0.13.0":
   version "0.13.0"

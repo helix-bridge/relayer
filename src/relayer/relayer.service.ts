@@ -63,6 +63,7 @@ export class BridgeConnectInfo {
 }
 
 export class LnProviderInfo {
+  resolverOnSource: string;
   relayer: string;
   swapRate: number;
   microThreshold: number;
@@ -235,7 +236,10 @@ export class RelayerService implements OnModuleInit {
             txHashCache: "",
             checkTimes: 0,
             lendMarket: lendMarket ?? [],
-            multicall: new MulticallContract(chainInfo.additional.multicallAddress, provider),
+            multicall: new MulticallContract(
+              chainInfo.additional.multicallAddress,
+              provider
+            ),
           },
         ];
       })
@@ -321,6 +325,8 @@ export class RelayerService implements OnModuleInit {
             bridge: fromBridge,
             safeWallet: undefined,
           };
+
+          const relayer = toConnectInfo.safeWallet?.address ?? toWallet.address;
           let lnProviders = await Promise.all(
             config.tokens
               .map(async (token) => {
@@ -382,8 +388,8 @@ export class RelayerService implements OnModuleInit {
                   toTokenDecimals: toTokenDecimals,
                   fromToken: fromTokenContract,
                   toToken: toTokenContract,
-                  relayer:
-                    toConnectInfo.safeWallet?.address ?? toWallet.address,
+                  relayer: relayer,
+                  resolverOnSource: config.providerAddress ?? relayer,
                   swapRate: token.swapRate,
                   microThreshold: token.microThreshold ?? 0,
                   withdrawLiquidityAmountThreshold:
@@ -409,7 +415,7 @@ export class RelayerService implements OnModuleInit {
             toBridge: toConnectInfo,
             lnProviders: lnProviders,
             heartBeatTime: this.heartBeatInterval,
-            toWallet: toWallet
+            toWallet: toWallet,
           };
         })
         .filter((item) => item !== null)
@@ -426,7 +432,10 @@ export class RelayerService implements OnModuleInit {
         eip1559fee: null,
       };
     } else {
-      return await chainInfo.provider.feeData(chainInfo.gasPriceStretching, chainInfo.notSupport1559);
+      return await chainInfo.provider.feeData(
+        chainInfo.gasPriceStretching,
+        chainInfo.notSupport1559
+      );
     }
   }
 
@@ -463,7 +472,7 @@ export class RelayerService implements OnModuleInit {
     const gasLimit = new EtherBigNumber(1000000).Number;
     let lnProviderInfoOnChain = await sourceContract.getLnProviderInfo(
       toChainInfo.chainId,
-      lnProviderInfo.relayer,
+      lnProviderInfo.resolverOnSource,
       lnProviderInfo.fromAddress,
       lnProviderInfo.toAddress
     );
@@ -653,7 +662,7 @@ export class RelayerService implements OnModuleInit {
         if (txInfo !== null && txInfo.readyExecute && relayer.isExecutor) {
           const safeContract = new SafeContract(
             relayer.safeWallet.address,
-            relayer.safeWallet.wallet,
+            relayer.safeWallet.wallet
           );
           const err = await safeContract.tryExecTransaction(
             txInfo.to,
@@ -717,7 +726,7 @@ export class RelayerService implements OnModuleInit {
             if (bridge.bridgeType === "lnv3") {
               const penaltyEnough = await fromBridgeContract.isPenaltyEnough(
                 toChainInfo.chainId,
-                lnProvider.relayer,
+                lnProvider.resolverOnSource,
                 lnProvider.fromAddress,
                 lnProvider.toAddress
               );
@@ -772,7 +781,7 @@ export class RelayerService implements OnModuleInit {
             this.configureService.indexer,
             fromChainInfo.chainId,
             toChainInfo.chainId,
-            lnProvider.relayer,
+            lnProvider.resolverOnSource,
             lnProvider.fromAddress,
             softTransferLimit,
             bridge.bridgeType,
@@ -836,7 +845,7 @@ export class RelayerService implements OnModuleInit {
           this.configureService.indexer,
           fromChainInfo.chainId,
           toChainInfo.chainId,
-          lnProvider.relayer,
+          lnProvider.resolverOnSource,
           lnProvider.fromAddress,
           baseFee,
           bridge.bridgeType,
@@ -866,7 +875,7 @@ export class RelayerService implements OnModuleInit {
               this.configureService.indexer,
               fromChainInfo.chainName,
               toChainInfo.chainName,
-              lnProvider.relayer,
+              lnProvider.resolverOnSource,
               lnProvider.toAddress,
               lnProvider.withdrawLiquidityAmountThreshold,
               lnProvider.withdrawLiquidityCountThreshold,
@@ -889,13 +898,16 @@ export class RelayerService implements OnModuleInit {
             let index = 0;
             let totalAmount = BigInt(0);
             for (const lockInfo of lockInfos) {
-              const [amountWithFeeAndPenalty, tokenIndex, txStatus] = AbiCoder.defaultAbiCoder().decode(
-                ["uint", "uint", "uint"],
-                lockInfo
-              );
+              const [amountWithFeeAndPenalty, tokenIndex, txStatus] =
+                AbiCoder.defaultAbiCoder().decode(
+                  ["uint", "uint", "uint"],
+                  lockInfo
+                );
               if (Number(txStatus) === 1) {
                 if (filterTransferIds.length < kMaxWithdrawTransferCount) {
-                  filterTransferIds.push(needWithdrawRecords.transferIds[index]);
+                  filterTransferIds.push(
+                    needWithdrawRecords.transferIds[index]
+                  );
                 }
                 totalAmount += amountWithFeeAndPenalty;
               }
@@ -907,15 +919,21 @@ export class RelayerService implements OnModuleInit {
             }
             let amountThreshold = kMaxWithdrawTransferAmount;
             if (lnProvider.withdrawLiquidityAmountThreshold) {
-              amountThreshold = BigInt(lnProvider.withdrawLiquidityAmountThreshold);
+              amountThreshold = BigInt(
+                lnProvider.withdrawLiquidityAmountThreshold
+              );
             }
-            if (filterTransferIds.length >= countThreshold || totalAmount >= amountThreshold) {
+            if (
+              filterTransferIds.length >= countThreshold ||
+              totalAmount >= amountThreshold
+            ) {
               // token transfer direction fromChain -> toChain
               // withdrawLiquidity message direction toChain -> fromChain
-              const fromChannelAddress = this.configureService.getMessagerAddress(
-                fromChainInfo.chainName,
-                needWithdrawRecords.channel
-              );
+              const fromChannelAddress =
+                this.configureService.getMessagerAddress(
+                  fromChainInfo.chainName,
+                  needWithdrawRecords.channel
+                );
               const toChannelAddress = this.configureService.getMessagerAddress(
                 toChainInfo.chainName,
                 needWithdrawRecords.channel
@@ -928,7 +946,7 @@ export class RelayerService implements OnModuleInit {
               const appPayload = toLnv3Contract.encodeWithdrawLiquidity(
                 filterTransferIds,
                 toChainInfo.chainId,
-                lnProvider.relayer
+                lnProvider.resolverOnSource
               );
               const payload = messager.encodePayload(
                 toChainInfo.chainId,
@@ -946,7 +964,7 @@ export class RelayerService implements OnModuleInit {
               const err = await toLnv3Contract.tryWithdrawLiquidity(
                 fromChainInfo.chainId,
                 filterTransferIds,
-                lnProvider.relayer,
+                lnProvider.resolverOnSource,
                 params.extParams,
                 params.fee
               );
@@ -969,7 +987,7 @@ export class RelayerService implements OnModuleInit {
                 const tx = await toLnv3Contract.withdrawLiquidity(
                   fromChainInfo.chainId,
                   filterTransferIds,
-                  lnProvider.relayer,
+                  lnProvider.resolverOnSource,
                   params.extParams,
                   gasPrice,
                   params.fee
@@ -989,7 +1007,7 @@ export class RelayerService implements OnModuleInit {
         this.configureService.indexer,
         fromChainInfo.chainName,
         toChainInfo.chainName,
-        lnProvider.relayer,
+        lnProvider.resolverOnSource,
         lnProvider.fromAddress,
         bridge.bridgeType
       );
@@ -1028,12 +1046,13 @@ export class RelayerService implements OnModuleInit {
       let nonce: number | null = null;
       // try relay: check balance and fee enough
       const targetAmount = new EtherBigNumber(record.recvAmount).Number;
+      const relayBySelf = lnProvider.resolverOnSource === lnProvider.relayer;
       const args: RelayArgs | RelayArgsV3 =
         bridge.bridgeType != "lnv3"
           ? {
               transferParameter: {
                 previousTransferId: needRelayRecord.lastTransferId,
-                relayer: lnProvider.relayer,
+                relayer: lnProvider.resolverOnSource,
                 sourceToken: lnProvider.fromAddress,
                 targetToken: lnProvider.toAddress,
                 amount: targetAmount,
@@ -1042,11 +1061,12 @@ export class RelayerService implements OnModuleInit {
               },
               remoteChainId: fromChainInfo.chainId,
               expectedTransferId: last(record.id.split("-")),
+              relayBySelf: relayBySelf,
             }
           : {
               transferParameter: {
                 remoteChainId: fromChainInfo.chainId,
-                provider: lnProvider.relayer,
+                provider: lnProvider.resolverOnSource,
                 sourceToken: lnProvider.fromAddress,
                 targetToken: lnProvider.toAddress,
                 sourceAmount: new EtherBigNumber(record.sendAmount).Number,
@@ -1055,6 +1075,7 @@ export class RelayerService implements OnModuleInit {
                 timestamp: new EtherBigNumber(record.messageNonce).Number,
               },
               expectedTransferId: last(record.id.split("-")),
+              relayBySelf: relayBySelf,
             };
       const configuredGasLimit = toChainInfo.relayGasLimit;
       const relayGasLimit =
@@ -1155,7 +1176,13 @@ export class RelayerService implements OnModuleInit {
             continue;
           } else {
             this.logger.log(
-              `[${fromChainInfo.chainName}>>${toChainInfo.chainName}] ready to exec safe tx, id: ${record.id}, gasPrice: ${gasPriceToString(gasPrice)}, gasLimit: ${relayGasLimit}`
+              `[${fromChainInfo.chainName}>>${
+                toChainInfo.chainName
+              }] ready to exec safe tx, id: ${
+                record.id
+              }, gasPrice: ${gasPriceToString(
+                gasPrice
+              )}, gasLimit: ${relayGasLimit}`
             );
             const tx = await safeContract.execTransaction(
               txInfo.to,
@@ -1195,7 +1222,9 @@ export class RelayerService implements OnModuleInit {
           continue;
         }
         this.logger.log(
-          `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${toChainInfo.chainName}`
+          `find valid relay info, id: ${record.id}, nonce: ${nonce}, toChain ${
+            toChainInfo.chainName
+          }, gasPrice ${gasPriceToString(gasPrice)}`
         );
         // relay and return
         const tx = await toBridgeContract.relay(
