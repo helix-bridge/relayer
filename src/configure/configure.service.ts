@@ -79,6 +79,9 @@ export interface TokenInfo {
 
 export interface BridgeInfo {
   direction: string;
+  // specify the provider address on source chain
+  // if undefined, it's the same as relayer
+  providerAddress: string | undefined;
   encryptedPrivateKey: string;
   encryptedCeramicKey: string | undefined;
   feeLimit: number;

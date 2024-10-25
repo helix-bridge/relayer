@@ -125,8 +125,9 @@ export class EthereumProvider {
       const feeInfo: EIP1559Fee = {
         // maxFeePerGas is not accurate
         //maxFeePerGas: fee.maxFeePerGas,
-        maxFeePerGas: maxFeePerGas * stretchScale / BigInt(100),
-        maxPriorityFeePerGas: fee.maxPriorityFeePerGas * stretchScale / BigInt(100),
+        maxFeePerGas: (maxFeePerGas * stretchScale) / BigInt(100),
+        maxPriorityFeePerGas:
+          (fee.maxPriorityFeePerGas * stretchScale) / BigInt(100),
       };
       return {
         eip1559fee: feeInfo,
@@ -137,7 +138,7 @@ export class EthereumProvider {
       return {
         isEip1559: false,
         fee: {
-          gasPrice: fee.gasPrice * stretchScale / BigInt(100),
+          gasPrice: (fee.gasPrice * stretchScale) / BigInt(100),
         },
         eip1559fee: null,
       };

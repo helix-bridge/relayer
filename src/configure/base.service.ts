@@ -29,6 +29,7 @@ export class BaseConfigService {
       HelixChain.base,
       HelixChain.avalanche,
       HelixChain.zircuit,
+      HelixChain.morph,
     ],
   };
   testConfigure: BaseConfigure = {
