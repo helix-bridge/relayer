@@ -145,15 +145,6 @@ export class RelayerService implements OnModuleInit {
               continue;
             }
             try {
-              if (timer.lastRepayLend === 0) {
-                const busy = await this.repayDept(key);
-                if (busy) {
-                  timer.isProcessing = false;
-                  this.adjustClock(key);
-                  timer.lastRepayLend = 0;
-                  return;
-                }
-              }
               const txPending = await this.relay(
                 item,
                 timer.lastAdjustTime === 0,
@@ -166,7 +157,17 @@ export class RelayerService implements OnModuleInit {
                 return;
               }
             } catch (err) {
-              this.logger.warn(`relay bridge failed, err: ${err}`);
+              this.logger.warn(`[${key}]relay bridge failed, err: ${err}`);
+            }
+          }
+          if (timer.lastRepayLend === 0) {
+            try {
+              const busy = await this.repayDept(key);
+              if (busy) {
+                timer.lastRepayLend = 0;
+              }
+            } catch (err) {
+              this.logger.warn(`[${key}]try to check repay dept failed, err: ${err}`);
             }
           }
           timer.isProcessing = false;

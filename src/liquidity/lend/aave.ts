@@ -11,8 +11,6 @@ import {
   LendMarket,
   TxInfo,
   WithdrawBorrowBalance,
-  DebtStatus,
-  CollateralStatus,
   maxU256,
 } from "./market";
 import {
@@ -537,8 +535,6 @@ export class Aave extends LendMarket {
   public oracle: AaveOracle;
   public multicall: MulticallContract;
   public wethContract: WETHContract;
-  public debtStatus = new Map();
-  public collateralStatus = new Map();
 
   public debtTokens: DebtToken[];
   public collateralTokens: CollateralToken[];
@@ -623,14 +619,6 @@ export class Aave extends LendMarket {
         index: tokenInfo.index,
       };
     });
-  }
-
-  public enableDebtStatus(account: string) {
-    this.debtStatus.set(account, DebtStatus.HasDebt);
-  }
-
-  public enableCollateralLack(account: string) {
-    this.collateralStatus.set(account, CollateralStatus.CollateralLack);
   }
 
   // https://github.com/aave/aave-v3-core/blob/v1.19.4/contracts/protocol/libraries/types/DataTypes.sol#L65-L67
@@ -762,9 +750,6 @@ export class Aave extends LendMarket {
   // the balanceOf(debtToken) > 0 and balanceOf(underlyingToken) > 0
   // repay amount = min(balanceOf(debtToken), balanceOf(underlyingToken))
   async checkDebtToRepay(account: string): Promise<WaitingRepayInfo[]> {
-    if (this.debtStatus.get(account) === DebtStatus.NoDebt) {
-      return [];
-    }
     const tokens: string[] = this.debtTokens
       .map((token) => [
         token.address,
@@ -776,12 +761,9 @@ export class Aave extends LendMarket {
     // [debt, underlying, debt, underlying, ...]
     const balances: bigint[] = await this.multicall.getBalance(account, tokens);
     let result: WaitingRepayInfo[] = [];
-    let debtStatus: DebtStatus = DebtStatus.NoDebt;
     for (let i = 0; i < balances.length; i += 2) {
       const debtBalance = balances[i];
-      if (debtBalance > BigInt(0)) {
-        debtStatus = DebtStatus.HasDebt;
-      } else {
+      if (debtBalance <= BigInt(0)) {
         continue;
       }
       const underlyingBalance = balances[i + 1];
@@ -807,16 +789,10 @@ export class Aave extends LendMarket {
       }
       result.push({ token: debtToken, amount: fixedDebtBalance });
     }
-    this.debtStatus.set(account, debtStatus);
     return result;
   }
 
   async checkCollateralToSupply(account: string): Promise<WaitingSupplyInfo[]> {
-    if (
-      this.collateralStatus.get(account) === CollateralStatus.CollateralFull
-    ) {
-      return [];
-    }
     const tokens: string[] = this.collateralTokens
       .map((token) => [
         token.aTokenContract.address,
@@ -828,14 +804,11 @@ export class Aave extends LendMarket {
     // [aToken, underlying, aToken, underlying, ...]
     const balances: bigint[] = await this.multicall.getBalance(account, tokens);
     let result: WaitingSupplyInfo[] = [];
-    let collateralStatus: CollateralStatus = CollateralStatus.CollateralFull;
     for (let i = 0; i < balances.length; i += 2) {
       const aTokenBalance = balances[i];
       const collateralToken = this.collateralTokens[(i / 2) | 0];
       if (aTokenBalance >= collateralToken.autosupplyAmount) {
         continue;
-      } else {
-        collateralStatus = CollateralStatus.CollateralLack;
       }
       const underlyingBalance = balances[i + 1];
       const maxInterest = (aTokenBalance * BigInt(20)) / BigInt(100 * 365); // 20 APY 1 day
@@ -854,7 +827,6 @@ export class Aave extends LendMarket {
       }
       result.push({ token: collateralToken, amount: avaiableSupplyAmount });
     }
-    this.collateralStatus.set(account, collateralStatus);
     return result;
   }
 
@@ -996,7 +968,6 @@ export class Aave extends LendMarket {
               onBehalfOf
             ),
           });
-          this.enableDebtStatus(onBehalfOf);
         } else {
           this.logger.warn(
             `[${this.name}] withdraw fixed amount not enough fixed: ${fixedWithdrawBalance}, amount: ${amount}`
@@ -1004,7 +975,6 @@ export class Aave extends LendMarket {
           return [];
         }
       }
-      this.enableCollateralLack(onBehalfOf);
     } else if (avaiable === BigInt(0)) {
       avaiable = await this.borrowAvailable(onBehalfOf, token);
       this.logger.log(
@@ -1019,7 +989,6 @@ export class Aave extends LendMarket {
           value: "0",
           data: this.borrowRawData(token, amount, onBehalfOf),
         });
-        this.enableDebtStatus(onBehalfOf);
       }
     } else {
       this.logger.warn(`[${this.name}] not enough balance, need ${amount}`);
