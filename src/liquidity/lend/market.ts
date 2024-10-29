@@ -9,16 +9,6 @@ export interface WithdrawBorrowBalance {
   borrow: bigint;
 }
 
-export enum DebtStatus {
-  HasDebt,
-  NoDebt,
-}
-
-export enum CollateralStatus {
-  CollateralFull,
-  CollateralLack,
-}
-
 export const maxU256: bigint = BigInt(
   "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 );

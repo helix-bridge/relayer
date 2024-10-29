@@ -20,8 +20,6 @@ import {
   LendMarket,
   TxInfo,
   WithdrawBorrowBalance,
-  DebtStatus,
-  CollateralStatus,
   maxU256,
 } from "./market";
 import { Any } from "../../base/bignumber";
@@ -165,8 +163,6 @@ export class Moonwell extends LendMarket {
   public oracleContract: MoonwellOracle;
   public multicallContract: MulticallContract;
   public wethContract: WETHContract;
-  public debtStatus = new Map();
-  public collateralStatus = new Map();
 
   public debtTokens: DebtToken[];
   public collateralTokens: CollateralToken[];
@@ -269,14 +265,6 @@ export class Moonwell extends LendMarket {
         };
       })
     );
-  }
-
-  public enableDebtStatus(account: string) {
-    this.debtStatus.set(account, DebtStatus.HasDebt);
-  }
-
-  public enableCollateralLack(account: string) {
-    this.collateralStatus.set(account, CollateralStatus.CollateralLack);
   }
 
   async userLendInfo(account: string): Promise<LendInfo | null> {
@@ -435,7 +423,6 @@ export class Moonwell extends LendMarket {
               onBehalfOf
             ),
           });
-          this.enableDebtStatus(onBehalfOf);
         } else {
           this.logger.warn(
             `[${this.name}] withdraw fixed amount not enough fixed: ${fixedWithdrawBalance}, amount: ${amount}`
@@ -457,7 +444,6 @@ export class Moonwell extends LendMarket {
           value: "0",
           data: this.borrowRawData(token, amount, onBehalfOf),
         });
-        this.enableDebtStatus(onBehalfOf);
       }
     } else {
       this.logger.warn(`[${this.name}] not enough balance, need ${amount}`);
@@ -516,11 +502,6 @@ export class Moonwell extends LendMarket {
   }
 
   async checkCollateralToSupply(account: string): Promise<WaitingSupplyInfo[]> {
-    if (
-      this.collateralStatus.get(account) === CollateralStatus.CollateralFull
-    ) {
-      return [];
-    }
     const tokens: string[] = this.collateralTokens.map(
       (token) => token.underlyingAddress
     );
@@ -530,7 +511,6 @@ export class Moonwell extends LendMarket {
       tokens
     );
     let result: WaitingSupplyInfo[] = [];
-    let collateralStatus: CollateralStatus = CollateralStatus.CollateralFull;
 
     const collateralSnapshotData = this.collateralTokens.map((token) => {
       return {
@@ -559,8 +539,6 @@ export class Moonwell extends LendMarket {
         (Number(mTokenBalance) * Number(exchangeRateMantissa)) / 1e18;
       if (undelyingBalanceInCollateral >= collateralToken.autoSupplyAmount) {
         continue;
-      } else {
-        collateralStatus = CollateralStatus.CollateralLack;
       }
       const underlyingBalance = balances[i];
       const maxInterest =
@@ -583,7 +561,6 @@ export class Moonwell extends LendMarket {
       }
       result.push({ token: collateralToken, amount: avaiableSupplyAmount });
     }
-    this.collateralStatus.set(account, collateralStatus);
     return result;
   }
 
@@ -634,9 +611,6 @@ export class Moonwell extends LendMarket {
   }
 
   async checkDebtToRepay(account: string): Promise<WaitingRepayInfo[]> {
-    if (this.debtStatus.get(account) === DebtStatus.NoDebt) {
-      return [];
-    }
     const tokens: string[] = this.debtTokens.map(
       (token) => token.underlyingAddress
     );
@@ -646,7 +620,6 @@ export class Moonwell extends LendMarket {
       tokens
     );
     let result: WaitingRepayInfo[] = [];
-    let debtStatus: DebtStatus = DebtStatus.NoDebt;
 
     const collateralSnapshotData = this.debtTokens.map((token) => {
       return {
@@ -669,9 +642,7 @@ export class Moonwell extends LendMarket {
           ["uint", "uint", "uint", "uint"],
           mtokenInfo
         );
-      if (borrowBalance > BigInt(0)) {
-        debtStatus = DebtStatus.HasDebt;
-      } else {
+      if (borrowBalance <= BigInt(0)) {
         continue;
       }
       const underlyingBalance = balances[i];
@@ -696,7 +667,6 @@ export class Moonwell extends LendMarket {
       }
       result.push({ token: debtToken, amount: fixedDebtBalance });
     }
-    this.debtStatus.set(account, debtStatus);
     return result;
   }
 
