@@ -42,7 +42,7 @@ export class BaseConfigService {
       HelixChain.bera,
       HelixChain.morphTestnet,
       HelixChain.baseSepolia,
-      HelixChain.zircuit,
+      HelixChain.zircuitSepolia,
       HelixChain.celoTestnet,
     ],
   };
