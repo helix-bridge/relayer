@@ -37,9 +37,7 @@ import { SafeService } from "../base/safe-service/safe.service";
 import { gasPriceToString } from "../base/provider";
 
 const kMaxWithdrawTransferCount = 16;
-export const kMaxWithdrawTransferAmount: bigint = BigInt(
-  "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-);
+export const kMaxWithdrawTransferAmount: number = Number.MAX_VALUE;
 
 export class ChainInfo {
   chainName: string;
@@ -920,13 +918,11 @@ export class RelayerService implements OnModuleInit {
             }
             let amountThreshold = kMaxWithdrawTransferAmount;
             if (lnProvider.withdrawLiquidityAmountThreshold) {
-              amountThreshold = BigInt(
-                lnProvider.withdrawLiquidityAmountThreshold
-              );
+              amountThreshold = lnProvider.withdrawLiquidityAmountThreshold
             }
             if (
               filterTransferIds.length >= countThreshold ||
-              totalAmount >= amountThreshold
+              Number(totalAmount) / Number(new Any(1, srcDecimals).Number) >= amountThreshold
             ) {
               // token transfer direction fromChain -> toChain
               // withdrawLiquidity message direction toChain -> fromChain
