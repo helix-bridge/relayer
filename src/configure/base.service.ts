@@ -40,9 +40,10 @@ export class BaseConfigService {
       HelixChain.zksyncSepolia,
       HelixChain.taikoHekla,
       HelixChain.bera,
-      HelixChain.morph,
+      HelixChain.morphTestnet,
       HelixChain.baseSepolia,
-      HelixChain.zircuit,
+      HelixChain.zircuitSepolia,
+      HelixChain.celoTestnet,
     ],
   };
 
