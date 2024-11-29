@@ -545,8 +545,9 @@ export class RelayerService implements OnModuleInit {
       transactionInfo = await chainInfo.provider.checkPendingTransaction(
         chainInfo.txHashCache
       );
-      // may be query error
-      if (transactionInfo === null) {
+      // maybe query error
+      // if confirmedBlock always zero, maybe the tx dropped from the tx pool
+      if (transactionInfo === null || transactionInfo.confirmedBlock === 0) {
         chainInfo.checkTimes += 1;
         // if always query null, maybe reorg or replaced
         if (chainInfo.checkTimes >= this.maxWaitingPendingTimes) {
@@ -556,6 +557,11 @@ export class RelayerService implements OnModuleInit {
           await this.store.delPendingTransaction(chainName);
           chainInfo.txHashCache = null;
           chainInfo.checkTimes = 0;
+        }
+        if (transactionInfo !== null) {
+          this.logger.log(
+            `the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${transactionInfo.confirmedBlock},  ${transactionInfo.nonce}`
+          );
         }
         return true;
       } else {
@@ -577,11 +583,6 @@ export class RelayerService implements OnModuleInit {
           chainInfo.txHashCache = null;
           return false;
         }
-      } else {
-        this.logger.log(
-          `the tx is pending, waiting for confirmed, txHash: ${chainInfo.txHashCache}, ${transactionInfo.confirmedBlock},  ${transactionInfo.nonce}`
-        );
-        return true;
       }
     }
     return false;
