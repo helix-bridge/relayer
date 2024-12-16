@@ -723,7 +723,7 @@ export class Aave extends LendMarket {
           (asset == zeroAddress && dt.underlyingAddress == this.wrappedToken)
       );
       if (!debtToken) {
-        return { withdraw: availableAToken, borrow: BigInt(0) };
+        return { withdraw: aTokenBalance, borrow: BigInt(0) };
       }
       // withdraw aTokenBalance, others borrow
       // (totalCollateralBase - aTokenBase) * ltv / BigInt(10000) / BigInt(this.healthFactorLimit) >= totalDebtBase + xBase
