@@ -8,8 +8,5 @@ export abstract class SafeService {
     this.name = name;
     this.url = url;
   }
-  abstract getTransactionConfirmations(
-    safeTxHash: string
-  ): Promise<SafeMultisigConfirmationResponse[]>;
   abstract proposeTransaction(prop: ProposeTransactionProps): Promise<void>;
 }
