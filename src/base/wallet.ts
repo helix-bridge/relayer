@@ -26,11 +26,15 @@ export class EthereumConnectedWallet {
   public wallet: Wallet | HDNodeWallet;
   public onProviderUpdatedHandlers: (() => void)[] = [];
   public tryNextUrl: () => void;
+  public url: () => string;
 
   constructor(privateKey: string, provider: EthereumProvider) {
     this.wallet = new Wallet(privateKey, provider.provider);
     this.tryNextUrl = () => {
       provider.tryNextUrl();
+    };
+    this.url = () => {
+      return provider.url;
     };
     provider.registerUrlUpdateHandler(() => {
       this.wallet = new Wallet(privateKey, provider.provider);
@@ -46,6 +50,10 @@ export class EthereumConnectedWallet {
 
   get address() {
     return this.wallet.address;
+  }
+
+  get privateKey() {
+    return this.wallet.privateKey;
   }
 
   get SignerOrProvider(): Wallet | HDNodeWallet | ethers.Provider {

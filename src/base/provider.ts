@@ -100,6 +100,10 @@ export class EthereumProvider {
     return this.provider;
   }
 
+  get url(): string {
+    return this.urls[this.urlIndex % this.urls.length];
+  }
+
   @rpcCallIfError
   async currentBlocknumber() {
     return await this.provider.getBlockNumber();
