@@ -68,13 +68,13 @@ export class SafeWallet {
       const readyExecute = signedTransaction.signatures.size >= this.threshold;
       if (signedTransaction.signatures.size < this.threshold) {
         try {
-          const signature = tx.getSignature(this.wallet.address) as EthSafeSignature;
+          const senderSignature = await this.safeSdk.signHash(txHash)
           await this.safeService.proposeTransaction({
             safeAddress: this.address,
             safeTransactionData: tx.data,
             safeTxHash: txHash,
             senderAddress: this.wallet.address,
-            senderSignature: buildSignatureBytes([signature])
+            senderSignature: senderSignature.data,
           });
           this.logger.log(
             `finish to propose transaction ${txHash} using ${this.safeService.name} on chain ${chainId}`
