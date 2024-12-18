@@ -664,13 +664,13 @@ export class RelayerService implements OnModuleInit {
             relayer.safeWallet.address,
             relayer.safeWallet.wallet
           );
-          const safeTransactionData = txInfo.signedTransaction.data;
+          const safeTransaction = txInfo.safeTransaction.data;
           const err = await safeContract.tryExecTransaction(
-            safeTransactionData.to,
-            safeTransactionData.data,
+            safeTransaction.to,
+            safeTransaction.data,
             BigInt(0),
-            safeTransactionData.operation,
-            txInfo.signedTransaction.encodedSignatures()
+            safeTransaction.operation,
+            txInfo.signatures
           );
           if (err != null) {
             this.logger.warn(
@@ -681,11 +681,11 @@ export class RelayerService implements OnModuleInit {
             this.logger.log(`[${chain}] ready to ${hint} using safe tx`);
             const gasPrice = await this.gasPrice(chainInfo);
             const tx = await safeContract.execTransaction(
-              safeTransactionData.to,
-              safeTransactionData.data,
+              safeTransaction.to,
+              safeTransaction.data,
               BigInt(0),
-              safeTransactionData.operation,
-              txInfo.signedTransaction.encodedSignatures(),
+              safeTransaction.operation,
+              txInfo.signatures,
               gasPrice
             );
             await this.store.savePendingTransaction(
@@ -1160,13 +1160,13 @@ export class RelayerService implements OnModuleInit {
             bridge.toBridge.safeWallet.address,
             bridge.toBridge.safeWallet.wallet
           );
-          const safeTransactionData = txInfo.signedTransaction.data;
+          const safeTransaction = txInfo.safeTransaction.data;
           const err = await safeContract.tryExecTransaction(
-            safeTransactionData.to,
-            safeTransactionData.data,
-            BigInt(safeTransactionData.value),
-            safeTransactionData.operation,
-            txInfo.signedTransaction.encodedSignatures(),
+            safeTransaction.to,
+            safeTransaction.data,
+            BigInt(safeTransaction.value),
+            safeTransaction.operation,
+            txInfo.signatures,
             relayGasLimit
           );
           if (err != null) {
@@ -1185,11 +1185,11 @@ export class RelayerService implements OnModuleInit {
               )}, gasLimit: ${relayGasLimit}`
             );
             const tx = await safeContract.execTransaction(
-              safeTransactionData.to,
-              safeTransactionData.data,
-              BigInt(safeTransactionData.value),
-              safeTransactionData.operation,
-              txInfo.signedTransaction.encodedSignatures(),
+              safeTransaction.to,
+              safeTransaction.data,
+              BigInt(safeTransaction.value),
+              safeTransaction.operation,
+              txInfo.signatures,
               gasPrice,
               null,
               relayGasLimit
