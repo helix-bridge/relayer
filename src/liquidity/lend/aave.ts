@@ -692,6 +692,9 @@ export class Aave extends LendMarket {
     }
 
     const accountInfo = await this.poolContract.getUserAccountData(account);
+    if (accountInfo.ltv === BigInt(0)) {
+      return { withdraw: aTokenBalance, borrow: BigInt(0) };
+    }
     // (totalCollateralBase - x) * ltv / BigInt(10000) / BigInt(this.healthFactorLimit) >= totalDebtBase
     // x <= totalCollateralBase - totalDebtBase * BigInt(this.healthFactorLimit) * BigInt(10000) / ltv
     const availableBase =
