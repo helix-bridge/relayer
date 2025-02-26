@@ -33,6 +33,7 @@ import { LendMarket } from "../liquidity/lend/market";
 import { CeramicService } from "../base/safe-service/ceramic.service";
 import { SingleService } from "../base/safe-service/single.service";
 import { SafeGlobalService } from "../base/safe-service/safeglobal.service";
+import { ApolloService } from "../base/safe-service/apollo.service";
 import { SafeService } from "../base/safe-service/safe.service";
 import { gasPriceToString } from "../base/provider";
 
@@ -165,7 +166,9 @@ export class RelayerService implements OnModuleInit {
                 timer.lastRepayLend = 0;
               }
             } catch (err) {
-              this.logger.warn(`[${key}]try to check repay dept failed, err: ${err}`);
+              this.logger.warn(
+                `[${key}]try to check repay dept failed, err: ${err}`
+              );
             }
           }
           timer.isProcessing = false;
@@ -295,6 +298,11 @@ export class RelayerService implements OnModuleInit {
                 ? new CeramicService(ceramicKey, config.safeWalletUrl)
                 : config.safeWalletType === "single"
                 ? new SingleService()
+                : config.safeWalletType === "apollo"
+                ? new ApolloService(
+                    toChainInfo.chainId,
+                    this.configureService.indexer
+                  )
                 : new SafeGlobalService(
                     config.safeWalletUrl,
                     toChainInfo.chainId
@@ -920,11 +928,12 @@ export class RelayerService implements OnModuleInit {
             }
             let amountThreshold = kMaxWithdrawTransferAmount;
             if (lnProvider.withdrawLiquidityAmountThreshold) {
-              amountThreshold = lnProvider.withdrawLiquidityAmountThreshold
+              amountThreshold = lnProvider.withdrawLiquidityAmountThreshold;
             }
             if (
               filterTransferIds.length >= countThreshold ||
-              Number(totalAmount) / Number(new Any(1, srcDecimals).Number) >= amountThreshold
+              Number(totalAmount) / Number(new Any(1, srcDecimals).Number) >=
+                amountThreshold
             ) {
               // token transfer direction fromChain -> toChain
               // withdrawLiquidity message direction toChain -> fromChain

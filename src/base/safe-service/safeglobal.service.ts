@@ -17,7 +17,6 @@ export class SafeGlobalService extends SafeService {
     await this.safeService.proposeTransaction(props);
   }
 
-
   async getTransactionConfirmations(
     safeTxHash: string
   ): Promise<SafeMultisigConfirmationResponse[]> {

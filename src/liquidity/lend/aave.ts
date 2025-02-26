@@ -7,12 +7,7 @@ import {
   WETHContract,
   Erc20Contract,
 } from "../../base/contract";
-import {
-  LendMarket,
-  TxInfo,
-  WithdrawBorrowBalance,
-  maxU256,
-} from "./market";
+import { LendMarket, TxInfo, WithdrawBorrowBalance, maxU256 } from "./market";
 import {
   LendTokenInfo,
   CollateralInfo,
