@@ -33,6 +33,7 @@ import { LendMarket } from "../liquidity/lend/market";
 import { CeramicService } from "../base/safe-service/ceramic.service";
 import { SingleService } from "../base/safe-service/single.service";
 import { SafeGlobalService } from "../base/safe-service/safeglobal.service";
+import { ApolloService } from "../base/safe-service/apollo.service";
 import { SafeService } from "../base/safe-service/safe.service";
 import { gasPriceToString } from "../base/provider";
 
@@ -295,7 +296,11 @@ export class RelayerService implements OnModuleInit {
                 ? new CeramicService(ceramicKey, config.safeWalletUrl)
                 : config.safeWalletType === "single"
                 ? new SingleService()
-                : new SafeGlobalService(
+                : config.safeWalletType === "apollo"
+                ? new ApolloService(
+                  toChainInfo.chainId,
+                  this.configureService.indexer
+                ) : new SafeGlobalService(
                     config.safeWalletUrl,
                     toChainInfo.chainId
                   );
