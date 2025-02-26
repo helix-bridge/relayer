@@ -4,7 +4,10 @@ import {
   SafeTransaction,
   SafeMultisigConfirmationResponse,
 } from "@safe-global/safe-core-sdk-types";
-import Safe, { buildSignatureBytes, EthSafeSignature } from "@safe-global/protocol-kit";
+import Safe, {
+  buildSignatureBytes,
+  EthSafeSignature,
+} from "@safe-global/protocol-kit";
 import { ethers, Wallet, HDNodeWallet } from "ethers";
 import { SafeService } from "./safe-service/safe.service";
 import { EthereumConnectedWallet } from "./wallet";
@@ -109,7 +112,7 @@ export class SafeWallet {
         return {
           readyExecute: true,
           safeTransaction: tx,
-          signatures: signedTransaction.encodedSignatures()
+          signatures: signedTransaction.encodedSignatures(),
         };
       } else {
         return null;
@@ -118,7 +121,7 @@ export class SafeWallet {
       let confirmations: SafeMultisigConfirmationResponse[];
       try {
         confirmations = await this.safeService.getTransactionConfirmations(
-         txHash 
+          txHash
         );
       } catch {
         confirmations = [];
@@ -135,7 +138,7 @@ export class SafeWallet {
       } else {
         if (signatureInfo.size < this.threshold) {
           try {
-            const senderSignature = await this.safeSdk.signHash(txHash)
+            const senderSignature = await this.safeSdk.signHash(txHash);
             await this.safeService.proposeTransaction({
               safeAddress: this.address,
               safeTransactionData: tx.data,
@@ -159,14 +162,14 @@ export class SafeWallet {
         return {
           readyExecute: false,
           safeTransaction: tx,
-          signatures: signatureInfo.signatures
-        }
+          signatures: signatureInfo.signatures,
+        };
       }
       // isExecuter
       return {
         readyExecute: readyExecute,
         safeTransaction: tx,
-        signatures: signatureInfo.signatures
+        signatures: signatureInfo.signatures,
       };
     }
   }

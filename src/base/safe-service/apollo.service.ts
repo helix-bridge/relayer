@@ -4,28 +4,6 @@ import { SafeService } from "./safe.service";
 import { ethers } from "ethers";
 import axios from "axios";
 
-interface ConfirmationNode {
-  owner: string;
-  id: string;
-  signature: string;
-  signatureType: string;
-  submissionDate: string;
-  transactionHash: string;
-  confirmationType: string;
-}
-
-interface ConfirmationEdge {
-  node: ConfirmationNode;
-}
-
-interface ConfirmationIndexData {
-  data: {
-    confirmationIndex: {
-      edges: ConfirmationEdge[];
-    };
-  };
-}
-
 export class ApolloService extends SafeService {
   private chainId: number;
   private privateKey: string;
@@ -70,11 +48,13 @@ export class ApolloService extends SafeService {
         owner, signature, signatureType, transactionHash, confirmationType
       }
     }`;
-    const confirmations = await axios.post(this.url, {
-      query,
-      variables: {},
-      operationName: null,
-    }).then((res) => res.data.data.getTransactionConfirmations);;
+    const confirmations = await axios
+      .post(this.url, {
+        query,
+        variables: {},
+        operationName: null,
+      })
+      .then((res) => res.data.data.getTransactionConfirmations);
 
     const validConfirmations = confirmations.filter((confirmation) => {
       const { signature } = confirmation;

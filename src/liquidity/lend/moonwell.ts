@@ -16,12 +16,7 @@ import {
   Erc20Contract,
   MulticallArgs,
 } from "../../base/contract";
-import {
-  LendMarket,
-  TxInfo,
-  WithdrawBorrowBalance,
-  maxU256,
-} from "./market";
+import { LendMarket, TxInfo, WithdrawBorrowBalance, maxU256 } from "./market";
 import { Any } from "../../base/bignumber";
 import { EthereumConnectedWallet } from "../../base/wallet";
 import { EthereumProvider } from "../../base/provider";
