@@ -29,7 +29,7 @@ export abstract class Messager extends EthereumContract {
 }
 
 export class MessagePortMessager extends Messager {
-  private serviceUrl: string = "https://api.msgport.xyz/ormp/fee";
+  private serviceUrl: string = "https://msgport-api.ringdao.com/ormp/fee";
 
   constructor(
     address: string,
